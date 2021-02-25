@@ -1,0 +1,16 @@
+<RCC>
+  <qresource prefix="icon">
+    <file>plus_small.png</file>
+    <file>plus.png</file>
+    <file>copy.png</file>
+    <file>cross.png</file>
+    <file>grid.png</file>
+    <file>print.png</file>
+    <file>ruler.png</file>
+    <file>save.png</file>
+    <file>first.png</file>
+    <file>last.png</file>
+    <file>next.png</file>
+    <file>previous.png</file>
+  </qresource>
+</RCC>
