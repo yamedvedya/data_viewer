@@ -30,7 +30,7 @@ class DataPool(QtCore.QObject):
 
         super(DataPool, self).__init__()
 
-        self.parent = parent
+        self.main_window = parent
         self.log = log
         self.space = 'real'
 
@@ -52,19 +52,6 @@ class DataPool(QtCore.QObject):
                            'loaded_mask': np.array([[], []]),
                            'file': '',
                            'energy': None}
-
-    # ----------------------------------------------------------------------
-    def _open_file_error(self, text, informative_text='', detailed_text=''):
-        self.msg = QtWidgets.QMessageBox()
-        self.msg.setModal(False)
-        self.msg.setIcon(QtWidgets.QMessageBox.Critical)
-        self.msg.setText(text)
-        self.msg.setInformativeText(informative_text)
-        if detailed_text != '':
-            self.msg.setDetailedText(detailed_text)
-        self.msg.setWindowTitle("Error")
-        self.msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        self.msg.show()
 
     # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):
@@ -122,9 +109,8 @@ class DataPool(QtCore.QObject):
             self.new_file_added.emit(entry_name)
 
         except Exception as err:
-            self.log.error("Error while open file {}: {}".format(file_name, err))
-            self._open_file_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
-                                  detailed_text=str(err))
+            self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
+                                          detailed_text=str(err))
 
     # ----------------------------------------------------------------------
     def remove_file(self, name):

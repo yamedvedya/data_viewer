@@ -1,10 +1,9 @@
 # Created by matveyev at 18.02.2021
 
-MEMORY_MODE = 'compressed' #'disk' or 'ram', 'compressed'
+MEMORY_MODE = 'ram' #'disk' or 'ram'
 
 import h5py
 import numpy as np
-import sparse
 
 from src.data_sources.abstract_data_file import AbstractDataFile
 
@@ -29,10 +28,8 @@ class SardanaScan(AbstractDataFile):
             if len(scan_data[key].shape) > 1:
                 self._data['cube_key'] = key
                 self._data['cube_shape'] = scan_data[key].shape
-                if MEMORY_MODE == 'compressed':
-                    self._data['3d_cube'] = sparse.COO(np.array(scan_data[key][...]))
-                elif MEMORY_MODE == 'ram':
-                    self._data['3d_cube'] = np.array(scan_data[key][...])
+                if MEMORY_MODE == 'ram':
+                    self._data['3d_cube'] = scan_data[key][...]
 
                 if scan_data[key].file.filename is not None:
                     try:
@@ -105,21 +102,16 @@ class SardanaScan(AbstractDataFile):
             else:
                 self._pixel_mask = None
 
-            if MEMORY_MODE in ['ram', 'compressed']:
+            if MEMORY_MODE == 'ram':
                 with h5py.File(self._original_file, 'r') as f:
-                    data = np.array(f['scan']['data'][self._data['cube_key']])
+                    self._data['3d_cube'] = f['scan']['data'][self._data['cube_key']][...]
 
                 if self._pixel_mask is not None:
-                    for frame in data:
+                    for frame in self._data['3d_cube']:
                         frame[self._pixel_mask] = 0
 
-                if MEMORY_MODE == 'compressed':
-                    self._data['3d_cube'] = sparse.COO(data)
-                else:
-                    self._data['3d_cube'] = data
-
         except Exception as err:
-            self._data_pool.log.error("{}: cannot apply mask: {}".format(self.my_name, err))
+            self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
     def get_2d_cut(self, space, axis, value, x_axis, y_axis):
@@ -134,8 +126,6 @@ class SardanaScan(AbstractDataFile):
                 else:
                     data = self._data['3d_cube'][:, :, value]
 
-                if MEMORY_MODE == 'compressed':
-                    data = data.todense()
             else:
                 with h5py.File(self._original_file, 'r') as f:
                     if cut_axis == 0:
@@ -169,7 +159,7 @@ class SardanaScan(AbstractDataFile):
             plot_axis = self._cube_axes_map[space][sect['axis']]
             cut_axis_1 = self._cube_axes_map[space][sect['roi_1_axis']]
 
-            if MEMORY_MODE in ['ram', 'compressed']:
+            if MEMORY_MODE == 'ram':
                 if plot_axis == 0:
                     if cut_axis_1 == 1:
                         cube_cut = self._data['3d_cube'][:,
@@ -206,8 +196,6 @@ class SardanaScan(AbstractDataFile):
                     cube_cut = np.sum(cube_cut, axis=0)
                     cube_cut = np.sum(cube_cut, axis=0)
 
-                if MEMORY_MODE == 'compressed':
-                    cube_cut = cube_cut.todense()
             else:
                 with h5py.File(self._original_file, 'r') as f:
                     if plot_axis == 0:

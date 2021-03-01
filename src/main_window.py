@@ -32,8 +32,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if options.folder is not None:
             self.folder = options.folder
-        # elif last_folder is not None:
-        #     self.folder = last_folder
         else:
             self.folder = os.getcwd()
 
@@ -89,7 +87,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
 
-        self.data_pool.open_file('D://test//Bhat_B_2_02867.nxs')
+        self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
         # self.data_pool.open_file()
 
     # ----------------------------------------------------------------------
@@ -153,6 +151,22 @@ class DataViewer(QtWidgets.QMainWindow):
         self._menu_view.addAction(dock.toggleViewAction())
 
         return widget, dock
+
+    # ----------------------------------------------------------------------
+    def report_error(self, text, informative_text='', detailed_text=''):
+
+        self.log.error("Error: {}, {}, {} ".format(text, informative_text, detailed_text))
+
+        self.msg = QtWidgets.QMessageBox()
+        self.msg.setModal(False)
+        self.msg.setIcon(QtWidgets.QMessageBox.Critical)
+        self.msg.setText(text)
+        self.msg.setInformativeText(informative_text)
+        if detailed_text != '':
+            self.msg.setDetailedText(detailed_text)
+        self.msg.setWindowTitle("Error")
+        self.msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        self.msg.show()
 
     # ----------------------------------------------------------------------
     def _exit(self):
