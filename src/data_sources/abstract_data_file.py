@@ -14,31 +14,38 @@ class AbstractDataFile(object):
         self._data_pool = data_pool
         self._data = {}
         self._spaces = ['real']
-        self._mask_info = {}
+        self._mask_mode = 'default'
+        self._attached_mask = np.array([[], []])
+        self._loaded_mask = np.array([[], []])
+        self._loaded_mask_info = {}
         self._axes_names = {'real': ['X', 'Y', 'Z']}
         self._cube_axes_map = {'real': {0: 0,
                                         1: 1,
                                         2: 2}}
 
     # ----------------------------------------------------------------------
-    def set_mask_info(self, mask_info):
-        self._mask_info = dict(mask_info)
+    def set_mask_info(self, mask_mode, loaded_mask=None, loaded_mask_info=None):
+        self._mask_mode = mask_mode
+        if mask_mode == 'file':
+            self._loaded_mask = loaded_mask
+            self._loaded_mask_info = loaded_mask_info
         self._apply_mask()
 
     # ----------------------------------------------------------------------
     def get_attached_mask_for_file(self):
-        if 'pixel_mask' in self._data:
-            return self._data['pixel_mask']
-
-        return []
+        return self._attached_mask
 
     # ----------------------------------------------------------------------
     def get_default_mask_for_file(self):
         return []
 
     # ----------------------------------------------------------------------
-    def get_mask_info(self):
-        return dict(self._mask_info)
+    def get_loaded_mask_for_file(self):
+        return self._loaded_mask, self._loaded_mask_info
+
+    # ----------------------------------------------------------------------
+    def get_mask_mode(self):
+        return self._mask_mode
 
     # ----------------------------------------------------------------------
     def _apply_mask(self):
@@ -88,11 +95,11 @@ class AbstractDataFile(object):
             cut_axis = self._cube_axes_map[space][axis]
 
             if cut_axis == 0:
-                data = self._data['3d_cube'][value, :, :]
+                data = self._3d_cube[value, :, :]
             elif cut_axis == 1:
-                data = self._data['3d_cube'][:, value, :]
+                data = self._3d_cube[:, value, :]
             else:
-                data = self._data['3d_cube'][:, :, value]
+                data = self._3d_cube[:, :, value]
 
             data = data.todense()
             if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
@@ -112,50 +119,44 @@ class AbstractDataFile(object):
         return 0
 
     # ----------------------------------------------------------------------
-    def get_roi_plot(self, space, section_params):
+    def get_roi_plot(self, space, sect):
         if space in self._spaces:
-            plot_axis = self._cube_axes_map[space][section_params['axis']]
-            cut_axis_1 = self._cube_axes_map[space][section_params['roi_1_axis']]
+            plot_axis = self._cube_axes_map[space][sect['axis']]
+            cut_axis_1 = self._cube_axes_map[space][sect['roi_1_axis']]
 
             if plot_axis == 0:
                 if cut_axis_1 == 1:
-                    cube_cut = self._data['3d_cube'][
-                               :,
-                               section_params['roi_1_pos']:section_params['roi_1_pos'] + section_params['roi_1_width'],
-                               section_params['roi_2_pos']:section_params['roi_2_pos'] + section_params['roi_2_width']]
+                    cube_cut = self._3d_cube[:,
+                                             sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                             sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
                 else:
-                    cube_cut = self._data['3d_cube'][
-                               :,
-                               section_params['roi_2_pos']:section_params['roi_2_pos'] + section_params['roi_2_width'],
-                               section_params['roi_1_pos']:section_params['roi_1_pos'] + section_params['roi_1_width']]
+                    cube_cut = self._3d_cube[:,
+                                             sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                             sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
                 cube_cut = np.sum(cube_cut, axis=1)
                 cube_cut = np.sum(cube_cut, axis=1)
 
             elif plot_axis == 1:
                 if cut_axis_1 == 0:
-                    cube_cut = self._data['3d_cube'][
-                               section_params['roi_1_pos']:section_params['roi_1_pos'] + section_params['roi_1_width'],
-                               :,
-                               section_params['roi_2_pos']:section_params['roi_2_pos'] + section_params['roi_2_width']]
+                    cube_cut = self._3d_cube[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                             :,
+                                             sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
                 else:
-                    cube_cut = self._data['3d_cube'][
-                               section_params['roi_2_pos']:section_params['roi_2_pos'] + section_params['roi_2_width'],
-                               :,
-                               section_params['roi_1_pos']:section_params['roi_1_pos'] + section_params['roi_1_width']]
+                    cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                             :,
+                                             sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
                 cube_cut = np.sum(cube_cut, axis=2)
                 cube_cut = np.sum(cube_cut, axis=0)
 
             else:
                 if cut_axis_1 == 0:
-                    cube_cut = self._data['3d_cube'][
-                               section_params['roi_1_pos']:section_params['roi_1_pos'] + section_params['roi_1_width'],
-                               section_params['roi_2_pos']:section_params['roi_2_pos'] + section_params['roi_2_width']
-                               :]
+                    cube_cut = self._3d_cube[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                             sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']
+                                             :]
                 else:
-                    cube_cut = self._data['3d_cube'][
-                               section_params['roi_2_pos']:section_params['roi_2_pos'] + section_params['roi_2_width'],
-                               section_params['roi_1_pos']:section_params['roi_1_pos'] + section_params['roi_1_width']
-                               :]
+                    cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                             sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']
+                                             :]
                 cube_cut = np.sum(cube_cut, axis=0)
                 cube_cut = np.sum(cube_cut, axis=0)
 

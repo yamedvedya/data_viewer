@@ -46,24 +46,27 @@ class MaskSelector(QtWidgets.QDialog):
         self._main_plot.getViewBox().setAspectLocked()
 
         self._current_file = self._parent.files_inspector.current_file
-        self._mask_info = self._data_pool.get_mask_info(self._current_file)
+        self._mask_mode = self._data_pool.get_mask_mode(self._current_file)
+        self._mask_info = {}
 
-        if self._mask_info['mode'] == 'default':
-            self._ui.rb_default.setChecked(True)
-            mask = self._data_pool.get_default_mask_for_file(self._current_file)
-        elif self._mask_info['mode'] == 'no':
+        if self._mask_mode == 'no':
             self._ui.rb_no_mask.setChecked(True)
-            mask = []
-        elif self._mask_info['mode'] == 'attached':
+            self._mask = np.array([[], []])
+        elif self._mask_mode == 'default':
+            self._ui.rb_default.setChecked(True)
+            self._mask = self._data_pool.get_default_mask_for_file(self._current_file)
+        elif self._mask_mode == 'attached':
             self._ui.rb_attached.setChecked(True)
-            mask = self._data_pool.get_attached_mask_for_file(self._current_file)
+            self._mask = self._data_pool.get_attached_mask_for_file(self._current_file)
         else:
             self._ui.rb_file.setChecked(True)
-            self._ui.lb_mask_file.setText(self._mask_info['file'])
-            mask = self._mask_info['loaded_mask']
+            self._ui.but_load_mask.setEnabled(True)
+            self._mask, self._mask_info = self._data_pool.get_loaded_mask_for_file(self._current_file)
+            if 'file' in self._mask_info:
+                self._ui.lb_mask_file.setText(self._mask_info['file'])
 
         self._plot_2d = pg.ImageItem()
-        self._plot_2d.setImage(image=mask)
+        self._plot_2d.setImage(np.copy(self._mask), autoLevels=True)
         self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients['grey']["ticks"])).getLookupTable())
         self._main_plot.addItem(self._plot_2d)
 
@@ -81,22 +84,26 @@ class MaskSelector(QtWidgets.QDialog):
     def change_mode(self, button):
         self._ui.but_load_mask.setEnabled(False)
         if button == self._ui.rb_no_mask:
-            self._mask_info['mode'] = 'no'
+            self._mask_mode = 'no'
             self._plot_2d.clear()
             return
         elif button == self._ui.rb_attached:
-            self._mask_info['mode'] = 'attached'
-            mask = self._data_pool.get_attached_mask_for_file(self._current_file)
+            self._mask_mode = 'attached'
+            self._mask = self._data_pool.get_attached_mask_for_file(self._current_file)
         elif button == self._ui.rb_file:
-            self._mask_info['mode'] = 'loaded'
-            mask = self._mask_info['loaded_mask']
+            self._mask_mode = 'file'
+            self._mask, self._mask_info = self._data_pool.get_loaded_mask_for_file(self._current_file)
+            if self._mask.shape[1] == 0:
+                self.load_mask_from_file()
             self._ui.but_load_mask.setEnabled(True)
+            if 'file' in self._mask_info:
+                self._ui.lb_mask_file.setText(self._mask_info['file'])
         else:
-            self._mask_info['mode'] = 'default'
-            mask = self._data_pool.get_default_mask_for_file(self._current_file)
+            self._mask_mode = 'default'
+            self._mask = self._data_pool.get_default_mask_for_file(self._current_file)
 
         try:
-            self._plot_2d.setImage(mask, autoLevels=True)
+            self._plot_2d.setImage(np.copy(self._mask), autoLevels=True)
         except Exception as err:
             self._parent.log.error("{} : cannot display mask geometry: {}".format(WIDGET_NAME, err))
             self._plot_2d.clear()
@@ -107,16 +114,25 @@ class MaskSelector(QtWidgets.QDialog):
                                                              self._data_pool.get_dir(self._parent.files_inspector.current_file))
 
         if file_name:
-            mask_info = read_mask_file(file_name)
-            if 'loaded_mask' in mask_info:
-                self._plot_2d.setImage(mask_info['loaded_mask'], autoLevels=True)
-                self._ui.lb_mask_file.setText(mask_info['file'])
+            mask, mask_info = read_mask_file(file_name)
+            if mask is not None:
+                self._mask = mask
                 self._mask_info = mask_info
+                self._plot_2d.setImage(np.copy(mask), autoLevels=True)
+                self._ui.lb_mask_file.setText(mask_info['file'])
 
     # ----------------------------------------------------------------------
     def accept(self):
-        self._data_pool.set_mask_mode(self._current_file, self._mask_info,
-                                      self._ui.chk_force_mask_opened.isChecked(), self._ui.chk_use_for_new.isChecked())
+        if self._mask_mode == 'file':
+            self._data_pool.set_mask(self._current_file, self._mask_mode,
+                                     self._ui.chk_force_mask_opened.isChecked(),
+                                     self._ui.chk_use_for_new.isChecked(),
+                                     self._mask, self._mask_info)
+        else:
+            self._data_pool.set_mask(self._current_file, self._mask_mode,
+                                     self._ui.chk_force_mask_opened.isChecked(),
+                                     self._ui.chk_use_for_new.isChecked())
+
         QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
         super(MaskSelector, self).accept()
 

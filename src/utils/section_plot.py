@@ -7,6 +7,7 @@ import numpy as np
 import pyqtgraph as pg
 
 import src.lookandfeel as lookandfeel
+from src.utils.fitter import make_fit
 
 # ----------------------------------------------------------------------
 class SectionPlot(QtCore.QObject):
@@ -23,10 +24,15 @@ class SectionPlot(QtCore.QObject):
         self.plot = plot_item.plot([], name=name,
                                    pen=pg.mkPen(color=lookandfeel.PLOT_COLORS[color % len(lookandfeel.PLOT_COLORS)]))
 
+        self._fit_style = pg.mkPen(color=lookandfeel.PLOT_COLORS[color % len(lookandfeel.PLOT_COLORS)],
+                                   style=QtCore.Qt.DashLine)
+
         SectionPlot.PENCOUNTER += 1
 
         self.x_data = np.array([])
         self.y_data = np.array([])
+
+        self._fits = {}
 
         self._is_visible = True
 
@@ -39,16 +45,11 @@ class SectionPlot(QtCore.QObject):
 
         self.plot_is_normalized = normalized
 
+        self._name = name
+
     # ----------------------------------------------------------------------
     def get_data(self):
         return self.plot.getData()
-
-    # ----------------------------------------------------------------------
-    def get_all_data(self):
-        if self.scan_data is not None:
-            return self.plots[0].getData(), self.scan_data[0]
-        else:
-            return self.plots[0].getData(), None
 
     # ----------------------------------------------------------------------
     def empty(self):
@@ -65,6 +66,7 @@ class SectionPlot(QtCore.QObject):
         self.plot_item().removeItem(self.plot)
         self.plot_item().removeItem(self.tooltip)
         self.plot_item().legend.removeItemByAddress(self.plot)
+        self.delete_fits()
 
     # ----------------------------------------------------------------------
     def show_tool_tip(self, flag, pos=None):
@@ -90,7 +92,7 @@ class SectionPlot(QtCore.QObject):
         return np.abs(np.max(y) - np.min(y))
 
     # ----------------------------------------------------------------------
-    def normalize_plot(self, status):
+    def normalize_plot(self, status, x_min, x_max):
         self.plot_is_normalized = status
         if status:
             if len(self.y_data):
@@ -106,8 +108,10 @@ class SectionPlot(QtCore.QObject):
             except:
                 pass
 
+        self.update_fits(x_min, x_max)
+
     # ----------------------------------------------------------------------
-    def update_plot(self, x, y):
+    def update_plot(self, x, y, x_min, x_max):
 
         self.x_data = x
         self.y_data = y
@@ -120,3 +124,44 @@ class SectionPlot(QtCore.QObject):
                 y = y/np.max(y)
 
         self.plot.setData(self.x_data, y)
+
+        self.update_fits(x_min, x_max)
+
+    # ----------------------------------------------------------------------
+    def update_fits(self, x_min, x_max):
+        for function in self._fits.keys():
+            self.make_fit(function, x_min, x_max)
+
+    # ----------------------------------------------------------------------
+    def make_fit(self, function, x_min, x_max):
+            x, y = self.plot.getData()
+
+            selected = np.where(np.logical_and(x_min <= x, x <= x_max))
+            x = np.copy(x[selected])
+            y = np.copy(y[selected])
+
+            if len(x) < 100:
+                new_x = np.linspace(np.min(x), np.max(x), 100)
+                y = np.interp(new_x, x, y, x[0], x[-1])
+                x = new_x
+
+            y_fit, label, fit_res = make_fit(x, y, function)
+
+            plot_name = self._name + ': ' + function + ': ' + label
+            if function not in self._fits:
+                self._fits[function] = self.plot_item().plot(x, y_fit, name=plot_name, pen=self._fit_style)
+            else:
+                self._fits[function].setData(x, y_fit, name=plot_name)
+
+    # ----------------------------------------------------------------------
+    def remove_fit(self, function):
+        if function in self._fits:
+            self.plot_item().removeItem(self._fits[function])
+            self.plot_item().legend.removeItemByAddress(self._fits[function])
+            del self._fits[function]
+
+    # ----------------------------------------------------------------------
+    def delete_fits(self):
+        for plot in self._fits.items():
+            self.plot_item().removeItem(plot)
+            self.plot_item().legend.removeItemByAddress(plot)

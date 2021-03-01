@@ -4,6 +4,10 @@ MEMORY_MODE = 'ram' #'disk' or 'ram'
 
 import h5py
 import numpy as np
+import gc
+import os
+import psutil
+from pympler import muppy, summary
 
 from src.data_sources.abstract_data_file import AbstractDataFile
 
@@ -29,13 +33,14 @@ class SardanaScan(AbstractDataFile):
                 self._data['cube_key'] = key
                 self._data['cube_shape'] = scan_data[key].shape
                 if MEMORY_MODE == 'ram':
-                    self._data['3d_cube'] = scan_data[key][...]
+                    self._3d_cube = scan_data[key][...]
 
                 if scan_data[key].file.filename is not None:
                     try:
                         source_file = h5py.File(scan_data[key].file.filename, 'r')
-                        self._data['pixel_mask'] = \
+                        self._attached_mask = \
                             np.array(source_file['entry']['instrument']['detector']['pixel_mask'])[0, :, :]
+                        self._loaded_mask = np.zeros_like(self._attached_mask)
                     except:
                         pass
 
@@ -87,28 +92,31 @@ class SardanaScan(AbstractDataFile):
 
     # ----------------------------------------------------------------------
     def get_default_mask_for_file(self):
-        return self._data['pixel_mask']
+        return self._attached_mask
 
     # ----------------------------------------------------------------------
     def _apply_mask(self):
 
         try:
-            if self._mask_info['mode'] in ['default', 'attached']:
-                self._pixel_mask = self._data['pixel_mask'] > 0
+            if self._mask_mode in ['default', 'attached']:
+                self._pixel_mask = self._attached_mask > 0
 
-            elif self._mask_info['mode'] == 'file' and 'loaded_mask' in self._data:
-                self._pixel_mask = self._data['loaded_mask'] > 0
+            elif self._mask_mode == 'file':
+                self._pixel_mask = self._loaded_mask > 0
 
             else:
                 self._pixel_mask = None
 
             if MEMORY_MODE == 'ram':
+                del self._3d_cube
                 with h5py.File(self._original_file, 'r') as f:
-                    self._data['3d_cube'] = f['scan']['data'][self._data['cube_key']][...]
+                    data = f['scan']['data'][self._data['cube_key']][...]
 
                 if self._pixel_mask is not None:
-                    for frame in self._data['3d_cube']:
+                    for frame in data:
                         frame[self._pixel_mask] = 0
+
+                self._3d_cube = data
 
         except Exception as err:
             self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
@@ -120,11 +128,11 @@ class SardanaScan(AbstractDataFile):
 
             if MEMORY_MODE == 'ram':
                 if cut_axis == 0:
-                    data = self._data['3d_cube'][value, :, :]
+                    data = np.copy(self._3d_cube[value, :, :])
                 elif cut_axis == 1:
-                    data = self._data['3d_cube'][:, value, :]
+                    data = np.copy(self._3d_cube[:, value, :])
                 else:
-                    data = self._data['3d_cube'][:, :, value]
+                    data = np.copy(self._3d_cube[:, :, value])
 
             else:
                 with h5py.File(self._original_file, 'r') as f:
@@ -162,37 +170,37 @@ class SardanaScan(AbstractDataFile):
             if MEMORY_MODE == 'ram':
                 if plot_axis == 0:
                     if cut_axis_1 == 1:
-                        cube_cut = self._data['3d_cube'][:,
-                                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
+                        cube_cut = self._3d_cube[:,
+                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
                     else:
-                        cube_cut = self._data['3d_cube'][:,
-                                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+                        cube_cut = self._3d_cube[:,
+                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
                     cube_cut = np.sum(cube_cut, axis=1)
                     cube_cut = np.sum(cube_cut, axis=1)
 
                 elif plot_axis == 1:
                     if cut_axis_1 == 0:
-                        cube_cut = self._data['3d_cube'][sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                         :,
-                                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
+                        cube_cut = self._3d_cube[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                 :,
+                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
                     else:
-                        cube_cut = self._data['3d_cube'][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                         :,
-                                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+                        cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                 :,
+                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
                     cube_cut = np.sum(cube_cut, axis=2)
                     cube_cut = np.sum(cube_cut, axis=0)
 
                 else:
                     if cut_axis_1 == 0:
-                        cube_cut = self._data['3d_cube'][sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                         :]
+                        cube_cut = self._3d_cube[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                 :]
                     else:
-                        cube_cut = self._data['3d_cube'][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                         :]
+                        cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                 :]
                     cube_cut = np.sum(cube_cut, axis=0)
                     cube_cut = np.sum(cube_cut, axis=0)
 

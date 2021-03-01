@@ -48,10 +48,9 @@ class DataPool(QtCore.QObject):
         self._rois = OrderedDict()
         self._last_roi_index = -1
 
-        self._mask_info = {'mode': 'default',
-                           'loaded_mask': np.array([[], []]),
-                           'file': '',
-                           'energy': None}
+        self._mask_mode = 'default'
+        self._loaded_mask = np.array([[], []])
+        self._loaded_mask_info = {'file': ''}
 
     # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):
@@ -93,16 +92,12 @@ class DataPool(QtCore.QObject):
             self._open_file_error('File with this name already opened')
             return
 
-        data_set = {'full_path': file_name,
-                    'scanned_values': [],
-                    '3d_cube': None}
-
         try:
-            data_set['axes_list'] = []
             with h5py.File(file_name, 'r') as f:
                 if 'scan' in f.keys():
                     self._files_data[entry_name] = SardanaScan(file_name, self, f)
-                    self._files_data[entry_name].set_mask_info(self._mask_info)
+                    self._files_data[entry_name].set_mask_info(self._mask_mode, self._loaded_mask,
+                                                               self._loaded_mask_info)
 
             self._rescan_possible_scan_parameters()
             self._get_all_axes_limits()
@@ -222,20 +217,26 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_default_mask_for_file()
 
     # ----------------------------------------------------------------------
-    def set_mask_mode(self, file, mask_info, force_to_opened, force_for_future):
+    def get_loaded_mask_for_file(self, file):
+        return self._files_data[file].get_loaded_mask_for_file()
+
+    # ----------------------------------------------------------------------
+    def set_mask(self, file, mask_mode, force_to_opened, force_for_future, loaded_mask=np.array([[], []]), loaded_mask_info = {}):
 
         if force_to_opened:
             for file in self._files_data.values():
-                file.set_mask_info(mask_info)
+                file.set_mask_info(mask_mode, loaded_mask, loaded_mask_info)
         else:
-            self._files_data[file].set_mask_info(mask_info)
+            self._files_data[file].set_mask_info(mask_mode, loaded_mask, loaded_mask_info)
 
         if force_for_future:
-            self._mask_info = mask_info
+            self._mask_mode = mask_mode
+            self._loaded_mask = loaded_mask
+            self._loaded_mask_info = loaded_mask_info
 
     # ----------------------------------------------------------------------
-    def get_mask_info(self, file):
-        return self._files_data[file].get_mask_info()
+    def get_mask_mode(self, file):
+        return self._files_data[file].get_mask_mode()
 
     # ----------------------------------------------------------------------
     def get_dir(self, file):

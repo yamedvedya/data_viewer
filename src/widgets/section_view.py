@@ -3,7 +3,7 @@
 WIDGET_NAME = 'SectionView'
 
 import pyqtgraph as pg
-import icons_rc
+import numpy as np
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from src.gui.section_viewer_ui import Ui_SectionView
@@ -33,6 +33,8 @@ class SectionView(QtWidgets.QWidget):
         self.data_pool = data_pool
         self.my_id = my_id
 
+        self._enabled_fits = []
+
         self.sld_1 = RangeSlider(QtCore.Qt.Horizontal, self)
         self._ui.v_layout.insertWidget(7, self.sld_1, 0)
         self.sld_2 = RangeSlider(QtCore.Qt.Horizontal, self)
@@ -49,7 +51,7 @@ class SectionView(QtWidgets.QWidget):
         self._ui.gv_main.setCentralItem(self._main_plot)
         self._ui.gv_main.setRenderHints(self._ui.gv_main.renderHints())
 
-        self.scanplot_items = {}
+        self._section_plots = {}
         self._normalized = False
 
         self._cross = CrosshairCursor(self._main_plot)
@@ -69,8 +71,6 @@ class SectionView(QtWidgets.QWidget):
 
         self._legend = addLegend(self._main_plot)
         self._legend.hide()
-
-        self.fit_style_cnt = 0
 
         self._ui.cb_section_axis.addItems(self.data_pool.get_axes())
         self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis'))
@@ -134,28 +134,34 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, color):
-        self.scanplot_items[file_name] = SectionPlot(self._main_plot, file_name, self._normalized, color)
+        self._section_plots[file_name] = SectionPlot(self._main_plot, file_name, self._normalized, color)
         x, y = self.data_pool.get_roi_plot(file_name, self.my_id)
-        self.scanplot_items[file_name].update_plot(x, y)
+        x_min, x_max = self._get_fit_range()
+        self._section_plots[file_name].update_plot(x, y, x_min, x_max)
+        for function in self._enabled_fits:
+            self._section_plots[file_name].make_fit(function, x_min, x_max)
         self.update_limits()
 
     # ----------------------------------------------------------------------
     def delete_file(self, file_name):
-        self.scanplot_items[file_name].release()
-        del self.scanplot_items[file_name]
+        self._section_plots[file_name].release()
+        del self._section_plots[file_name]
         self.update_limits()
 
     # ----------------------------------------------------------------------
     def _update_plots(self):
-        for file_name, plot_item in self.scanplot_items.items():
+        x_min, x_max = self._get_fit_range()
+
+        for file_name, plot_item in self._section_plots.items():
             x, y = self.data_pool.get_roi_plot(file_name, self.my_id)
-            plot_item.update_plot(x, y)
+            plot_item.update_plot(x, y, x_min, x_max)
 
     # ----------------------------------------------------------------------
     def _normalize_plots(self, state):
         self._normalized = state
-        for plot in self.scanplot_items.values():
-            plot.normalize_plot(state)
+        x_min, x_max = self._get_fit_range()
+        for plot in self._section_plots.values():
+            plot.normalize_plot(state, x_min, x_max)
 
     # ----------------------------------------------------------------------
     def _set_new_section_axis(self, axis):
@@ -225,19 +231,24 @@ class SectionView(QtWidgets.QWidget):
             pos = self._main_plot.vb.mapSceneToView(pos)
             self._ruler.mouseClicked(pos.x(), pos.y())
 
-            for _, scan_plot in self.scanplot_items.items():
+            for _, scan_plot in self._section_plots.items():
                 scan_plot.show_tool_tip(False)
 
             closest_plot = self.closest_plot(pos)
             if closest_plot:
-                closest_plot.showTooltip(True, pos)
+                closest_plot.show_tool_tip(True, pos)
 
     # ----------------------------------------------------------------------
     def _new_range(self):
         if self._ui.rb_range_all.isChecked():
-            min, max = self._main_plot.getAxis('bottom').range
-            self._ui.dsp_cut_from.setValue(min)
-            self._ui.dsp_cut_to.setValue(max)
+            x_min, x_max = self._main_plot.getAxis('bottom').range
+            self._ui.dsp_cut_from.setValue(x_min)
+            self._ui.dsp_cut_to.setValue(x_max)
+        else:
+            x_min, x_max = self._ui.dsp_cut_from.value(), self._ui.dsp_cut_to.value()
+
+        for _, scan_plot in self._section_plots.items():
+            scan_plot.update_fits(x_min, x_max)
 
     # ----------------------------------------------------------------------
     def _cut_range(self, selection):
@@ -267,87 +278,48 @@ class SectionView(QtWidgets.QWidget):
                 self._ui.dsp_cut_from.setValue(value)
                 self.range_line_from.setValue(value)
 
+        self._new_range()
+
     # ----------------------------------------------------------------------
     def closest_plot(self, pos, threshold=0.05):
         closest_plot = None
         min_distance = 1e+6
-        y_epsilon = 1e-6
 
-        for _, plot in self.scanplot_items.items():
+        for _, plot in self._section_plots.items():
             y_distance = plot.distance_y(pos)
             y_range = plot.range_y()
             if y_distance < min_distance and (y_distance / y_range < threshold):
-                #or (y_range < y_epsilon and y_distance < threshold)):
                 closest_plot = plot
                 min_distance = y_distance
 
         return closest_plot
 
     # ----------------------------------------------------------------------
-    def _make_fit(self, type):
-        fit_style = lookandfeel.FIT_STYLES[self.fit_style_cnt %
-                                           len(lookandfeel.FIT_STYLES)]
-        self.fit_style_cnt = (self.fit_style_cnt + 1) % len(lookandfeel.FIT_STYLES)
-
-        # fit all visible plots in a given x range
+    def _get_fit_range(self):
         if self._ui.rb_range_all.isChecked():
-            [[x_min, x_max], [y_min, y_max]] = self.plot_item.viewRange()
+            [[x_min, x_max], [_, _]] = self._main_plot.viewRange()
         else:
-            x_min = self._ui.dsp_cut_to.value()
-            x_max = self._ui.dsp_cut_from.value()
+            x_max = self._ui.dsp_cut_to.value()
+            x_min = self._ui.dsp_cut_from.value()
 
-        for key, plot in self.scanplot_items.items():  # only visible plots TODO
-            [x, y], all_x = plot.getAllData()
+        return x_min, x_max
 
-            if self.xinfo == 'binding':
-                x = plot.excitation - x
-                x_max, x_min = plot.excitation - x_min, plot.excitation - x_max
-
-            # crop data into visible range
-            selected = [idx for idx, v in enumerate(x) if (v >= x_min and v <= x_max)]
-            x = np.array([x[idx] for idx in selected])
-            y = np.array([y[idx] for idx in selected])
-
-            if len(x) < 100:
-                x_fit = np.linspace(np.min(x), np.max(x), 100)
-                y_fit = np.interp(x_fit, x, y, x[0], x[-1])
-            else:
-                x_fit = x
-                y_fit = y
-
-            if key not in self.fits:
-                self.fits[key] = []
-            else:
-                for _, fitplot in self.fits[key]:
-                    self.plot_item.removeItem(fitplot)
-                    self.legend.removeItem(fitplot.name())
-                    self.legend.updateSize()
-
-            y_fit, label, fit_res = make_fit(x_fit, y_fit, function,
-                                             plot.excitation if self.xinfo == 'binding' else None)
-            if fit_res is not None and all_x is not None:
-                fit_res[0] = np.append(fit_res[0], [np.interp(fit_res[0], all_x[:, 0], all_x[:, i]) for i in
-                                                    range(1, all_x.shape[1])])
-            label = os.path.splitext(os.path.basename(key[0]))[0] + ' ' + key[2].split('_')[-1] + ': ' + label
-            self.log.info("{}, {}".format(key, label))
-
-            fitplot = self.plot_item.plot([], name=label, pen=pg.mkPen(**fit_style))
-            if self.xinfo == 'binding':
-                x_fit = plot.excitation - x_fit
-            fitplot.setData(x_fit, y_fit)
-
-            self.fits[key].append((fitplot, function, fit_res))
-
-        if not self.legend:
-            self.legend = addLegend(self.plot_item)
-            self.legend.show()
-
-        for plot in self.scanplot_items.values():
-            plot.showHideSweeps()
+    # ----------------------------------------------------------------------
+    def _make_fit(self, function):
+        if function not in self._enabled_fits:
+            self._enabled_fits.append(function)
+            x_min, x_max = self._get_fit_range()
+            for plot in self._section_plots.values():  # only visible plots TODO
+                plot.make_fit(function, x_min, x_max)
+        else:
+            self._enabled_fits.remove(function)
+            for plot in self._section_plots.values():  # only visible plots TODO
+                plot.remove_fit(function)
 
     # ----------------------------------------------------------------------
     def _delete_fits(self):
-        pass
+        for plot in self._section_plots.values():  # only visible plots TODO
+            plot.delete_fits()
 
     # ----------------------------------------------------------------------
     def _save_picture(self):
@@ -444,12 +416,16 @@ class SectionView(QtWidgets.QWidget):
     def _make_fit_menu(self, button):
         menu = QtWidgets.QMenu(parent=button)
         action = menu.addAction("Linear")
+        action.setCheckable(True)
         action.triggered.connect(lambda: self._make_fit("linear"))
         action = menu.addAction("Gaussian")
+        action.setCheckable(True)
         action.triggered.connect(lambda: self._make_fit("gaussian"))
         action = menu.addAction("Lorentzian")
+        action.setCheckable(True)
         action.triggered.connect(lambda: self._make_fit("lorentzian"))
         action = menu.addAction("FWHM")
+        action.setCheckable(True)
         action.triggered.connect(lambda: self._make_fit("fwhm"))
         menu.addSeparator()
         action = menu.addAction("Delete All")
