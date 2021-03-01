@@ -209,7 +209,7 @@ class FilesInspector(QtWidgets.QWidget):
         self._setup_limits()
         self.display_z_value()
         self._update_image()
-        for idx, _ in range(len(self._rois)):
+        for idx in range(len(self._rois)):
             self.new_roi_range(idx)
 
     # ----------------------------------------------------------------------
