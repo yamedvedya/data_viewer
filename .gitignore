@@ -135,3 +135,4 @@ dmypy.json
 /src/gui/*
 !/src/gui/__init__.py
 /logs
+icons_rc.py

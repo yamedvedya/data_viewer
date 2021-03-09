@@ -28,6 +28,8 @@ class SardanaScan(AbstractDataFile):
         self._inten_correction['default'] = 'on'
         self._inten_correction['default_param'] = 'eh_c01'
 
+        self._correction = None
+
         scan_data = opened_file['scan']['data']
         for key in scan_data.keys():
             if len(scan_data[key].shape) > 1:
@@ -117,26 +119,26 @@ class SardanaScan(AbstractDataFile):
                 with h5py.File(self._original_file, 'r') as f:
                     self._3d_cube = np.array(f['scan']['data'][self._data['cube_key']][...], dtype=np.float32)
 
-                correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
+                self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
 
                 if self._atten_correction['state'] == 'on':
                     if self._atten_correction['param'] in self._data['scanned_values']:
-                        correction = correction*np.maximum(self._data[self._atten_correction['param']], 1)
+                        self._correction = self._correction*np.maximum(self._data[self._atten_correction['param']], 1)
                 elif self._atten_correction['state'] == 'default':
                     if self._atten_correction['default_param'] in self._data['scanned_values']:
-                        correction = correction*np.maximum(self._data[self._atten_correction['default_param']], 1)
+                        self._correction = self._correction*np.maximum(self._data[self._atten_correction['default_param']], 1)
 
                 if self._inten_correction['state'] == 'on':
                     if self._inten_correction['param'] in self._data['scanned_values']:
                         mean_value = np.max((np.mean(self._data[self._inten_correction['param']]), 1))
-                        correction = correction*np.maximum(self._data[self._inten_correction['param']], 1)/mean_value
+                        self._correction = self._correction*np.maximum(self._data[self._inten_correction['param']], 1)/mean_value
                 elif self._inten_correction['state'] == 'default':
                     mean_value = np.max((np.mean(self._data[self._inten_correction['default_param']]), 1))
                     if self._inten_correction['default_param'] in self._data['scanned_values']:
-                        correction = correction*np.maximum(self._data[self._inten_correction['default_param']], 1)/mean_value
+                        self._correction = self._correction*np.maximum(self._data[self._inten_correction['default_param']], 1)/mean_value
 
                 if self._pixel_mask is not None:
-                    for frame, corr in zip(self._3d_cube, correction):
+                    for frame, corr in zip(self._3d_cube, self._correction):
                         frame[self._pixel_mask] = 0
                         frame /= corr
 
@@ -159,21 +161,24 @@ class SardanaScan(AbstractDataFile):
             else:
                 with h5py.File(self._original_file, 'r') as f:
                     if cut_axis == 0:
-                        data = f['scan']['data'][self._data['cube_key']][value, :, :]
+                        data = np.array(f['scan']['data'][self._data['cube_key']][value, :, :], dtype=np.float32)
                         if self._pixel_mask is not None:
                             data[self._pixel_mask] = 0
+                            data /= self._correction[value]
                     elif cut_axis == 1:
                         data = f['scan']['data'][self._data['cube_key']][:, value, :]
                         if self._pixel_mask is not None:
                             cut_mask = self._pixel_mask[value, :]
-                            for line in data:
+                            for line, corr in zip(data, self._correction):
                                 line[cut_mask] = 0
+                                line /= corr
                     else:
                         data = f['scan']['data'][self._data['cube_key']][:, :, value]
                         if self._pixel_mask is not None:
                             cut_mask = self._pixel_mask[:, value]
-                            for line in data:
+                            for line, corr in zip(data, self._correction):
                                 line[cut_mask] = 0
+                                line /= corr
 
             if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
                 return np.transpose(data)
@@ -230,18 +235,20 @@ class SardanaScan(AbstractDataFile):
                 with h5py.File(self._original_file, 'r') as f:
                     if plot_axis == 0:
                         if cut_axis_1 == 1:
-                            cube_cut = f['scan']['data'][self._data['cube_key']][:,
-                                                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
+                            cube_cut = np.array(f['scan']['data'][self._data['cube_key']][:,
+                                                                                          sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                                                          sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']],
+                                                dtype=np.float32)
                             if self._pixel_mask is not None:
                                 mask_cut = self._pixel_mask[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
                                                             sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
                                 for frame in cube_cut:
                                     frame[mask_cut] = 0
                         else:
-                            cube_cut = f['scan']['data'][self._data['cube_key']][:,
-                                                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+                            cube_cut = np.array(f['scan']['data'][self._data['cube_key']][:,
+                                                                                          sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                                                          sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']],
+                                                dtype=np.float32)
                             if self._pixel_mask is not None:
                                 mask_cut = self._pixel_mask[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                                             sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
@@ -250,51 +257,59 @@ class SardanaScan(AbstractDataFile):
 
                         cube_cut = np.sum(cube_cut, axis=1)
                         cube_cut = np.sum(cube_cut, axis=1)
+                        cube_cut /= self._correction
 
                     elif plot_axis == 1:
                         if cut_axis_1 == 0:
-                            cube_cut = f['scan']['data'][self._data['cube_key']][sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                                                 :,
-                                                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
+                            cube_cut = np.array(f['scan']['data'][self._data['cube_key']][sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                                                          :,
+                                                                                          sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']],
+                                                dtype=np.float32)
                             if self._pixel_mask is not None:
                                 for z in range(sect['roi_2_pos'], sect['roi_2_pos'] + sect['roi_2_width']):
                                     mask_cut = self._pixel_mask[:, z]
-                                    for frame in cube_cut:
+                                    for frame, corr in zip(cube_cut, self._correction[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]):
                                         frame[mask_cut, z] = 0
-
+                                        frame /= corr
                         else:
-                            cube_cut = f['scan']['data'][self._data['cube_key']][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                                                 :,
-                                                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+                            cube_cut = np.array(f['scan']['data'][self._data['cube_key']][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                                                         :,
+                                                                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']],
+                                                dtype=np.float32)
                             if self._pixel_mask is not None:
                                 for z in range(sect['roi_1_pos'], sect['roi_1_pos'] + sect['roi_1_width']):
                                     mask_cut = self._pixel_mask[:, z]
-                                    for frame in cube_cut:
+                                    for frame, corr in zip(cube_cut, self._correction[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]):
                                         frame[mask_cut, z] = 0
+                                        frame /= corr
 
                         cube_cut = np.sum(cube_cut, axis=2)
                         cube_cut = np.sum(cube_cut, axis=0)
 
                     else:
                         if cut_axis_1 == 0:
-                            cube_cut = f['scan']['data'][self._data['cube_key']][sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                                                 :]
+                            cube_cut = np.array(f['scan']['data'][self._data['cube_key']][sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                                                          sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                                                          :],
+                                                dtype=np.float32)
                             if self._pixel_mask is not None:
                                 for y in range(sect['roi_2_pos'], sect['roi_2_pos'] + sect['roi_2_width']):
                                     mask_cut = self._pixel_mask[y, :]
-                                    for frame in cube_cut:
+                                    for frame, corr in zip(cube_cut, self._correction[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]):
                                         frame[y, mask_cut] = 0
+                                        frame /= corr
 
                         else:
-                            cube_cut = f['scan']['data'][self._data['cube_key']][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                                                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                                                                 :]
+                            cube_cut = np.array(f['scan']['data'][self._data['cube_key']][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                                                                                          sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                                                                                          :],
+                                                dtype=np.float32)
                             if self._pixel_mask is not None:
                                 for y in range(sect['roi_1_pos'], sect['roi_1_pos'] + sect['roi_1_width']):
                                     mask_cut = self._pixel_mask[y, :]
-                                    for frame in cube_cut:
+                                    for frame, corr in zip(cube_cut, self._correction[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]):
                                         frame[y, mask_cut] = 0
+                                        frame /= corr
 
                         cube_cut = np.sum(cube_cut, axis=0)
                         cube_cut = np.sum(cube_cut, axis=0)
