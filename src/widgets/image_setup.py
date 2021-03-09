@@ -3,20 +3,19 @@
 WIDGET_NAME = 'MaskSetup'
 
 import pyqtgraph as pg
-import os
 import numpy as np
 
 from PyQt5 import QtWidgets, QtCore
 from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
 
-from src.gui.mask_selector_ui import Ui_MaskSelector
+from src.gui.image_setup_ui import Ui_ImageSetup
 
-from src.utils.utils import read_mask_file
+from src.utils.utils import read_mask_file, refresh_combo_box
 from src.main_window import APP_NAME
 
 
 # ----------------------------------------------------------------------
-class MaskSelector(QtWidgets.QDialog):
+class ImageSetup(QtWidgets.QDialog):
     """
     """
 
@@ -24,8 +23,8 @@ class MaskSelector(QtWidgets.QDialog):
     def __init__(self, parent, data_pool):
         """
         """
-        super(MaskSelector, self).__init__()
-        self._ui = Ui_MaskSelector()
+        super(ImageSetup, self).__init__()
+        self._ui = Ui_ImageSetup()
         self._ui.setupUi(self)
 
         self._parent = parent
@@ -69,6 +68,28 @@ class MaskSelector(QtWidgets.QDialog):
         self._plot_2d.setImage(np.copy(self._mask), autoLevels=True)
         self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients['grey']["ticks"])).getLookupTable())
         self._main_plot.addItem(self._plot_2d)
+
+        self._ui.cmb_intensity.addItems(self._data_pool.get_scan_parameters(self._current_file))
+        self._ui.cmb_attenuator.addItems(self._data_pool.get_scan_parameters(self._current_file))
+
+        settings = self._data_pool.get_atten_settings(self._current_file)
+        self._ui.lb_defalut_atten.setText('{}: {}'.format(settings['default'], settings['default_param']))
+        refresh_combo_box(self._ui.cmb_attenuator, settings['param'])
+        self._ui.rb_atten_deafult.setChecked(settings['state'] == 'default')
+        self._ui.rb_atten_on.setChecked(settings['state'] == 'on')
+        self._ui.rb_atten_off.setChecked(settings['state'] == 'off')
+
+        settings = self._data_pool.get_inten_settings(self._current_file)
+        self._ui.lb_defalut_intensity.setText('{}: {}'.format(settings['default'], settings['default_param']))
+        refresh_combo_box(self._ui.cmb_intensity, settings['param'])
+        self._ui.rb_inten_deafult.setChecked(settings['state'] == 'default')
+        self._ui.rb_inten_on.setChecked(settings['state'] == 'on')
+        self._ui.rb_inten_off.setChecked(settings['state'] == 'off')
+
+        self._ui.bg_intensity.buttonClicked.connect(
+            lambda button: self._ui.cmb_intensity.setEnabled(button == self._ui.rb_inten_param_special))
+        self._ui.bg_attenuator.buttonClicked.connect(
+            lambda button: self._ui.cmb_attenuator.setEnabled(button == self._ui.rb_atten_param_special))
 
         self._ui.bg_mask_option.buttonClicked.connect(self.change_mode)
         self._ui.but_load_mask.clicked.connect(self.load_mask_from_file)
@@ -133,13 +154,37 @@ class MaskSelector(QtWidgets.QDialog):
                                      self._ui.chk_force_mask_opened.isChecked(),
                                      self._ui.chk_use_for_new.isChecked())
 
+        settings = {'param': str(self._ui.cmb_attenuator.currentText())}
+        if self._ui.rb_atten_deafult.isChecked():
+            settings['state'] = 'default'
+        elif self._ui.rb_atten_on.isChecked():
+            settings['state'] = 'on'
+        elif self._ui.rb_atten_off.isChecked():
+            settings['state'] = 'off'
+
+        self._data_pool.set_atten_settings(self._current_file, settings, self._ui.chk_force_mask_opened.isChecked(),
+                                           self._ui.chk_use_for_new.isChecked())
+
+        settings = {'param': str(self._ui.cmb_intensity.currentText())}
+        if self._ui.rb_inten_deafult.isChecked():
+            settings['state'] = 'default'
+        elif self._ui.rb_inten_on.isChecked():
+            settings['state'] = 'on'
+        elif self._ui.rb_inten_off.isChecked():
+            settings['state'] = 'off'
+
+        self._data_pool.set_inten_settings(self._current_file, settings, self._ui.chk_force_mask_opened.isChecked(),
+                                           self._ui.chk_use_for_new.isChecked())
+
+        self._data_pool.apply_settings(self._current_file, self._ui.chk_force_mask_opened.isChecked())
+
         QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
-        super(MaskSelector, self).accept()
+        super(ImageSetup, self).accept()
 
     # ----------------------------------------------------------------------
     def reject(self):
         QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
-        super(MaskSelector, self).reject()
+        super(ImageSetup, self).reject()
 
     # ----------------------------------------------------------------------
     def _mouse_clicked(self, event):

@@ -27,6 +27,11 @@ class SardanaScan(AbstractDataFile):
 
         self._data['scanned_values'] = []
 
+        self._atten_correction['default'] = 'on'
+        self._atten_correction['default_param'] = 'atten'
+        self._inten_correction['default'] = 'on'
+        self._inten_correction['default_param'] = 'eh_c01'
+
         scan_data = opened_file['scan']['data']
         for key in scan_data.keys():
             if len(scan_data[key].shape) > 1:
@@ -46,7 +51,11 @@ class SardanaScan(AbstractDataFile):
 
             elif len(scan_data[key][...]) > 1:
                 self._data['scanned_values'].append(key)
-                self._data[key] = scan_data[key][...]
+                self._data[key] = np.array(scan_data[key][...])
+
+    # ----------------------------------------------------------------------
+    def get_scan_parameters(self):
+        return self._data['scanned_values']
 
     # ----------------------------------------------------------------------
     def get_axis_limits(self, space):
@@ -95,7 +104,7 @@ class SardanaScan(AbstractDataFile):
         return self._attached_mask
 
     # ----------------------------------------------------------------------
-    def _apply_mask(self):
+    def apply_settings(self):
 
         try:
             if self._mask_mode in ['default', 'attached']:
@@ -110,13 +119,30 @@ class SardanaScan(AbstractDataFile):
             if MEMORY_MODE == 'ram':
                 del self._3d_cube
                 with h5py.File(self._original_file, 'r') as f:
-                    data = f['scan']['data'][self._data['cube_key']][...]
+                    self._3d_cube = np.array(f['scan']['data'][self._data['cube_key']][...], dtype=np.float32)
+
+                correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
+
+                if self._atten_correction['state'] == 'on':
+                    if self._atten_correction['param'] in self._data['scanned_values']:
+                        correction = correction*np.maximum(self._data[self._atten_correction['param']], 1)
+                elif self._atten_correction['state'] == 'default':
+                    if self._atten_correction['default_param'] in self._data['scanned_values']:
+                        correction = correction*np.maximum(self._data[self._atten_correction['default_param']], 1)
+
+                if self._inten_correction['state'] == 'on':
+                    if self._inten_correction['param'] in self._data['scanned_values']:
+                        mean_value = np.max((np.mean(self._data[self._inten_correction['param']]), 1))
+                        correction = correction*np.maximum(self._data[self._inten_correction['param']], 1)/mean_value
+                elif self._inten_correction['state'] == 'default':
+                    mean_value = np.max((np.mean(self._data[self._inten_correction['default_param']]), 1))
+                    if self._inten_correction['default_param'] in self._data['scanned_values']:
+                        correction = correction*np.maximum(self._data[self._inten_correction['default_param']], 1)/mean_value
 
                 if self._pixel_mask is not None:
-                    for frame in data:
+                    for frame, corr in zip(self._3d_cube, correction):
                         frame[self._pixel_mask] = 0
-
-                self._3d_cube = data
+                        frame /= corr
 
         except Exception as err:
             self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))

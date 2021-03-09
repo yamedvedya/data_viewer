@@ -3,16 +3,13 @@
 import h5py
 import os
 import numpy as np
-import threading
-import time
 
 from collections import OrderedDict
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore
 
 from src.data_sources.sardana_scan import SardanaScan
 from src.utils.roi import ROI
-from src.utils.utils import info_dialog
 
 
 class DataPool(QtCore.QObject):
@@ -24,6 +21,8 @@ class DataPool(QtCore.QObject):
     new_parameter_selected = QtCore.pyqtSignal()
 
     new_roi_range = QtCore.pyqtSignal(int)
+
+    data_updated = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
     def __init__(self, parent, log):
@@ -51,6 +50,9 @@ class DataPool(QtCore.QObject):
         self._mask_mode = 'default'
         self._loaded_mask = np.array([[], []])
         self._loaded_mask_info = {'file': ''}
+
+        self._atten_correction = {'state': 'default', 'param': ''}
+        self._inten_correction = {'state': 'default', 'param': ''}
 
     # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):
@@ -98,6 +100,10 @@ class DataPool(QtCore.QObject):
                     self._files_data[entry_name] = SardanaScan(file_name, self, f)
                     self._files_data[entry_name].set_mask_info(self._mask_mode, self._loaded_mask,
                                                                self._loaded_mask_info)
+                    self._files_data[entry_name].set_atten_settings(self._atten_correction)
+                    self._files_data[entry_name].set_inten_settings(self._inten_correction)
+
+                    self._files_data[entry_name].apply_settings()
 
             self._rescan_possible_scan_parameters()
             self._get_all_axes_limits()
@@ -207,8 +213,14 @@ class DataPool(QtCore.QObject):
         self.new_parameter_selected.emit()
 
     # ----------------------------------------------------------------------
+    def set_space(self, space):
+        # self.space = space
+        pass
+
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+
     def get_attached_mask_for_file(self, file):
         return self._files_data[file].get_attached_mask_for_file()
 
@@ -241,3 +253,52 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     def get_dir(self, file):
         return self._files_data[file].my_dir
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+
+    def get_scan_parameters(self, file):
+        return self._files_data[file].get_scan_parameters()
+
+    # ----------------------------------------------------------------------
+    def get_atten_settings(self, file):
+        return self._files_data[file].get_atten_settings()
+
+    # ----------------------------------------------------------------------
+    def get_inten_settings(self, file):
+        return self._files_data[file].get_inten_settings()
+
+    # ----------------------------------------------------------------------
+    def set_atten_settings(self, file, settings, force_to_opened, force_for_future):
+        if force_to_opened:
+            for file in self._files_data.values():
+                file.set_atten_settings(settings)
+        else:
+            self._files_data[file].set_atten_settings(settings)
+
+        if force_for_future:
+            self._atten_correction = settings
+
+    # ----------------------------------------------------------------------
+    def set_inten_settings(self, file, settings, force_to_opened, force_for_future):
+        if force_to_opened:
+            for file in self._files_data.values():
+                file.set_inten_settings(settings)
+        else:
+            self._files_data[file].set_inten_settings(settings)
+
+        if force_for_future:
+            self._inten_correction = settings
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def apply_settings(self, file, force_to_opened):
+        if force_to_opened:
+            for file in self._files_data.values():
+                file.apply_settings()
+        else:
+            self._files_data[file].apply_settings()
+
+        self.data_updated.emit()

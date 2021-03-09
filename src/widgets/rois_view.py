@@ -84,6 +84,11 @@ class RoisView(QtWidgets.QWidget):
             widget.update_limits()
 
     # ----------------------------------------------------------------------
+    def update_plots(self):
+        for widget in self._roi_widgets.values():
+            widget.update_plots()
+
+    # ----------------------------------------------------------------------
     def new_roi_range(self, roi_id):
         self._roi_widgets[roi_id].new_roi_range()
 

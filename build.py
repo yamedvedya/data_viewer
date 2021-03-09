@@ -23,8 +23,8 @@ def compile_uis(ui_compiler, rc_compiler, in_dirs, out_dirs):
     """
     for in_dir, out_dir in zip(in_dirs, out_dirs):
         for f in [f for f in os.listdir(in_dir) if os.path.isfile(os.path.join(in_dir, f))
-                                                   and os.path.splitext(f)[-1] in [".ui",
-                                                                                   ".qrc"]]:  # simplify this loop TODO
+                  and os.path.splitext(f)[-1] in [".ui", ".qrc"]]:
+
             base, ext = os.path.splitext(f)
             if ext == ".ui":
                 cmd = "{} {}/{} -o {}/{}{}.py".format(ui_compiler, in_dir, f, out_dir, base, "_ui")

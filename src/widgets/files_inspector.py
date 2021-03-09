@@ -208,7 +208,7 @@ class FilesInspector(QtWidgets.QWidget):
         self.current_axes = self.section_names[self.data_pool.space][str(text)]
         self._setup_limits()
         self.display_z_value()
-        self._update_image()
+        self.update_image()
         for idx, _ in range(len(self._rois)):
             self.new_roi_range(idx)
 
@@ -224,7 +224,7 @@ class FilesInspector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
         self.auto_levels = state
-        self._update_image()
+        self.update_image()
         self._ui.chk_auto_levels.setChecked(state)
 
     # ----------------------------------------------------------------------
@@ -234,7 +234,7 @@ class FilesInspector(QtWidgets.QWidget):
         else:
             self.level_mode = 'log'
 
-        self._update_image()
+        self.update_image()
 
     # ----------------------------------------------------------------------
     def _mouse_moved(self, pos):
@@ -277,7 +277,7 @@ class FilesInspector(QtWidgets.QWidget):
         self._tb_files.removeTab(index)
 
     # ----------------------------------------------------------------------
-    def _update_image(self):
+    def update_image(self):
         if self.current_file is None:
             return
 
@@ -319,7 +319,7 @@ class FilesInspector(QtWidgets.QWidget):
             self._ui.sl_frame.setValue(self.current_frame)
 
         self.display_z_value()
-        self._update_image()
+        self.update_image()
 
     # ----------------------------------------------------------------------
     def display_z_value(self):
@@ -337,7 +337,7 @@ class FilesInspector(QtWidgets.QWidget):
         self._ui.sl_frame.setValue(self.current_frame)
         self.display_z_value()
         self._block_signals(False)
-        self._update_image()
+        self.update_image()
 
     # ----------------------------------------------------------------------
     def _switch_frame(self, type):

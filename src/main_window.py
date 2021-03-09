@@ -13,7 +13,7 @@ from src.widgets.file_browser import FileBrowser
 from src.widgets.files_inspector import FilesInspector
 from src.widgets.rois_view import RoisView
 from src.data_pool import DataPool
-from src.utils.mask_selector import MaskSelector
+from src.widgets.image_setup import ImageSetup
 
 
 class DataViewer(QtWidgets.QMainWindow):
@@ -79,6 +79,9 @@ class DataViewer(QtWidgets.QMainWindow):
         self.data_pool.new_roi_range.connect(self.files_inspector.new_roi_range)
         self.data_pool.new_roi_range.connect(self.rois_view.new_roi_range)
 
+        self.data_pool.data_updated.connect(self.files_inspector.update_image)
+        self.data_pool.data_updated.connect(self.rois_view.update_plots)
+
         self._load_ui_settings()
 
         self._init_status_bar()
@@ -97,6 +100,15 @@ class DataViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
         self.files_inspector.delete_roi(idx)
+
+    # ----------------------------------------------------------------------
+    def _new_space(self, space):
+        self.data_pool.set_space(space)
+        pass # TODO
+
+    # ----------------------------------------------------------------------
+    def _convert_space(self):
+        pass
 
     # ----------------------------------------------------------------------
     def _setup_parameter_menu(self):
@@ -118,23 +130,45 @@ class DataViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _setup_menu(self):
         self.parameter_menu = QtWidgets.QMenu('Display parameter', self)
-
-        mask_setup = QtWidgets.QAction('Detector mask setup', self)
-        mask_setup.triggered.connect(self._setup_mask)
-
         self._menu_view = QtWidgets.QMenu('Widgets', self)
+
+        space_menu = QtWidgets.QMenu('Displayed space', self)
+        space_group = QtWidgets.QActionGroup(self)
+        action = space_menu.addAction('Real')
+        action.setCheckable(True)
+        action.setChecked(True)
+        action.triggered.connect(lambda: self._new_space('real'))
+        space_group.addAction(action)
+        action = space_menu.addAction('Reciprocal')
+        action.setCheckable(True)
+        action.triggered.connect(lambda: self._new_space('reciprocal'))
+        space_group.addAction(action)
+
+        image_setup = QtWidgets.QAction('Image setup', self)
+        image_setup.triggered.connect(self._setup_image)
+
+        menu_convert = QtWidgets.QAction('Convert space', self)
+        menu_convert.triggered.connect(self._convert_space)
 
         menu_exit = QtWidgets.QAction('Exit', self)
         menu_exit.triggered.connect(self._exit)
 
         self.menuBar().addMenu(self.parameter_menu)
-        self.menuBar().addAction(mask_setup)
+        self.menuBar().addMenu(space_menu)
+
+        self.menuBar().addSeparator()
+
+        self.menuBar().addAction(image_setup)
+        self.menuBar().addAction(menu_convert)
+
+        self.menuBar().addSeparator()
+
         self.menuBar().addMenu(self._menu_view)
         self.menuBar().addAction(menu_exit)
 
     # ----------------------------------------------------------------------
-    def _setup_mask(self):
-        MaskSelector(self, self.data_pool).exec_()
+    def _setup_image(self):
+        ImageSetup(self, self.data_pool).exec_()
 
     # ----------------------------------------------------------------------
     def _add_dock(self, WidgetClass, label, location, *args, **kwargs):

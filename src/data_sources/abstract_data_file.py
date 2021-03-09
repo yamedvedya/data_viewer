@@ -23,13 +23,39 @@ class AbstractDataFile(object):
                                         1: 1,
                                         2: 2}}
 
+        self._atten_correction = {'default': 'off', 'default_param': ''}
+        self._inten_correction = {'default': 'off', 'default_param': ''}
+
+    # ----------------------------------------------------------------------
+    def get_scan_parameters(self):
+        return []
+
+    # ----------------------------------------------------------------------
+    def get_atten_settings(self):
+        return self._atten_correction
+
+    # ----------------------------------------------------------------------
+    def get_inten_settings(self):
+        return self._inten_correction
+
+    # ----------------------------------------------------------------------
+    def set_atten_settings(self, settings):
+        self._atten_correction.update(settings)
+
+    # ----------------------------------------------------------------------
+    def set_inten_settings(self, settings):
+        self._inten_correction.update(settings)
+
     # ----------------------------------------------------------------------
     def set_mask_info(self, mask_mode, loaded_mask=None, loaded_mask_info=None):
         self._mask_mode = mask_mode
         if mask_mode == 'file':
             self._loaded_mask = loaded_mask
             self._loaded_mask_info = loaded_mask_info
-        self._apply_mask()
+
+    # ----------------------------------------------------------------------
+    def apply_settings(self):
+        pass
 
     # ----------------------------------------------------------------------
     def get_attached_mask_for_file(self):
@@ -46,10 +72,6 @@ class AbstractDataFile(object):
     # ----------------------------------------------------------------------
     def get_mask_mode(self):
         return self._mask_mode
-
-    # ----------------------------------------------------------------------
-    def _apply_mask(self):
-        pass
 
     # ----------------------------------------------------------------------
     def file_axes_caption(self, space):

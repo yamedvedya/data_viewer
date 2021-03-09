@@ -112,7 +112,7 @@ class SectionView(QtWidgets.QWidget):
 
         self._block_signals(False)
 
-        self._update_plots()
+        self.update_plots()
 
     # ----------------------------------------------------------------------
     def update_limits(self):
@@ -149,7 +149,7 @@ class SectionView(QtWidgets.QWidget):
         self.update_limits()
 
     # ----------------------------------------------------------------------
-    def _update_plots(self):
+    def update_plots(self):
         x_min, x_max = self._get_fit_range()
 
         for file_name, plot_item in self._section_plots.items():
@@ -185,7 +185,7 @@ class SectionView(QtWidgets.QWidget):
                                                    [self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
         self._ui.lb_axis_2.setText('{} ROI'.format(self.data_pool.get_axes()
                                                    [self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
-        self._update_plots()
+        self.update_plots()
         self.update_limits()
 
     # ----------------------------------------------------------------------
@@ -202,7 +202,7 @@ class SectionView(QtWidgets.QWidget):
         getattr(self._ui, 'sb_{}_{}'.format(axis, param)).setValue(accepted_value)
         self._block_signals(False)
 
-        self._update_plots()
+        self.update_plots()
 
     # ----------------------------------------------------------------------
     def _mouse_moved(self, pos):
@@ -309,16 +309,16 @@ class SectionView(QtWidgets.QWidget):
         if function not in self._enabled_fits:
             self._enabled_fits.append(function)
             x_min, x_max = self._get_fit_range()
-            for plot in self._section_plots.values():  # only visible plots TODO
+            for plot in self._section_plots.values():
                 plot.make_fit(function, x_min, x_max)
         else:
             self._enabled_fits.remove(function)
-            for plot in self._section_plots.values():  # only visible plots TODO
+            for plot in self._section_plots.values():
                 plot.remove_fit(function)
 
     # ----------------------------------------------------------------------
     def _delete_fits(self):
-        for plot in self._section_plots.values():  # only visible plots TODO
+        for plot in self._section_plots.values():
             plot.delete_fits()
 
     # ----------------------------------------------------------------------
