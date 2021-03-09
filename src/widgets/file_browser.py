@@ -4,8 +4,11 @@ WIDGET_NAME = 'DataBrowser'
 
 file_formats = ["*.nxs"]
 
-from watchdog.observers import Observer
-from watchdog.events import PatternMatchingEventHandler
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import PatternMatchingEventHandler
+except:
+    pass
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from src.gui.file_browser_ui import Ui_FileBrowser
@@ -42,10 +45,13 @@ class FileBrowser(QtWidgets.QWidget):
             self.file_filter.new_version = False
         self.file_filter.setSourceModel(self.file_browser)
 
-        self._my_event_handler = PatternMatchingEventHandler(file_formats, "", False, True)
-        self._my_event_handler.on_created = self._on_created
+        try:
+            self._my_event_handler = PatternMatchingEventHandler(file_formats, "", False, True)
+            self._my_event_handler.on_created = self._on_created
 
-        self._my_observer = None
+            self._my_observer = None
+        except:
+            self._ui.chk_monitor.setEnabled(False)
 
         self._ui.tr_file_browser.setModel(self.file_filter)
         self._ui.tr_file_browser.hideColumn(2)

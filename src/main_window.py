@@ -302,6 +302,9 @@ def _init_logger():
 
     format = logging.Formatter("%(asctime)s %(module)s %(lineno)-6d %(levelname)-6s %(message)s")
 
+    if not os.path.exists('./logs'):
+        os.mkdir('./logs')
+
     fh = logging.FileHandler('./logs/main_log')
     fh.setFormatter(format)
     main_log.addHandler(fh)

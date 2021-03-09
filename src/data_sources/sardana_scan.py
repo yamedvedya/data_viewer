@@ -4,10 +4,6 @@ MEMORY_MODE = 'ram' #'disk' or 'ram'
 
 import h5py
 import numpy as np
-import gc
-import os
-import psutil
-from pympler import muppy, summary
 
 from src.data_sources.abstract_data_file import AbstractDataFile
 
