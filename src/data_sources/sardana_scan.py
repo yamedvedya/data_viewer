@@ -3,6 +3,7 @@
 MEMORY_MODE = 'ram' #'disk' or 'ram'
 
 import h5py
+import os
 import numpy as np
 
 from src.data_sources.abstract_data_file import AbstractDataFile
@@ -32,24 +33,61 @@ class SardanaScan(AbstractDataFile):
 
         scan_data = opened_file['scan']['data']
         for key in scan_data.keys():
-            if len(scan_data[key].shape) > 1:
+            if key == 'lmbd':
+                self._detector = 'lmbd'
+                self._detector_folder = os.path.join(os.path.dirname(opened_file.filename),
+                                                     os.path.splitext(os.path.basename(opened_file.filename))[0], 'lmbd')
+
+                self._last_loaded_file = ''
+                self._reload_detector_data()
+
+            elif len(scan_data[key].shape) > 1:
+                self._detector = key
                 self._data['cube_key'] = key
                 self._data['cube_shape'] = scan_data[key].shape
                 if MEMORY_MODE == 'ram':
-                    self._3d_cube = scan_data[key][...]
-
-                if scan_data[key].file.filename is not None:
-                    try:
-                        source_file = h5py.File(scan_data[key].file.filename, 'r')
-                        self._attached_mask = \
-                            np.array(source_file['entry']['instrument']['detector']['pixel_mask'])[0, :, :]
-                        self._loaded_mask = np.zeros_like(self._attached_mask)
-                    except:
-                        pass
+                    self._3d_cube = np.array(scan_data[key][...], dtype=np.float32)
 
             elif len(scan_data[key][...]) > 1:
                 self._data['scanned_values'].append(key)
                 self._data[key] = np.array(scan_data[key][...])
+
+    # ----------------------------------------------------------------------
+    def _reload_detector_data(self, reload=True):
+
+        file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
+
+        self._data['cube_shape'] = (0, 0, 0)
+        if len(file_lists) > 0:
+            if reload or MEMORY_MODE == 'disk':
+                self._3d_cube = None
+                source_file = h5py.File(os.path.join(self._detector_folder, file_lists[0]), 'r')
+                data = np.array(source_file['entry']['instrument']['detector']['data'], dtype=np.float32)
+                self._attached_mask = \
+                    np.array(source_file['entry']['instrument']['detector']['pixel_mask'])[0, :, :]
+                self._loaded_mask = np.zeros_like(self._attached_mask)
+                name = file_lists[0]
+
+                for name in file_lists[1:]:
+                    source_file = h5py.File(os.path.join(self._detector_folder, name), 'r')
+                    data = np.vstack((data, np.array(source_file['entry']['instrument']['detector']['data'],
+                                                     dtype=np.float32)))
+
+                self._data['cube_shape'] = data.shape
+                if MEMORY_MODE == 'ram':
+                    self._3d_cube = data
+            else:
+                name = self._last_loaded_file
+                start_ind = file_lists.index(self._last_loaded_file)
+                for name in file_lists[start_ind:]:
+                    source_file = h5py.File(os.path.join(self._detector_folder, name), 'r')
+                    self._3d_cube = np.vstack((self._3d_cube,
+                                               np.array(source_file['entry']['instrument']['detector']['data'],
+                                                        dtype=np.float32)))
+
+                self._data['cube_shape'] = self._3d_cube.shape
+
+            self._last_loaded_file = name
 
     # ----------------------------------------------------------------------
     def get_scan_parameters(self):
@@ -116,31 +154,30 @@ class SardanaScan(AbstractDataFile):
 
             if MEMORY_MODE == 'ram':
                 del self._3d_cube
-                with h5py.File(self._original_file, 'r') as f:
-                    self._3d_cube = np.array(f['scan']['data'][self._data['cube_key']][...], dtype=np.float32)
+                self._reload_detector_data()
 
                 self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
 
                 if self._atten_correction['state'] == 'on':
                     if self._atten_correction['param'] in self._data['scanned_values']:
-                        self._correction = self._correction*np.maximum(self._data[self._atten_correction['param']], 1)
+                        self._correction *= np.maximum(self._data[self._atten_correction['param']], 1)
                 elif self._atten_correction['state'] == 'default':
                     if self._atten_correction['default_param'] in self._data['scanned_values']:
-                        self._correction = self._correction*np.maximum(self._data[self._atten_correction['default_param']], 1)
+                        self._correction *= np.maximum(self._data[self._atten_correction['default_param']], 1)
 
                 if self._inten_correction['state'] == 'on':
                     if self._inten_correction['param'] in self._data['scanned_values']:
-                        mean_value = np.max((np.mean(self._data[self._inten_correction['param']]), 1))
-                        self._correction = self._correction*np.maximum(self._data[self._inten_correction['param']], 1)/mean_value
+                        self._correction *= np.max((1, self._data[self._inten_correction['param']][0]))/\
+                                           np.maximum(self._data[self._inten_correction['param']], 1)
                 elif self._inten_correction['state'] == 'default':
-                    mean_value = np.max((np.mean(self._data[self._inten_correction['default_param']]), 1))
                     if self._inten_correction['default_param'] in self._data['scanned_values']:
-                        self._correction = self._correction*np.maximum(self._data[self._inten_correction['default_param']], 1)/mean_value
+                        self._correction *= np.max((self._data[self._inten_correction['default_param']][0], 1))/\
+                                            np.maximum(self._data[self._inten_correction['default_param']], 1)
 
                 if self._pixel_mask is not None:
                     for frame, corr in zip(self._3d_cube, self._correction):
                         frame[self._pixel_mask] = 0
-                        frame /= corr
+                        frame *= corr
 
         except Exception as err:
             self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
@@ -164,21 +201,21 @@ class SardanaScan(AbstractDataFile):
                         data = np.array(f['scan']['data'][self._data['cube_key']][value, :, :], dtype=np.float32)
                         if self._pixel_mask is not None:
                             data[self._pixel_mask] = 0
-                            data /= self._correction[value]
+                            data *= self._correction[value]
                     elif cut_axis == 1:
                         data = f['scan']['data'][self._data['cube_key']][:, value, :]
                         if self._pixel_mask is not None:
                             cut_mask = self._pixel_mask[value, :]
                             for line, corr in zip(data, self._correction):
                                 line[cut_mask] = 0
-                                line /= corr
+                                line *= corr
                     else:
                         data = f['scan']['data'][self._data['cube_key']][:, :, value]
                         if self._pixel_mask is not None:
                             cut_mask = self._pixel_mask[:, value]
                             for line, corr in zip(data, self._correction):
                                 line[cut_mask] = 0
-                                line /= corr
+                                line *= corr
 
             if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
                 return np.transpose(data)
@@ -257,7 +294,7 @@ class SardanaScan(AbstractDataFile):
 
                         cube_cut = np.sum(cube_cut, axis=1)
                         cube_cut = np.sum(cube_cut, axis=1)
-                        cube_cut /= self._correction
+                        cube_cut *= self._correction
 
                     elif plot_axis == 1:
                         if cut_axis_1 == 0:
@@ -270,7 +307,7 @@ class SardanaScan(AbstractDataFile):
                                     mask_cut = self._pixel_mask[:, z]
                                     for frame, corr in zip(cube_cut, self._correction[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]):
                                         frame[mask_cut, z] = 0
-                                        frame /= corr
+                                        frame *= corr
                         else:
                             cube_cut = np.array(f['scan']['data'][self._data['cube_key']][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                                                                          :,
@@ -281,7 +318,7 @@ class SardanaScan(AbstractDataFile):
                                     mask_cut = self._pixel_mask[:, z]
                                     for frame, corr in zip(cube_cut, self._correction[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]):
                                         frame[mask_cut, z] = 0
-                                        frame /= corr
+                                        frame *= corr
 
                         cube_cut = np.sum(cube_cut, axis=2)
                         cube_cut = np.sum(cube_cut, axis=0)
@@ -297,7 +334,7 @@ class SardanaScan(AbstractDataFile):
                                     mask_cut = self._pixel_mask[y, :]
                                     for frame, corr in zip(cube_cut, self._correction[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]):
                                         frame[y, mask_cut] = 0
-                                        frame /= corr
+                                        frame *= corr
 
                         else:
                             cube_cut = np.array(f['scan']['data'][self._data['cube_key']][sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
@@ -309,7 +346,7 @@ class SardanaScan(AbstractDataFile):
                                     mask_cut = self._pixel_mask[y, :]
                                     for frame, corr in zip(cube_cut, self._correction[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]):
                                         frame[y, mask_cut] = 0
-                                        frame /= corr
+                                        frame *= corr
 
                         cube_cut = np.sum(cube_cut, axis=0)
                         cube_cut = np.sum(cube_cut, axis=0)

@@ -162,6 +162,6 @@ class SectionPlot(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def delete_fits(self):
-        for plot in self._fits.items():
+        for _, plot in self._fits.items():
             self.plot_item().removeItem(plot)
             self.plot_item().legend.removeItemByAddress(plot)

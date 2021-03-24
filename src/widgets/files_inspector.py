@@ -17,12 +17,12 @@ class FilesInspector(QtWidgets.QWidget):
     """
     """
 
-    section_names = {'real': {'Y vs. X': {'x': 0, 'y': 1, 'z': 2},
-                              'X vs. Y': {'x': 1, 'y': 0, 'z': 2},
-                              'Z vs. X': {'x': 0, 'y': 2, 'z': 1},
-                              'X vs. Z': {'x': 2, 'y': 0, 'z': 1},
-                              'Z vs. Y': {'x': 1, 'y': 2, 'z': 0},
-                              'Y vs. Z': {'x': 2, 'y': 1, 'z': 0}}}
+    section_axes_map = {'real': {'Y vs. X': {'x': 0, 'y': 1, 'z': 2},
+                                 'X vs. Y': {'x': 1, 'y': 0, 'z': 2},
+                                 'Z vs. X': {'x': 0, 'y': 2, 'z': 1},
+                                 'X vs. Z': {'x': 2, 'y': 0, 'z': 1},
+                                 'Z vs. Y': {'x': 1, 'y': 2, 'z': 0},
+                                 'Y vs. Z': {'x': 2, 'y': 1, 'z': 0}}}
 
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
@@ -84,10 +84,10 @@ class FilesInspector(QtWidgets.QWidget):
         self._parent = parent
         self.data_pool = data_pool
 
-        self._ui.cb_section.addItems(list(self.section_names[self.data_pool.space].keys()))
+        self._ui.cb_section.addItems(list(self.section_axes_map[self.data_pool.space].keys()))
         self._ui.cb_section.currentTextChanged.connect(self._new_axes)
 
-        self.current_axes = self.section_names[self.data_pool.space][str(self._ui.cb_section.currentText())]
+        self.current_axes = self.section_axes_map[self.data_pool.space][str(self._ui.cb_section.currentText())]
 
         self._ui.sl_frame.valueChanged.connect(lambda value: self._display_new_frame(value))
 
@@ -113,7 +113,7 @@ class FilesInspector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def add_file(self, file_name):
         new_index = self._tb_files.count()
-        self._opened_files.insert(0, file_name)
+        self._opened_files.insert(new_index, file_name)
         self._tb_files.insertTab(new_index, '{}'.format(file_name))
         self._tb_files.setCurrentIndex(new_index)
 
@@ -205,7 +205,7 @@ class FilesInspector(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _new_axes(self, text):
-        self.current_axes = self.section_names[self.data_pool.space][str(text)]
+        self.current_axes = self.section_axes_map[self.data_pool.space][str(text)]
         self._setup_limits()
         self.display_z_value()
         self.update_image()

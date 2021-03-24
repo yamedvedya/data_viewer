@@ -90,6 +90,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
 
+        # self.data_pool.open_file('./test/Bhat_B_1V_02665.nxs')
         self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
         # self.data_pool.open_file()
 

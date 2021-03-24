@@ -283,7 +283,7 @@ class SectionView(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def closest_plot(self, pos, threshold=0.05):
         closest_plot = None
-        min_distance = 1e+6
+        min_distance = self._main_plot.viewRange()[1][1] - self._main_plot.viewRange()[1][0]
 
         for _, plot in self._section_plots.items():
             y_distance = plot.distance_y(pos)
