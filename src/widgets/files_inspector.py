@@ -1,7 +1,6 @@
 # Created by matveyev at 15.02.2021
 
 WIDGET_NAME = 'FileInspector'
-color_maps = ('grey', 'thermal', 'bipolar')
 
 import pyqtgraph as pg
 import numpy as np
@@ -32,13 +31,25 @@ class FilesInspector(QtWidgets.QWidget):
         self._ui = Ui_FilesInspector()
         self._ui.setupUi(self)
 
-        self._tb_files = QtWidgets.QTabBar(self)
-        self._tb_files.setObjectName("tb_files")
-        self._tb_files.setTabsClosable(True)
-        self._ui.v_layout.insertWidget(0, self._tb_files, 0)
+        self._tb_files_main = QtWidgets.QTabBar(self)
+        self._tb_files_main.setObjectName("tb_main")
+        self._tb_files_main.setTabsClosable(True)
+        self._tb_files_main.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self._tb_files_main.customContextMenuRequested.connect(lambda pos: self._move_tab_menu(pos, 'main'))
+        self._ui.view_main.insertWidget(0, self._tb_files_main, 0)
+
+        self._tb_files_second = QtWidgets.QTabBar(self)
+        self._tb_files_second.setObjectName("tb_second")
+        self._tb_files_second.setTabsClosable(True)
+        self._tb_files_second.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self._tb_files_second.customContextMenuRequested.connect(lambda pos: self._move_tab_menu(pos, 'second'))
+        self._ui.view_second.insertWidget(0, self._tb_files_second, 0)
+
+        self._tb_files_second.setVisible(False)
+        self._ui.gv_second.setVisible(False)
 
         self._status_bar = QtWidgets.QStatusBar(self)
-        self._ui.verticalLayout.addWidget(self._status_bar, 0)
+        self._ui.gv_layout.addWidget(self._status_bar, 0)
 
         self._coordinate_label = QtWidgets.QLabel("")
         self._status_bar.addPermanentWidget(self._coordinate_label)
@@ -61,13 +72,12 @@ class FilesInspector(QtWidgets.QWidget):
         self._main_plot.getViewBox().setAspectLocked()
 
         self.current_frame = 0
-        self.current_file = None
+        self.main_file = None
         self.level_mode = 'lin'
         self.auto_levels = True
         self.max_frame = 0
 
         self._plot_2d = pg.ImageItem()
-        self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients[color_maps[0]]["ticks"])).getLookupTable())
         self._main_plot.addItem(self._plot_2d)
 
         self._center_cross = ImageMarker(0, 0, self._main_plot)
@@ -77,9 +87,7 @@ class FilesInspector(QtWidgets.QWidget):
         self._hist = pg.HistogramLUTWidget(self)
         self._hist.setBackground('w')
         self._hist.item.setImageItem(self._plot_2d)
-        self._ui.g_layout.addWidget(self._hist, 6, 0, 1, 2)
-
-        self._ui.cb_color_map.addItems(color_maps)
+        self._ui.g_layout.addWidget(self._hist, 5, 0, 1, 2)
 
         self._parent = parent
         self.data_pool = data_pool
@@ -96,8 +104,8 @@ class FilesInspector(QtWidgets.QWidget):
         self._ui.but_next.clicked.connect(lambda: self._switch_frame('next'))
         self._ui.but_last.clicked.connect(lambda: self._switch_frame('last'))
 
-        self._tb_files.tabCloseRequested.connect(self._close_file)
-        self._tb_files.currentChanged.connect(self._switch_file)
+        self._tb_files_main.tabCloseRequested.connect(self._close_file)
+        self._tb_files_main.currentChanged.connect(self._switch_file)
 
         self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
         self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
@@ -108,14 +116,28 @@ class FilesInspector(QtWidgets.QWidget):
         self._ui.chk_auto_levels.clicked.connect(lambda state: self._toggle_auto_levels(state))
 
         self._ui.bg_level.buttonClicked.connect(lambda button: self._change_level_mode(button))
-        self._ui.cb_color_map.currentTextChanged.connect(lambda map: self._change_color_map(map))
+
+    # ----------------------------------------------------------------------
+    def _move_tab_menu(self, pos, source_tab):
+
+        menu = QtWidgets.QMenu()
+        if source_tab == 'main':
+            action = QtWidgets.QAction('Move to compare')
+        else:
+            action = QtWidgets.QAction('Move to main')
+
+        menu.addAction(action)
+
+        action = menu.exec_(self.mapToGlobal(pos))
+
+        if action:
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name):
-        new_index = self._tb_files.count()
+        new_index = self._tb_files_main.count()
         self._opened_files.insert(new_index, file_name)
-        self._tb_files.insertTab(new_index, '{}'.format(file_name))
-        self._tb_files.setCurrentIndex(new_index)
+        self._tb_files_main.insertTab(new_index, '{}'.format(file_name))
+        self._tb_files_main.setCurrentIndex(new_index)
 
     # ----------------------------------------------------------------------
     def new_roi_range(self, roi_ind):
@@ -213,10 +235,6 @@ class FilesInspector(QtWidgets.QWidget):
             self.new_roi_range(idx)
 
     # ----------------------------------------------------------------------
-    def _change_color_map(self, map):
-        self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients[map]["ticks"])).getLookupTable())
-
-    # ----------------------------------------------------------------------
     def switch_off_auto_levels(self):
         self.auto_levels = False
         self._ui.chk_auto_levels.setChecked(False)
@@ -243,11 +261,11 @@ class FilesInspector(QtWidgets.QWidget):
 
             self._center_cross.setPos(pos)
 
-            if self.current_file is None:
+            if self.main_file is None:
                 return
 
-            x_name, x_value = self.data_pool.get_value_at_point(self.current_file, self.current_axes['x'], int(pos.x()))
-            y_name, y_value = self.data_pool.get_value_at_point(self.current_file, self.current_axes['y'], int(pos.y()))
+            x_name, x_value = self.data_pool.get_value_at_point(self.main_file, self.current_axes['x'], int(pos.x()))
+            y_name, y_value = self.data_pool.get_value_at_point(self.main_file, self.current_axes['y'], int(pos.y()))
 
             self._coordinate_label.setText('{}: {:3f}, {}: {:.3f}'.format(x_name, x_value, y_name, y_value))
 
@@ -274,14 +292,15 @@ class FilesInspector(QtWidgets.QWidget):
     def _close_file(self, index):
         self.data_pool.remove_file(self._opened_files[index])
         del self._opened_files[index]
-        self._tb_files.removeTab(index)
+        self.main_file = None
+        self._tb_files_main.removeTab(index)
 
     # ----------------------------------------------------------------------
     def update_image(self):
-        if self.current_file is None:
+        if self.main_file is None:
             return
 
-        data_to_display = self.data_pool.get_2d_cut(self.current_file, self.current_axes['z'], self.current_frame,
+        data_to_display = self.data_pool.get_2d_cut(self.main_file, self.current_axes['z'], self.current_frame,
                                                     self.current_axes['x'], self.current_axes['y'])
 
         if self.level_mode == 'log':
@@ -293,29 +312,29 @@ class FilesInspector(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _setup_limits(self):
-        if self.current_file is None:
+        if self.main_file is None:
             return
 
-        self.max_frame = self.data_pool.get_max_frame(self.current_file, self.current_axes['z'])
+        self.max_frame = self.data_pool.get_max_frame(self.main_file, self.current_axes['z'])
         self._ui.sl_frame.setMaximum(self.max_frame)
 
     # ----------------------------------------------------------------------
     def _switch_file(self, index):
         z_value = None
-        if self.current_file is not None:
-            _, z_value = self.data_pool.get_value_at_point(self.current_file, self.current_axes['z'],
+        if self.main_file is not None:
+            _, z_value = self.data_pool.get_value_at_point(self.main_file, self.current_axes['z'],
                                                            self.current_frame)
 
-        self.current_file = self._opened_files[index]
+        self.main_file = self._opened_files[index]
 
-        axes_names = self.data_pool.file_axes_caption(self.current_file)
+        axes_names = self.data_pool.file_axes_caption(self.main_file)
         self._ui.lb_axes_captions.setText('X axis: {}, Y axis: {}, Z axis: {}'.format(axes_names[0],
                                                                                       axes_names[1],
                                                                                       axes_names[2]))
 
         self._setup_limits()
         if z_value is not None:
-            self.current_frame = self.data_pool.frame_for_point(self.current_file, self.current_axes['z'], z_value)
+            self.current_frame = self.data_pool.frame_for_point(self.main_file, self.current_axes['z'], z_value)
             self._ui.sl_frame.setValue(self.current_frame)
 
         self.display_z_value()
@@ -323,10 +342,10 @@ class FilesInspector(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def display_z_value(self):
-        if self.current_file is None:
+        if self.main_file is None:
             return
 
-        z_name, z_value = self.data_pool.get_value_at_point(self.current_file, self.current_axes['z'],
+        z_name, z_value = self.data_pool.get_value_at_point(self.main_file, self.current_axes['z'],
                                                             self.current_frame)
         self._ui.lb_value.setText('{}: {:3f}'.format(z_name, z_value))
 
@@ -354,7 +373,7 @@ class FilesInspector(QtWidgets.QWidget):
     def _block_signals(self, flag):
         self._ui.sl_frame.blockSignals(flag)
         self._ui.cb_section.blockSignals(flag)
-        self._tb_files.blockSignals(flag)
+        self._tb_files_main.blockSignals(flag)
 
     # ----------------------------------------------------------------------
     def load_ui_settings(self, settings):
