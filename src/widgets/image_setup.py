@@ -44,7 +44,7 @@ class ImageSetup(QtWidgets.QDialog):
 
         self._main_plot.getViewBox().setAspectLocked()
 
-        self._current_file = self._parent.files_inspector.main_file
+        self._current_file = self._parent.files_inspector.current_file #TODO !!!!!!!!!!!!!!!!!!!!
         self._mask_mode = self._data_pool.get_mask_mode(self._current_file)
         self._mask_info = {}
 
@@ -132,7 +132,7 @@ class ImageSetup(QtWidgets.QDialog):
     # ----------------------------------------------------------------------
     def load_mask_from_file(self):
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file with mask',
-                                                             self._data_pool.get_dir(self._parent.files_inspector.main_file))
+                                                             self._data_pool.get_dir(self._parent.files_inspector.current_file)) # TODO !!!!!!!!!!!!!!
 
         if file_name:
             mask, mask_info = read_mask_file(file_name)

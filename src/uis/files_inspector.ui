@@ -138,38 +138,10 @@
         </widget>
        </item>
        <item>
-        <widget class="QSplitter" name="splitter">
+        <widget class="QSplitter" name="view_spliter">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <widget class="QWidget" name="verticalLayoutWidget">
-          <layout class="QVBoxLayout" name="view_main">
-           <item>
-            <widget class="GraphicsView" name="gv_main">
-             <property name="autoFillBackground">
-              <bool>false</bool>
-             </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="verticalLayoutWidget_2">
-          <layout class="QVBoxLayout" name="view_second">
-           <item>
-            <widget class="GraphicsView" name="gv_second">
-             <property name="autoFillBackground">
-              <bool>false</bool>
-             </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
         </widget>
        </item>
        <item>
@@ -243,13 +215,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>GraphicsView</class>
-   <extends>QGraphicsView</extends>
-   <header>pyqtgraph</header>
-  </customwidget>
- </customwidgets>
  <resources>
   <include location="icons.qrc"/>
  </resources>
