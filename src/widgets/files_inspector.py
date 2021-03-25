@@ -32,10 +32,10 @@ class FilesInspector(QtWidgets.QWidget):
 
         self._main_view = View2d(self, 'main', data_pool)
         self._second_view = View2d(self, 'second', data_pool)
-        self._second_view.setVisible(False)
+        self._second_view.hide()
 
-        self._ui.view_spliter.insertWidget(0, self._main_view)
-        self._ui.view_spliter.insertWidget(1, self._second_view)
+        self._ui.view_layout.addWidget(self._main_view, 0)
+        self._ui.view_layout.addWidget(self._second_view, 0)
 
         self._status_bar = QtWidgets.QStatusBar(self)
         self._ui.gv_layout.addWidget(self._status_bar, 0)
@@ -50,10 +50,10 @@ class FilesInspector(QtWidgets.QWidget):
         self.auto_levels = True
         self.max_frame = 0
 
-        self._hist = pg.HistogramLUTWidget(self)
-        self._hist.setBackground('w')
-        self._hist.item.setImageItem(self._main_view.plot_2d)
-        self._ui.g_layout.addWidget(self._hist, 5, 0, 1, 2)
+        self.hist = pg.HistogramLUTWidget(self)
+        self.hist.setBackground('w')
+        self.hist.item.setImageItem(self._main_view.plot_2d)
+        self._ui.g_layout.addWidget(self.hist, 5, 0, 1, 2)
 
         self._parent = parent
         self.data_pool = data_pool
@@ -70,8 +70,9 @@ class FilesInspector(QtWidgets.QWidget):
         self._ui.but_next.clicked.connect(lambda: self._switch_frame('next'))
         self._ui.but_last.clicked.connect(lambda: self._switch_frame('last'))
 
-        self._hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
-        self._hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+        self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
+        self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+        self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
         self._ui.chk_auto_levels.clicked.connect(lambda state: self._toggle_auto_levels(state))
 
         self._ui.bg_level.buttonClicked.connect(lambda button: self._change_level_mode(button))
@@ -104,6 +105,14 @@ class FilesInspector(QtWidgets.QWidget):
             self._main_view.move_marker(pos)
 
     # ----------------------------------------------------------------------
+    def new_view_box(self, source, view_box):
+        # print('New view box from {}, box {}'.format(source, view_box))
+        if source == 'main':
+            self._second_view.new_view_box(view_box)
+        else:
+            self._main_view.new_view_box(view_box)
+
+    # ----------------------------------------------------------------------
     def delete_roi(self, idx):
         self._main_view.delete_roi(idx)
         self._second_view.delete_roi(idx)
@@ -118,9 +127,14 @@ class FilesInspector(QtWidgets.QWidget):
         self._second_view.new_axes()
 
     # ----------------------------------------------------------------------
+    def _new_lookup_table(self):
+        self._second_view.new_lookup_table()
+
+    # ----------------------------------------------------------------------
     def switch_off_auto_levels(self):
         self.auto_levels = False
         self._ui.chk_auto_levels.setChecked(False)
+        self._second_view.new_levels()
 
     # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
@@ -144,10 +158,10 @@ class FilesInspector(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def update_image(self):
-        self._hist.item.sigLevelsChanged.disconnect()
+        self.hist.item.sigLevelsChanged.disconnect()
         self._main_view.update_image()
         self._second_view.update_image()
-        self._hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+        self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
 
     # ----------------------------------------------------------------------
     def _setup_limits(self):

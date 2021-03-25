@@ -60,6 +60,8 @@ class View2d(QtWidgets.QWidget):
         self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
         self._main_plot.scene().sigMouseHover.connect(self._mouse_hover)
 
+        self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+
     # ----------------------------------------------------------------------
     def _move_tab_menu(self, pos):
 
@@ -83,6 +85,19 @@ class View2d(QtWidgets.QWidget):
             self.current_file = None
             self._tb_files.removeTab(index)
 
+            if self._type == 'second' and len(self._my_files) == 0:
+                self.hide()
+
+    # ----------------------------------------------------------------------
+    def _range_changed(self, view_box):
+        self._parent.new_view_box(self._type, view_box)
+
+    # ----------------------------------------------------------------------
+    def new_view_box(self, view_box):
+        self._main_plot.getViewBox().sigRangeChanged.disconnect()
+        self._main_plot.getViewBox().setRange(view_box.viewRect())
+        self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+
     # ----------------------------------------------------------------------
     def add_file(self, file_name):
         new_index = self._tb_files.count()
@@ -90,17 +105,27 @@ class View2d(QtWidgets.QWidget):
         self._tb_files.insertTab(new_index, '{}'.format(file_name))
         self._tb_files.setCurrentIndex(new_index)
 
-        self.setVisible(True)
+        if self._type == 'second':
+            self.show()
 
-        # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def new_lookup_table(self):
+        if self.plot_2d.image is not None:
+            self.plot_2d.setLookupTable(self._parent.hist.item.getLookupTable(self.plot_2d.image))
+
+    # ----------------------------------------------------------------------
+    def new_levels(self):
+        self.plot_2d.setLevels(self._parent.hist.item.getLevels())
+
+    # ----------------------------------------------------------------------
     def _close_file(self, index):
         self.data_pool.remove_file(self._my_files[index])
         del self._my_files[index]
         self.current_file = None
         self._tb_files.removeTab(index)
 
-        if self._type == 'main' and len(self._my_files) == 0:
-            self.setVisible(False)
+        if self._type == 'second' and len(self._my_files) == 0:
+            self.hide()
 
     # ----------------------------------------------------------------------
     def add_roi(self,idx):
@@ -230,13 +255,18 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _switch_file(self, index):
-        if self._type == 'main':
-            z_value = None
-            if self.current_file is not None:
-                _, z_value = self.data_pool.get_value_at_point(self.current_file, self.current_axes['z'],
-                                                               self.current_frame)
 
+        z_value = None
+        if self.current_file is not None:
+            _, z_value = self.data_pool.get_value_at_point(self.current_file, self._parent.current_axes['z'],
+                                                           self._parent.current_frame)
+
+        if index > -1:
             self.current_file = self._my_files[index]
+        else:
+            self.current_file = None
+
+        if self._type == 'main':
             self._parent.new_main_file(z_value)
 
     # ----------------------------------------------------------------------
