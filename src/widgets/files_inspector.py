@@ -174,6 +174,7 @@ class FilesInspector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def display_z_value(self):
         if self._main_view.current_file is None:
+            self._ui.lb_value.setText('')
             return
 
         z_name, z_value = self.data_pool.get_value_at_point(self._main_view.current_file, self.current_axes['z'],
@@ -192,15 +193,19 @@ class FilesInspector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_main_file(self, z_value):
 
-        axes_names = self.data_pool.file_axes_caption(self._main_view.current_file)
-        self._ui.lb_axes_captions.setText('X axis: {}, Y axis: {}, Z axis: {}'.format(axes_names[0],
-                                                                                      axes_names[1],
-                                                                                      axes_names[2]))
+        if self._main_view.current_file is not None:
+            axes_names = self.data_pool.file_axes_caption(self._main_view.current_file)
+            self._ui.lb_axes_captions.setText('X axis: {}, Y axis: {}, Z axis: {}'.format(axes_names[0],
+                                                                                          axes_names[1],
+                                                                                          axes_names[2]))
 
-        self._setup_limits()
-        if z_value is not None:
-            self.current_frame = self.data_pool.frame_for_point(self._main_view.current_file, self.current_axes['z'], z_value)
-            self._ui.sl_frame.setValue(self.current_frame)
+            self._setup_limits()
+            if z_value is not None:
+                self.current_frame = self.data_pool.frame_for_point(self._main_view.current_file, self.current_axes['z'], z_value)
+                self._ui.sl_frame.setValue(self.current_frame)
+        else:
+            self._ui.lb_axes_captions.setText('')
+            self._ui.sl_frame.setValue(0)
 
         self.display_z_value()
         self.update_image()

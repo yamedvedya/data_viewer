@@ -76,10 +76,13 @@ class DataPool(QtCore.QObject):
         self.possible_display_parameters.sort()
 
         if self.display_parameter not in self.possible_display_parameters:
-            if 'point_nb' in self.possible_display_parameters:
-                self.display_parameter = 'point_nb'
+            if self.possible_display_parameters:
+                if 'point_nb' in self.possible_display_parameters:
+                    self.display_parameter = 'point_nb'
+                else:
+                    self.display_parameter = self.possible_display_parameters[0]
             else:
-                self.display_parameter = self.possible_display_parameters[0]
+                self.display_parameter = 'point_nb'
 
         self.update_parameter_list.emit()
 
@@ -97,14 +100,15 @@ class DataPool(QtCore.QObject):
         try:
             with h5py.File(file_name, 'r') as f:
                 if 'scan' in f.keys():
-                    self._files_data[entry_name] = SardanaScan(file_name, self, f)
-                    self._files_data[entry_name].set_mask_info(self._mask_mode, self._loaded_mask,
+                    new_file = SardanaScan(file_name, self, f)
+                    new_file.set_mask_info(self._mask_mode, self._loaded_mask,
                                                                self._loaded_mask_info)
-                    self._files_data[entry_name].set_atten_settings(self._atten_correction)
-                    self._files_data[entry_name].set_inten_settings(self._inten_correction)
+                    new_file.set_atten_settings(self._atten_correction)
+                    new_file.set_inten_settings(self._inten_correction)
 
-                    self._files_data[entry_name].apply_settings()
+                    new_file.apply_settings()
 
+            self._files_data[entry_name] = new_file
             self._rescan_possible_scan_parameters()
             self._get_all_axes_limits()
             self.new_file_added.emit(entry_name)
@@ -112,6 +116,7 @@ class DataPool(QtCore.QObject):
         except Exception as err:
             self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
                                           detailed_text=str(err))
+
 
     # ----------------------------------------------------------------------
     def remove_file(self, name):
@@ -296,8 +301,15 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     def apply_settings(self, file, force_to_opened):
         if force_to_opened:
-            for file in self._files_data.values():
-                file.apply_settings()
+            files_to_delete = []
+            for name, data in self._files_data.items():
+                try:
+                    data.apply_settings()
+                except:
+                    files_to_delete.append(name)
+
+            if files_to_delete:
+                raise RuntimeError('Non implemented!')
         else:
             self._files_data[file].apply_settings()
 

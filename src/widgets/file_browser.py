@@ -4,6 +4,12 @@ WIDGET_NAME = 'DataBrowser'
 
 file_formats = ["*.nxs"]
 
+FILE_REFRESH_PERIOD = 1
+
+import threading
+import os
+import time
+
 try:
     from watchdog.observers import Observer
     from watchdog.events import PatternMatchingEventHandler
@@ -14,6 +20,11 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from src.gui.file_browser_ui import Ui_FileBrowser
 
 from src.utils.utils import FileFilter
+
+
+# ----------------------------------------------------------------------
+def _scan_folder(folder):
+    return set([f_name for f_name in os.listdir(folder) if f_name.endswith('.nxs')])
 
 # ----------------------------------------------------------------------
 class FileBrowser(QtWidgets.QWidget):
@@ -47,11 +58,16 @@ class FileBrowser(QtWidgets.QWidget):
 
         try:
             self._my_event_handler = PatternMatchingEventHandler(file_formats, "", False, True)
-            self._my_event_handler.on_created = self._on_created
+            self._my_event_handler.on_any_event = self._on_created
 
             self._my_observer = None
         except:
             self._ui.chk_monitor.setEnabled(False)
+
+        self._file_watch_dog = threading.Thread(target=self._file_watch_dog)
+        self._stop_file_watch = False
+        self._monitor_folder = None
+        self._file_watch_dog.start()
 
         self._ui.tr_file_browser.setModel(self.file_filter)
         self._ui.tr_file_browser.hideColumn(2)
@@ -60,6 +76,26 @@ class FileBrowser(QtWidgets.QWidget):
         self._ui.tr_file_browser.doubleClicked.connect(self._open_folder)
         self._ui.le_filter.editingFinished.connect(self._apply_filter)
         self._ui.chk_monitor.clicked.connect(lambda state: self._toggle_watch_dog(state))
+
+    # ----------------------------------------------------------------------
+    def __del__(self):
+        self._stop_file_watch = True
+
+    # ----------------------------------------------------------------------
+    def _file_watch_dog(self):
+        _last_file_list = []
+        while not self._stop_file_watch:
+            if self._monitor_folder is not None:
+                if not _last_file_list:
+                    _last_file_list = _scan_folder(self._monitor_folder)
+                else:
+                    new_files = _scan_folder(self._monitor_folder)
+                    new_names = list(new_files - _last_file_list)
+                    for name in new_names:
+                        self.file_selected.emit(os.path.join(self._monitor_folder, name))
+            else:
+                _last_file_list = []
+            time.sleep(FILE_REFRESH_PERIOD)
 
     # ----------------------------------------------------------------------
     def _open_folder(self):
@@ -72,10 +108,13 @@ class FileBrowser(QtWidgets.QWidget):
                 parent = self.file_filter.parent(self.file_filter.parent(selected_index))
                 if self.file_filter.parent(parent) == QtCore.QModelIndex():
                     self._ui.tr_file_browser.setRootIndex(QtCore.QModelIndex())
+                    self.file_browser.setRootPath("")
                 else:
                     self._ui.tr_file_browser.setRootIndex(parent)
+                    self.file_browser.setRootPath(self.file_browser.filePath(self.file_filter.mapToSource(parent)))
             else:
                 self._ui.tr_file_browser.setRootIndex(selected_index)
+                self.file_browser.setRootPath(name)
         else:
             file_name = str(self.file_browser.filePath(file_index))
             if ".nxs" in file_name:
@@ -107,6 +146,9 @@ class FileBrowser(QtWidgets.QWidget):
                 self._my_observer = Observer()
                 self._my_observer.schedule(self._my_event_handler, folder, recursive=True)
                 self._my_observer.start()
+                self._monitor_folder = folder
+            else:
+                self._monitor_folder = None
 
     # ----------------------------------------------------------------------
     def _toggle_watch_dog(self, state):
@@ -117,6 +159,7 @@ class FileBrowser(QtWidgets.QWidget):
                 self._my_observer.stop()
                 self._my_observer.join()
                 self._my_observer = None
+                self._monitor_folder = None
 
     # ----------------------------------------------------------------------
     def _on_created(self, event):

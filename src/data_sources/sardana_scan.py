@@ -5,6 +5,7 @@ MEMORY_MODE = 'ram' #'disk' or 'ram'
 import h5py
 import os
 import numpy as np
+import traceback
 
 from src.data_sources.abstract_data_file import AbstractDataFile
 
@@ -63,8 +64,12 @@ class SardanaScan(AbstractDataFile):
                 self._3d_cube = None
                 source_file = h5py.File(os.path.join(self._detector_folder, file_lists[0]), 'r')
                 data = np.array(source_file['entry']['instrument']['detector']['data'], dtype=np.float32)
-                self._attached_mask = \
-                    np.array(source_file['entry']['instrument']['detector']['pixel_mask'])[0, :, :]
+                try:
+                    self._attached_mask = \
+                        np.array(source_file['entry']['instrument']['detector']['pixel_mask'])[0, :, :]
+                except:
+                    print('Cannot load mask!')
+                    self._attached_mask = np.zeros(data.shape[1:])
                 self._loaded_mask = np.zeros_like(self._attached_mask)
                 name = file_lists[0]
 
@@ -142,29 +147,32 @@ class SardanaScan(AbstractDataFile):
     # ----------------------------------------------------------------------
     def apply_settings(self):
 
-        try:
-            if self._mask_mode in ['default', 'attached']:
-                self._pixel_mask = self._attached_mask > 0
+        if self._mask_mode in ['default', 'attached']:
+            self._pixel_mask = self._attached_mask > 0
 
-            elif self._mask_mode == 'file':
-                self._pixel_mask = self._loaded_mask > 0
+        elif self._mask_mode == 'file':
+            self._pixel_mask = self._loaded_mask > 0
 
-            else:
-                self._pixel_mask = None
+        else:
+            self._pixel_mask = None
 
-            if MEMORY_MODE == 'ram':
-                del self._3d_cube
-                self._reload_detector_data()
+        if MEMORY_MODE == 'ram':
+            del self._3d_cube
+            self._reload_detector_data()
 
-                self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
+            self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
 
+            try:
                 if self._atten_correction['state'] == 'on':
                     if self._atten_correction['param'] in self._data['scanned_values']:
                         self._correction *= np.maximum(self._data[self._atten_correction['param']], 1)
                 elif self._atten_correction['state'] == 'default':
                     if self._atten_correction['default_param'] in self._data['scanned_values']:
                         self._correction *= np.maximum(self._data[self._atten_correction['default_param']], 1)
+            except Exception as err:
+                self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
+            try:
                 if self._inten_correction['state'] == 'on':
                     if self._inten_correction['param'] in self._data['scanned_values']:
                         self._correction *= np.max((1, self._data[self._inten_correction['param']][0]))/\
@@ -173,14 +181,19 @@ class SardanaScan(AbstractDataFile):
                     if self._inten_correction['default_param'] in self._data['scanned_values']:
                         self._correction *= np.max((self._data[self._inten_correction['default_param']][0], 1))/\
                                             np.maximum(self._data[self._inten_correction['default_param']], 1)
+            except Exception as err:
+                self._data_pool.main_window.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
 
+
+            try:
                 if self._pixel_mask is not None:
                     for frame, corr in zip(self._3d_cube, self._correction):
                         frame[self._pixel_mask] = 0
                         frame *= corr
+            except Exception as err:
+                self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
 
-        except Exception as err:
-            self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
+
 
     # ----------------------------------------------------------------------
     def get_2d_cut(self, space, axis, value, x_axis, y_axis):
