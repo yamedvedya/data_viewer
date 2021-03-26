@@ -65,8 +65,10 @@ def read_mask_file(file_name):
     mask, mask_info = None, None
     try:
         with h5py.File(file_name, 'r') as f:
-            mask = np.array(f['Mask_file'])
-            mask_info = {'file': os.path.basename(file_name), 'energy': float(f['Energy_for_acqusition'][...])}
+            mask = np.array(f['pixel_mask'])
+            mask_info = {'file': os.path.basename(file_name)}
+            if 'energy' in f:
+                mask_info['energy'] = float(f['Energy_for_acqusition'][...])
     except:
         pass
 

@@ -14,17 +14,10 @@ class AbstractDataFile(object):
         self._data_pool = data_pool
         self._data = {}
         self._spaces = ['real']
-        self._mask_mode = 'default'
-        self._attached_mask = np.array([[], []])
-        self._loaded_mask = np.array([[], []])
-        self._loaded_mask_info = {}
         self._axes_names = {'real': ['X', 'Y', 'Z']}
         self._cube_axes_map = {'real': {0: 0,
                                         1: 1,
                                         2: 2}}
-
-        self._atten_correction = {'default': 'off', 'default_param': ''}
-        self._inten_correction = {'default': 'off', 'default_param': ''}
 
     # ----------------------------------------------------------------------
     def update_settings(self):

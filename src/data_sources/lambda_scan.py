@@ -174,7 +174,7 @@ class LambdaScan(AbstractDataFile):
             self._pixel_mask = self._attached_mask > 0
 
         elif SETTINGS['mask_mode'] == 'file' and SETTINGS['loaded_mask'] is not None:
-            self._pixel_mask = self._loaded_mask > 0
+            self._pixel_mask = SETTINGS['loaded_mask'] > 0
 
         else:
             self._pixel_mask = None
@@ -494,7 +494,7 @@ class LambdaScanSetup(QtWidgets.QWidget):
 
         elif button == self._ui.rb_file:
             SETTINGS['mask_mode'] = 'file'
-            if SETTINGS['loaded_mask'].shape[1] == 0:
+            if SETTINGS['loaded_mask'] is None:
                 self.load_mask_from_file()
 
             self._ui.but_load_mask.setEnabled(True)
