@@ -159,6 +159,7 @@ class FilesInspector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def update_image(self):
         self.hist.item.sigLevelsChanged.disconnect()
+        self.display_z_value()
         self._main_view.update_image()
         self._second_view.update_image()
         self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)

@@ -27,51 +27,12 @@ class AbstractDataFile(object):
         self._inten_correction = {'default': 'off', 'default_param': ''}
 
     # ----------------------------------------------------------------------
-    def get_scan_parameters(self):
-        return []
-
-    # ----------------------------------------------------------------------
-    def get_atten_settings(self):
-        return self._atten_correction
-
-    # ----------------------------------------------------------------------
-    def get_inten_settings(self):
-        return self._inten_correction
-
-    # ----------------------------------------------------------------------
-    def set_atten_settings(self, settings):
-        self._atten_correction.update(settings)
-
-    # ----------------------------------------------------------------------
-    def set_inten_settings(self, settings):
-        self._inten_correction.update(settings)
-
-    # ----------------------------------------------------------------------
-    def set_mask_info(self, mask_mode, loaded_mask=None, loaded_mask_info=None):
-        self._mask_mode = mask_mode
-        if mask_mode == 'file':
-            self._loaded_mask = loaded_mask
-            self._loaded_mask_info = loaded_mask_info
+    def update_settings(self):
+        pass
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
         pass
-
-    # ----------------------------------------------------------------------
-    def get_attached_mask_for_file(self):
-        return self._attached_mask
-
-    # ----------------------------------------------------------------------
-    def get_default_mask_for_file(self):
-        return []
-
-    # ----------------------------------------------------------------------
-    def get_loaded_mask_for_file(self):
-        return self._loaded_mask, self._loaded_mask_info
-
-    # ----------------------------------------------------------------------
-    def get_mask_mode(self):
-        return self._mask_mode
 
     # ----------------------------------------------------------------------
     def file_axes_caption(self, space):
@@ -93,10 +54,6 @@ class AbstractDataFile(object):
                 new_limits[display_axis] = [0, self._data['cube_shape'][cube_axis] - 1]
 
         return new_limits
-
-    # ----------------------------------------------------------------------
-    def get_scan_params(self):
-        return []
 
     # ----------------------------------------------------------------------
     def frame_for_point(self, space, axis, pos):

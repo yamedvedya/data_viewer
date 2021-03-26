@@ -275,6 +275,13 @@ class View2d(QtWidgets.QWidget):
             self.plot_2d.setImage(np.array([[0], [0]]))
             return
 
+        _, z_value = self.data_pool.get_value_at_point(self.current_file, self._file_inspector.current_axes['z'],
+                                                       self._file_inspector.current_frame)
+
+        if z_value is np.NAN:
+            self.plot_2d.clear()
+            return
+
         data_to_display = self.data_pool.get_2d_cut(self.current_file, self._file_inspector.current_axes['z'],
                                                     self._file_inspector.current_frame, self._file_inspector.current_axes['x'],
                                                     self._file_inspector.current_axes['y'])

@@ -78,7 +78,7 @@ class FileBrowser(QtWidgets.QWidget):
         self._ui.chk_monitor.clicked.connect(lambda state: self._toggle_watch_dog(state))
 
     # ----------------------------------------------------------------------
-    def __del__(self):
+    def stop_threads(self):
         self._stop_file_watch = True
 
     # ----------------------------------------------------------------------
@@ -132,6 +132,10 @@ class FileBrowser(QtWidgets.QWidget):
             self._ui.tr_file_browser.expandAll()
         else:
             self._ui.tr_file_browser.collapseAll()
+
+    # ----------------------------------------------------------------------
+    def current_folder(self):
+        return self.file_browser.filePath(self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex()))
 
     # ----------------------------------------------------------------------
     def _change_observer_folder(self):

@@ -71,11 +71,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.data_pool.file_deleted.connect(self.rois_view.delete_file)
 
-        self.data_pool.update_parameter_list.connect(self._setup_parameter_menu)
-
-        self.data_pool.new_parameter_selected.connect(self.files_inspector.display_z_value)
-        self.data_pool.new_parameter_selected.connect(self.rois_view.update_limits)
-
         self.data_pool.new_roi_range.connect(self.files_inspector.new_roi_range)
         self.data_pool.new_roi_range.connect(self.rois_view.new_roi_range)
 
@@ -90,6 +85,10 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer = QtCore.QTimer(self)
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
+
+    # ----------------------------------------------------------------------
+    def get_current_folder(self):
+        return self.file_browser.current_folder()
 
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
@@ -109,25 +108,7 @@ class DataViewer(QtWidgets.QMainWindow):
         pass
 
     # ----------------------------------------------------------------------
-    def _setup_parameter_menu(self):
-        for action in self.parameter_actions:
-            self.parameter_menu.removeAction(action)
-
-        self.parameter_actions = []
-        self.parameter_action_group = QtWidgets.QActionGroup(self)
-
-        for parameter in self.data_pool.possible_display_parameters:
-            action = QtWidgets.QAction(parameter, self)
-            action.setCheckable(True)
-            action.setChecked(parameter == self.data_pool.display_parameter)
-            action.triggered.connect(lambda state, name=parameter: self.data_pool.set_new_display_parameter(name))
-            self.parameter_action_group.addAction(action)
-            self.parameter_menu.addAction(action)
-            self.parameter_actions.append(action)
-
-    # ----------------------------------------------------------------------
     def _setup_menu(self):
-        self.parameter_menu = QtWidgets.QMenu('Display parameter', self)
         self._menu_view = QtWidgets.QMenu('Widgets', self)
 
         space_menu = QtWidgets.QMenu('Displayed space', self)
@@ -151,7 +132,6 @@ class DataViewer(QtWidgets.QMainWindow):
         menu_exit = QtWidgets.QAction('Exit', self)
         menu_exit.triggered.connect(self._exit)
 
-        self.menuBar().addMenu(self.parameter_menu)
         self.menuBar().addMenu(space_menu)
 
         self.menuBar().addSeparator()
@@ -204,6 +184,7 @@ class DataViewer(QtWidgets.QMainWindow):
     def _exit(self):
 
         self.log.info("Closing the app...")
+        self.file_browser.stop_threads()
         self._save_ui_settings()
         QtWidgets.QApplication.quit()
 
@@ -212,6 +193,7 @@ class DataViewer(QtWidgets.QMainWindow):
         """
         """
         self.log.info("Closing the app...")
+        self.file_browser.stop_threads()
         self._save_ui_settings()
         event.accept()
 
@@ -252,11 +234,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.files_inspector.load_ui_settings(settings)
         # self.cube_view.load_ui_settings(settings)
 
-        # try:
-        #     return settings.value("StartFolder")
-        # except:
-        #     return None
-
     # ----------------------------------------------------------------------
     def _init_status_bar(self):
         """
@@ -286,10 +263,10 @@ class DataViewer(QtWidgets.QMainWindow):
     def _refresh_status_bar(self):
         """
         """
-        # if self._test_run:
-        #     self.data_pool.open_file('./test/Bhat_B_1V_02665.nxs')
-        #     self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
-        #     self._test_run =False
+        if self._test_run:
+            self.data_pool.open_file('./test/Bhat_B_1V_02665.nxs')
+            self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
+            self._test_run =False
 
         process = psutil.Process(os.getpid())
         mem = float(process.memory_info().rss) / (1024. * 1024.)

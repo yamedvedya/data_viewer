@@ -2,19 +2,39 @@
 
 MEMORY_MODE = 'ram' #'disk' or 'ram'
 
+WIDGET_NAME = 'LambdaScanSetup'
+
 import h5py
 import os
-import numpy as np
-import traceback
 
+import pyqtgraph as pg
+import numpy as np
+
+from PyQt5 import QtWidgets, QtCore
+from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
+
+from src.gui.lambda_setup_ui import Ui_LambdaSetup
+from src.utils.utils import read_mask_file, refresh_combo_box
+from src.main_window import APP_NAME
 from src.data_sources.abstract_data_file import AbstractDataFile
 
+SETTINGS = {'mask_mode': 'off',
+            'loaded_mask': None,
+            'loaded_mask_info': {'file': ''},
+            'atten_correction': 'on',
+            'atten_param': 'atten',
+            'inten_correction': 'on',
+            'inten_param': 'eh_c01',
+            'displayed_param': 'point_nb',
+            'all_params': []
+            }
 
-class SardanaScan(AbstractDataFile):
+
+class LambdaScan(AbstractDataFile):
 
     # ----------------------------------------------------------------------
     def __init__(self, file_name, data_pool, opened_file):
-        super(SardanaScan, self).__init__(file_name, data_pool, opened_file)
+        super(LambdaScan, self).__init__(file_name, data_pool, opened_file)
 
         self._original_file = file_name
         self._spaces = ['real']
@@ -24,11 +44,6 @@ class SardanaScan(AbstractDataFile):
                                         2: 0}}
 
         self._data['scanned_values'] = []
-
-        self._atten_correction['default'] = 'on'
-        self._atten_correction['default_param'] = 'atten'
-        self._inten_correction['default'] = 'on'
-        self._inten_correction['default_param'] = 'eh_c01'
 
         self._correction = None
 
@@ -69,8 +84,7 @@ class SardanaScan(AbstractDataFile):
                         np.array(source_file['entry']['instrument']['detector']['pixel_mask'])[0, :, :]
                 except:
                     print('Cannot load mask!')
-                    self._attached_mask = np.zeros(data.shape[1:])
-                self._loaded_mask = np.zeros_like(self._attached_mask)
+                    self._attached_mask = None
                 name = file_lists[0]
 
                 for name in file_lists[1:]:
@@ -105,9 +119,9 @@ class SardanaScan(AbstractDataFile):
         if space == 'real':
             new_limits[0] = [0, self._data['cube_shape'][2]-1]
             new_limits[1] = [0, self._data['cube_shape'][1]-1]
-            if self._data_pool.display_parameter in self._data['scanned_values']:
-                new_limits[2] = [min(self._data[self._data_pool.display_parameter]),
-                                 max(self._data[self._data_pool.display_parameter])]
+            if SETTINGS['displayed_param'] in self._data['scanned_values']:
+                new_limits[2] = [min(self._data[SETTINGS['displayed_param']]),
+                                 max(self._data[SETTINGS['displayed_param']])]
             else:
                 new_limits[2] = [0, 0]
 
@@ -122,68 +136,60 @@ class SardanaScan(AbstractDataFile):
         if space == 'real':
             real_axis = self._cube_axes_map[space][axis]
             if real_axis == 0:
-                if self._data_pool.display_parameter in self._data['scanned_values']:
-                    if 0 <= pos < len(self._data[self._data_pool.display_parameter]):
-                        return self._data_pool.display_parameter, self._data[self._data_pool.display_parameter][pos]
-                    else:
-                        return self._data_pool.display_parameter, np.NaN
+                if SETTINGS['displayed_param'] in self._data['scanned_values']:
+                    if 0 <= pos < len(self._data[SETTINGS['displayed_param']]):
+                        return SETTINGS['displayed_param'], self._data[SETTINGS['displayed_param']][pos]
+                return SETTINGS['displayed_param'], np.NaN
             else:
                 return self._axes_names['real'][axis], pos
 
     # ----------------------------------------------------------------------
     def _get_roi_axis(self, plot_axis):
         if plot_axis == 0:
-            if self._data_pool.display_parameter in self._data['scanned_values']:
-                return self._data[self._data_pool.display_parameter]
+            if SETTINGS['displayed_param'] in self._data['scanned_values']:
+                return self._data[SETTINGS['displayed_param']]
             else:
                 return np.arange(0, self._data['cube_shape'][plot_axis])
         else:
             return np.arange(0, self._data['cube_shape'][plot_axis])
 
     # ----------------------------------------------------------------------
-    def get_default_mask_for_file(self):
-        return self._attached_mask
+    def update_settings(self):
+        for value in self._data['scanned_values']:
+            if value not in SETTINGS['all_params']:
+                SETTINGS['all_params'].append(value)
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
 
-        if self._mask_mode in ['default', 'attached']:
+        if SETTINGS['mask_mode'] == 'attached' and self._attached_mask is not None:
             self._pixel_mask = self._attached_mask > 0
 
-        elif self._mask_mode == 'file':
+        elif SETTINGS['mask_mode'] == 'file' and SETTINGS['loaded_mask'] is not None:
             self._pixel_mask = self._loaded_mask > 0
 
         else:
             self._pixel_mask = None
 
         if MEMORY_MODE == 'ram':
-            del self._3d_cube
             self._reload_detector_data()
 
             self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
 
             try:
-                if self._atten_correction['state'] == 'on':
-                    if self._atten_correction['param'] in self._data['scanned_values']:
-                        self._correction *= np.maximum(self._data[self._atten_correction['param']], 1)
-                elif self._atten_correction['state'] == 'default':
-                    if self._atten_correction['default_param'] in self._data['scanned_values']:
-                        self._correction *= np.maximum(self._data[self._atten_correction['default_param']], 1)
+                if SETTINGS['atten_correction'] == 'on':
+                    if SETTINGS['atten_param'] in self._data['scanned_values']:
+                        self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
             except Exception as err:
                 self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
             try:
-                if self._inten_correction['state'] == 'on':
-                    if self._inten_correction['param'] in self._data['scanned_values']:
-                        self._correction *= np.max((1, self._data[self._inten_correction['param']][0]))/\
-                                           np.maximum(self._data[self._inten_correction['param']], 1)
-                elif self._inten_correction['state'] == 'default':
-                    if self._inten_correction['default_param'] in self._data['scanned_values']:
-                        self._correction *= np.max((self._data[self._inten_correction['default_param']][0], 1))/\
-                                            np.maximum(self._data[self._inten_correction['default_param']], 1)
+                if SETTINGS['inten_correction'] == 'on':
+                    if SETTINGS['inten_param'] in self._data['scanned_values']:
+                        self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0]))/\
+                                           np.maximum(self._data[SETTINGS['inten_param']], 1)
             except Exception as err:
                 self._data_pool.main_window.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
-
 
             try:
                 if self._pixel_mask is not None:
@@ -192,8 +198,6 @@ class SardanaScan(AbstractDataFile):
                         frame *= corr
             except Exception as err:
                 self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
-
-
 
     # ----------------------------------------------------------------------
     def get_2d_cut(self, space, axis, value, x_axis, y_axis):
@@ -367,3 +371,179 @@ class SardanaScan(AbstractDataFile):
             return self._get_roi_axis(plot_axis), cube_cut
 
         return 0, 0
+
+# ----------------------------------------------------------------------
+class LambdaScanSetup(QtWidgets.QWidget):
+    """
+    settings = {'mask_mode': 'off',
+                'loaded_mask': np.array([[], []]),
+                'loaded_mask_info': {'file': ''},
+                'atten_correction': 'on',
+                'atten_param': 'atten',
+                'inten_correction': 'on',
+                'inten_param': 'eh_c01',
+            }
+    """
+
+    # ----------------------------------------------------------------------
+    def __init__(self, main_window, data_pool):
+        """
+        """
+        super(LambdaScanSetup, self).__init__()
+        self._ui = Ui_LambdaSetup()
+        self._ui.setupUi(self)
+
+        self._main_window = main_window
+        self._data_pool = data_pool
+
+        self._main_plot = pg.PlotItem()
+        self._main_plot.showAxis('left', False)
+        self._main_plot.showAxis('bottom', False)
+        self._main_plot.setMenuEnabled(False)
+
+        self._ui.gv_main.setStyleSheet("")
+        self._ui.gv_main.setBackground('w')
+        self._ui.gv_main.setObjectName("gvMain")
+
+        self._ui.gv_main.setCentralItem(self._main_plot)
+        self._ui.gv_main.setRenderHints(self._ui.gv_main.renderHints())
+
+        self._main_plot.getViewBox().setAspectLocked()
+
+        self._old_settings = dict(SETTINGS)
+
+        if SETTINGS['mask_mode'] == 'off':
+            self._ui.rb_no_mask.setChecked(True)
+            _mask = None
+        elif SETTINGS['mask_mode'] == 'attached':
+            self._ui.rb_attached.setChecked(True)
+            _mask = None
+        else:
+            self._ui.rb_file.setChecked(True)
+            self._ui.but_load_mask.setEnabled(True)
+            self._ui.lb_mask_file.setText(SETTINGS['loaded_mask_info']['file'])
+            _mask = SETTINGS['loaded_mask']
+
+        self._plot_2d = pg.ImageItem()
+        if _mask is not None:
+            self._plot_2d.setImage(np.copy(_mask), autoLevels=True)
+        self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients['grey']["ticks"])).getLookupTable())
+        self._main_plot.addItem(self._plot_2d)
+
+        self._ui.cmb_attenuator.addItems(SETTINGS['all_params'])
+        self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'] == 'on')
+        if SETTINGS['atten_param'] not in SETTINGS['all_params']:
+            self._ui.cmb_attenuator.addItem(SETTINGS['atten_param'])
+        refresh_combo_box(self._ui.cmb_attenuator, SETTINGS['atten_param'])
+        self._ui.rb_atten_on.setChecked(SETTINGS['atten_correction'] == 'on')
+        self._ui.rb_atten_off.setChecked(SETTINGS['atten_correction'] == 'off')
+
+        self._ui.cmb_intensity.addItems(SETTINGS['all_params'])
+        self._ui.cmb_intensity.setEnabled(SETTINGS['inten_correction'] == 'on')
+        if SETTINGS['inten_param'] not in SETTINGS['all_params']:
+            self._ui.cmb_intensity.addItem(SETTINGS['inten_param'])
+        refresh_combo_box(self._ui.cmb_intensity, SETTINGS['inten_param'])
+        self._ui.rb_inten_on.setChecked(SETTINGS['inten_correction'] == 'on')
+        self._ui.rb_inten_off.setChecked(SETTINGS['inten_correction'] == 'off')
+
+        self._ui.cmb_z_axis.addItems(SETTINGS['all_params'])
+        if SETTINGS['displayed_param'] not in SETTINGS['all_params']:
+            self._ui.cmb_z_axis.addItem(SETTINGS['displayed_param'])
+        refresh_combo_box(self._ui.cmb_z_axis, SETTINGS['displayed_param'])
+
+        self._ui.bg_intensity.buttonClicked.connect(
+            lambda button: self._ui.cmb_intensity.setEnabled(button == self._ui.rb_inten_on))
+        self._ui.bg_attenuator.buttonClicked.connect(
+            lambda button: self._ui.cmb_attenuator.setEnabled(button == self._ui.rb_atten_on))
+
+        self._ui.bg_mask_option.buttonClicked.connect(self.change_mode)
+        self._ui.but_load_mask.clicked.connect(self.load_mask_from_file)
+
+        self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
+
+        try:
+            self.restoreGeometry(QtCore.QSettings(APP_NAME).value("{}/geometry".format(WIDGET_NAME)))
+        except Exception as err:
+            self._main_window.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
+
+    # ----------------------------------------------------------------------
+    def get_name(self):
+        return 'Lambda Scan Setup'
+
+    # ----------------------------------------------------------------------
+    def change_mode(self, button):
+        self._ui.but_load_mask.setEnabled(False)
+
+        if button == self._ui.rb_no_mask:
+            SETTINGS['mask_mode'] = 'off'
+            self._plot_2d.clear()
+            return
+
+        elif button == self._ui.rb_attached:
+            SETTINGS['mask_mode'] = 'attached'
+            self._plot_2d.clear()
+            return
+
+        elif button == self._ui.rb_file:
+            SETTINGS['mask_mode'] = 'file'
+            if SETTINGS['loaded_mask'].shape[1] == 0:
+                self.load_mask_from_file()
+
+            self._ui.but_load_mask.setEnabled(True)
+            self._ui.lb_mask_file.setText(SETTINGS['loaded_mask_info']['file'])
+
+            try:
+                self._plot_2d.setImage(np.copy(SETTINGS['loaded_mask']), autoLevels=True)
+            except Exception as err:
+                self._main_window.log.error("{} : cannot display mask geometry: {}".format(WIDGET_NAME, err))
+                self._plot_2d.clear()
+
+    # ----------------------------------------------------------------------
+    def load_mask_from_file(self):
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file with mask',
+                                                             self._main_window.get_current_folder())
+
+        if file_name:
+            mask, mask_info = read_mask_file(file_name)
+            if mask is not None:
+                SETTINGS['loaded_mask'] = mask
+                SETTINGS['loaded_mask_info'] = mask_info
+                self._plot_2d.setImage(np.copy(mask), autoLevels=True)
+                self._ui.lb_mask_file.setText(mask_info['file'])
+
+    # ----------------------------------------------------------------------
+    def accept(self):
+
+        SETTINGS['atten_param'] = str(self._ui.cmb_attenuator.currentText())
+        if self._ui.rb_atten_on.isChecked():
+            SETTINGS['atten_correction'] = 'on'
+        elif self._ui.rb_atten_off.isChecked():
+            SETTINGS['atten_correction'] = 'off'
+
+        SETTINGS['inten_param'] = str(self._ui.cmb_intensity.currentText())
+        if self._ui.rb_inten_on.isChecked():
+            SETTINGS['inten_correction'] = 'on'
+        elif self._ui.rb_inten_off.isChecked():
+            SETTINGS['inten_correction'] = 'off'
+
+        SETTINGS['displayed_param'] = str(self._ui.cmb_z_axis.currentText())
+
+        QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
+
+    # ----------------------------------------------------------------------
+    def reject(self):
+
+        for key in SETTINGS.keys():
+            SETTINGS[key] = self._old_settings[key]
+
+        QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
+
+    # ----------------------------------------------------------------------
+    def _mouse_clicked(self, event):
+        """
+        """
+        if event.double():
+            try:
+                self._main_plot.autoRange()
+            except:
+                pass

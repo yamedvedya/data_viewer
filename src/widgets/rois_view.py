@@ -79,12 +79,10 @@ class RoisView(QtWidgets.QWidget):
             widget.delete_file(file_name)
 
     # ----------------------------------------------------------------------
-    def update_limits(self):
+    def update_plots(self):
         for widget in self._roi_widgets.values():
             widget.update_limits()
 
-    # ----------------------------------------------------------------------
-    def update_plots(self):
         for widget in self._roi_widgets.values():
             widget.update_plots()
 
