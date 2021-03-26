@@ -82,6 +82,13 @@ class DataPool(QtCore.QObject):
             self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
                                           detailed_text=str(err))
 
+
+    # ----------------------------------------------------------------------
+    def remove_file(self, name):
+        del self._files_data[name]
+        self._get_all_axes_limits()
+        self.file_deleted.emit(name)
+
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

@@ -56,6 +56,14 @@ class FileBrowser(QtWidgets.QWidget):
             self.file_filter.new_version = False
         self.file_filter.setSourceModel(self.file_browser)
 
+        self._ui.tr_file_browser.setModel(self.file_filter)
+        self._ui.tr_file_browser.hideColumn(2)
+        self._ui.tr_file_browser.hideColumn(1)
+
+        self._ui.tr_file_browser.header().setSortIndicatorShown(True)
+        self._ui.tr_file_browser.setSortingEnabled(True)
+        self._ui.tr_file_browser.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+
         try:
             self._my_event_handler = PatternMatchingEventHandler(file_formats, "", False, True)
             self._my_event_handler.on_any_event = self._on_created
@@ -68,10 +76,6 @@ class FileBrowser(QtWidgets.QWidget):
         self._stop_file_watch = False
         self._monitor_folder = None
         self._file_watch_dog.start()
-
-        self._ui.tr_file_browser.setModel(self.file_filter)
-        self._ui.tr_file_browser.hideColumn(2)
-        self._ui.tr_file_browser.hideColumn(1)
 
         self._ui.tr_file_browser.doubleClicked.connect(self._open_folder)
         self._ui.le_filter.editingFinished.connect(self._apply_filter)

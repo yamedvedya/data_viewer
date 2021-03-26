@@ -64,9 +64,17 @@ class LambdaScan(AbstractDataFile):
                 if MEMORY_MODE == 'ram':
                     self._3d_cube = np.array(scan_data[key][...], dtype=np.float32)
 
-            elif len(scan_data[key][...]) > 1:
-                self._data['scanned_values'].append(key)
-                self._data[key] = np.array(scan_data[key][...])
+        for key in scan_data.keys():
+            if key != 'lmbd' and len(scan_data[key].shape) == 1:
+                if len(scan_data[key][...]) == self._data['cube_shape'][0]:
+                    self._data['scanned_values'].append(key)
+                    self._data[key] = np.array(scan_data[key][...])
+
+        if 'point_nb' not in self._data['scanned_values']:
+            self._data['scanned_values'].append('point_nb')
+            self._data['point_nb'] = np.arange(self._data['cube_shape'][0])
+
+        pass
 
     # ----------------------------------------------------------------------
     def _reload_detector_data(self, reload=True):
