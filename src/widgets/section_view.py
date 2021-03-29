@@ -42,7 +42,9 @@ class SectionView(QtWidgets.QWidget):
 
         self._main_plot = pg.PlotItem()
         self._main_plot.showGrid(True, True)
-        self._main_plot.setMenuEnabled(False)
+        # self._main_plot.setMenuEnabled(False)
+        self._main_plot.getViewBox().setMouseMode(pg.ViewBox.RectMode)
+
 
         self._ui.gv_main.setStyleSheet("")
         self._ui.gv_main.setBackground('w')

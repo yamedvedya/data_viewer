@@ -36,6 +36,7 @@ class View2d(QtWidgets.QWidget):
         self._main_plot.showAxis('left', False)
         self._main_plot.showAxis('bottom', False)
         self._main_plot.setMenuEnabled(False)
+        self._main_plot.getViewBox().setMouseMode(pg.ViewBox.RectMode)
 
         self._ui.gv_main.setStyleSheet("")
         self._ui.gv_main.setBackground('w')
