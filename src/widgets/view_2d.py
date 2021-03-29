@@ -272,19 +272,16 @@ class View2d(QtWidgets.QWidget):
     def update_image(self):
 
         if self.current_file is None:
-            self.plot_2d.setImage(np.array([[0], [0]]))
-            return
-
-        _, z_value = self.data_pool.get_value_at_point(self.current_file, self._file_inspector.current_axes['z'],
-                                                       self._file_inspector.current_frame)
-
-        if z_value is np.NAN:
             self.plot_2d.clear()
             return
 
         data_to_display = self.data_pool.get_2d_cut(self.current_file, self._file_inspector.current_axes['z'],
                                                     self._file_inspector.current_frame, self._file_inspector.current_axes['x'],
                                                     self._file_inspector.current_axes['y'])
+
+        if data_to_display is None:
+            self.plot_2d.clear()
+            return
 
         if self._file_inspector.level_mode == 'log':
             data_to_display = np.log(data_to_display + 1)

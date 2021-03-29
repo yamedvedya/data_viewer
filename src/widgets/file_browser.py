@@ -81,6 +81,8 @@ class FileBrowser(QtWidgets.QWidget):
         self._ui.le_filter.editingFinished.connect(self._apply_filter)
         self._ui.chk_monitor.clicked.connect(lambda state: self._toggle_watch_dog(state))
 
+        self._ui.cmd_reload.clicked.connect(self._reload)
+
     # ----------------------------------------------------------------------
     def stop_threads(self):
         self._stop_file_watch = True
@@ -100,6 +102,13 @@ class FileBrowser(QtWidgets.QWidget):
             else:
                 _last_file_list = []
             time.sleep(FILE_REFRESH_PERIOD)
+
+    # ----------------------------------------------------------------------
+    def _reload(self):
+        current_folder = self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex())
+        parent = self.file_filter.mapToSource(self.file_filter.parent(self._ui.tr_file_browser.rootIndex()))
+        self.file_browser.setRootPath(self.file_browser.filePath(parent))
+        self.file_browser.setRootPath(self.file_browser.filePath(current_folder))
 
     # ----------------------------------------------------------------------
     def _open_folder(self):

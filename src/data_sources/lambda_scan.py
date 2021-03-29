@@ -223,24 +223,28 @@ class LambdaScan(AbstractDataFile):
             else:
                 with h5py.File(self._original_file, 'r') as f:
                     if cut_axis == 0:
+                        if SETTINGS['displayed_param'] not in self._data['scanned_values']:
+                            return None
                         data = np.array(f['scan']['data'][self._data['cube_key']][value, :, :], dtype=np.float32)
                         if self._pixel_mask is not None:
                             data[self._pixel_mask] = 0
-                            data *= self._correction[value]
+                        data *= self._correction[value]
                     elif cut_axis == 1:
                         data = f['scan']['data'][self._data['cube_key']][:, value, :]
                         if self._pixel_mask is not None:
                             cut_mask = self._pixel_mask[value, :]
                             for line, corr in zip(data, self._correction):
                                 line[cut_mask] = 0
-                                line *= corr
+                        for line, corr in zip(data, self._correction):
+                            line *= corr
                     else:
                         data = f['scan']['data'][self._data['cube_key']][:, :, value]
                         if self._pixel_mask is not None:
                             cut_mask = self._pixel_mask[:, value]
                             for line, corr in zip(data, self._correction):
                                 line[cut_mask] = 0
-                                line *= corr
+                        for line, corr in zip(data, self._correction):
+                            line *= corr
 
             if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
                 return np.transpose(data)
@@ -258,6 +262,9 @@ class LambdaScan(AbstractDataFile):
 
             if MEMORY_MODE == 'ram':
                 if plot_axis == 0:
+                    if SETTINGS['displayed_param'] not in self._data['scanned_values']:
+                        return None, None
+
                     if cut_axis_1 == 1:
                         cube_cut = self._3d_cube[:,
                                                  sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
@@ -378,7 +385,7 @@ class LambdaScan(AbstractDataFile):
 
             return self._get_roi_axis(plot_axis), cube_cut
 
-        return 0, 0
+        return None, None
 
 # ----------------------------------------------------------------------
 class LambdaScanSetup(QtWidgets.QWidget):

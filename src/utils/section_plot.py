@@ -116,6 +116,13 @@ class SectionPlot(QtCore.QObject):
         self.x_data = x
         self.y_data = y
 
+        if x is None or y is None:
+            self.plot.hide()
+            self.delete_fits()
+            return
+
+        self.plot.show()
+
         if self.plot_is_normalized:
             dy = np.max(y) - np.min(y)
             if dy > 0:
