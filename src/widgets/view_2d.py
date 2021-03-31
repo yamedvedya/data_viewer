@@ -129,6 +129,18 @@ class View2d(QtWidgets.QWidget):
             self.hide()
 
     # ----------------------------------------------------------------------
+    def file_closed_by_pool(self, file_name):
+        if file_name in self._my_files:
+            index = self._my_files.index(file_name)
+            del self._my_files[index]
+            if self.current_file == file_name:
+                self.current_file = None
+            self._tb_files.removeTab(index)
+
+            if len(self._my_files) == 0:
+                self.hide()
+
+    # ----------------------------------------------------------------------
     def add_roi(self,idx):
         roi_id = self.data_pool.get_roi_name(idx)
         self._rois[idx] = (pg.RectROI([0, 0], [1, 1], pen=(0, 9)),

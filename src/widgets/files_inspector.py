@@ -95,6 +95,11 @@ class FilesInspector(QtWidgets.QWidget):
         self._second_view.add_roi(idx)
 
     # ----------------------------------------------------------------------
+    def file_closed_by_pool(self, file_name):
+        self._main_view.file_closed_by_pool(file_name)
+        self._second_view.file_closed_by_pool(file_name)
+
+    # ----------------------------------------------------------------------
     def new_coordinate(self, source, x_name, x_value, y_name, y_value, pos):
 
         self._coordinate_label.setText('{}: {:3f}, {}: {:.3f}'.format(x_name, x_value, y_name, y_value))

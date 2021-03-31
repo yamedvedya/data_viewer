@@ -72,6 +72,8 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.data_pool.file_deleted.connect(self.rois_view.delete_file)
 
+        self.data_pool.close_file.connect(self.files_inspector.file_closed_by_pool)
+
         self.data_pool.new_roi_range.connect(self.files_inspector.new_roi_range)
         self.data_pool.new_roi_range.connect(self.rois_view.new_roi_range)
 

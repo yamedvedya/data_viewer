@@ -16,6 +16,7 @@ class DataPool(QtCore.QObject):
 
     new_file_added = QtCore.pyqtSignal(str)
     file_deleted = QtCore.pyqtSignal(str)
+    close_file = QtCore.pyqtSignal(str)
 
     new_roi_range = QtCore.pyqtSignal(int)
     data_updated = QtCore.pyqtSignal()
@@ -75,9 +76,11 @@ class DataPool(QtCore.QObject):
 
             if self._max_num_files is not None and self._max_num_files > 0:
                 while len(self._files_data) >= self._max_num_files:
+                    self.close_file.emit(self._files_history[0])
                     self.remove_file(self._files_history[0])
             elif self._max_memory is not None and self._max_memory > 0:
                 while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
+                    self.close_file.emit(self._files_history[0])
                     self.remove_file(self._files_history[0])
 
             self._files_data[entry_name] = new_file
