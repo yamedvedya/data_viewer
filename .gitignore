@@ -136,3 +136,4 @@ dmypy.json
 !/src/gui/__init__.py
 /logs
 icons_rc.py
+settings.ini

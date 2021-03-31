@@ -15,6 +15,7 @@ from src.utils.legend_item import addLegend
 
 import src.lookandfeel as lookandfeel
 
+
 # ----------------------------------------------------------------------
 class SectionView(QtWidgets.QWidget):
     """

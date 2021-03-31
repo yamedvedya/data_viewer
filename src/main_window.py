@@ -5,6 +5,7 @@ APP_NAME = "3D_Data_Viewer"
 import os
 import logging
 import psutil
+import configparser
 
 from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
@@ -14,7 +15,7 @@ from src.widgets.files_inspector import FilesInspector
 from src.widgets.rois_view import RoisView
 from src.data_pool import DataPool
 from src.widgets.image_setup import ImageSetup
-
+from src.widgets.settings import ProgramSetup
 
 class DataViewer(QtWidgets.QMainWindow):
     """
@@ -78,6 +79,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.data_pool.data_updated.connect(self.rois_view.update_plots)
 
         self._load_ui_settings()
+        self.apply_settings()
 
         self._init_status_bar()
 
@@ -85,6 +87,21 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer = QtCore.QTimer(self)
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
+
+    # ----------------------------------------------------------------------
+    def apply_settings(self, settings=None):
+        if settings is None:
+            settings = configparser.ConfigParser()
+            settings.read('./settings.ini')
+
+        if 'FILE_BROWSER' in settings:
+            self.file_browser.set_settings(settings['FILE_BROWSER'])
+        if 'FILES_INSPECTOR' in settings:
+            self.files_inspector.set_settings(settings['FILES_INSPECTOR'])
+        if 'ROIS_VIEW' in settings:
+            self.rois_view.set_settings(settings['ROIS_VIEW'])
+        if 'DATA_POOL' in settings:
+            self.data_pool.set_settings(settings['DATA_POOL'])
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):
@@ -104,8 +121,8 @@ class DataViewer(QtWidgets.QMainWindow):
         pass # TODO
 
     # ----------------------------------------------------------------------
-    def _convert_space(self):
-        pass
+    def _show_settings(self):
+        ProgramSetup(self).exec_()
 
     # ----------------------------------------------------------------------
     def _setup_menu(self):
@@ -126,8 +143,8 @@ class DataViewer(QtWidgets.QMainWindow):
         image_setup = QtWidgets.QAction('Image setup', self)
         image_setup.triggered.connect(self._setup_image)
 
-        menu_convert = QtWidgets.QAction('Convert space', self)
-        menu_convert.triggered.connect(self._convert_space)
+        menu_settings = QtWidgets.QAction('Program settings', self)
+        menu_settings.triggered.connect(self._show_settings)
 
         menu_exit = QtWidgets.QAction('Exit', self)
         menu_exit.triggered.connect(self._exit)
@@ -137,7 +154,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.menuBar().addSeparator()
 
         self.menuBar().addAction(image_setup)
-        self.menuBar().addAction(menu_convert)
+        self.menuBar().addAction(menu_settings)
 
         self.menuBar().addSeparator()
 
@@ -184,7 +201,7 @@ class DataViewer(QtWidgets.QMainWindow):
     def _exit(self):
 
         self.log.info("Closing the app...")
-        self.file_browser.stop_threads()
+        self.file_browser.safe_close()
         self._save_ui_settings()
         QtWidgets.QApplication.quit()
 
@@ -193,7 +210,7 @@ class DataViewer(QtWidgets.QMainWindow):
         """
         """
         self.log.info("Closing the app...")
-        self.file_browser.stop_threads()
+        self.file_browser.safe_close()
         self._save_ui_settings()
         event.accept()
 

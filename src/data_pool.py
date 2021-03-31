@@ -2,7 +2,7 @@
 
 import h5py
 import os
-import numpy as np
+import psutil
 
 from collections import OrderedDict
 
@@ -29,6 +29,10 @@ class DataPool(QtCore.QObject):
         self.log = log
         self.space = 'real'
 
+        self._lim_mode = 'no'
+        self._max_num_files = None
+        self._max_memory = None
+
         self._axes_names = {'real': ['X', 'Y', 'Z']}
 
         self.axes_limits = {0: [0, 0],
@@ -36,6 +40,7 @@ class DataPool(QtCore.QObject):
                             2: [0, 0]}
 
         self._files_data = {}
+        self._files_history = []
 
         self._rois = OrderedDict()
         self._last_roi_index = -1
@@ -43,16 +48,13 @@ class DataPool(QtCore.QObject):
         self._settings = {}
 
     # ----------------------------------------------------------------------
-    def _get_all_axes_limits(self):
-        new_limits = {0: [0, 0], 1: [0, 0], 2: [0, 0]}
+    def set_settings(self, settings):
 
-        for data_set in self._files_data.values():
-            file_limits = data_set.get_axis_limits(self.space)
-            for axis, lim in new_limits.items():
-                lim[0] = min(lim[0], file_limits[axis][0])
-                lim[1] = max(lim[1], file_limits[axis][1])
+        if 'max_open_files' in settings:
+            self._max_num_files = int(settings['max_open_files'])
 
-        self.axes_limits = new_limits
+        if 'max_memory_usage' in settings:
+            self._max_memory = int(settings['max_memory_usage'])
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -71,7 +73,15 @@ class DataPool(QtCore.QObject):
                     new_file = LambdaScan(file_name, self, f)
                     new_file.apply_settings()
 
+            if self._max_num_files is not None and self._max_num_files > 0:
+                while len(self._files_data) >= self._max_num_files:
+                    self.remove_file(self._files_history[0])
+            elif self._max_memory is not None and self._max_memory > 0:
+                while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
+                    self.remove_file(self._files_history[0])
+
             self._files_data[entry_name] = new_file
+            self._files_history.append(entry_name)
             self._get_all_axes_limits()
             for data_set in self._files_data.values():
                 data_set.update_settings()
@@ -82,10 +92,10 @@ class DataPool(QtCore.QObject):
             self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
                                           detailed_text=str(err))
 
-
     # ----------------------------------------------------------------------
     def remove_file(self, name):
         del self._files_data[name]
+        self._files_history.remove(name)
         self._get_all_axes_limits()
         self.file_deleted.emit(name)
 
@@ -174,6 +184,18 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     def file_axes_caption(self, file):
         return self._files_data[file].file_axes_caption(self.space)
+
+    # ----------------------------------------------------------------------
+    def _get_all_axes_limits(self):
+        new_limits = {0: [0, 0], 1: [0, 0], 2: [0, 0]}
+
+        for data_set in self._files_data.values():
+            file_limits = data_set.get_axis_limits(self.space)
+            for axis, lim in new_limits.items():
+                lim[0] = min(lim[0], file_limits[axis][0])
+                lim[1] = max(lim[1], file_limits[axis][1])
+
+        self.axes_limits = new_limits
 
     # ----------------------------------------------------------------------
     def set_space(self, space):

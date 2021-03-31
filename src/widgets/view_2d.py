@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from src.utils.image_marker import ImageMarker
 from src.gui.view_2d_ui import Ui_View2D
 
+
 class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------

@@ -7,6 +7,7 @@ from src.gui.rois_view_ui import Ui_RoisView
 
 from src.widgets.section_view import SectionView
 
+
 # ----------------------------------------------------------------------
 class RoisView(QtWidgets.QWidget):
     """
