@@ -3,6 +3,7 @@
 import h5py
 import os
 import psutil
+import time
 
 from collections import OrderedDict
 
@@ -68,32 +69,41 @@ class DataPool(QtCore.QObject):
             self._open_file_error('File with this name already opened')
             return
 
-        try:
-            with h5py.File(file_name, 'r') as f:
-                if 'scan' in f.keys():
-                    new_file = LambdaScan(file_name, self, f)
-                    new_file.apply_settings()
+        finished = False
+        while not finished:
+            try:
+                with h5py.File(file_name, 'r') as f:
+                    if 'scan' in f.keys():
+                        new_file = LambdaScan(file_name, self, f)
+                        new_file.apply_settings()
 
-            if self._max_num_files is not None and self._max_num_files > 0:
-                while len(self._files_data) >= self._max_num_files:
-                    self.close_file.emit(self._files_history[0])
-                    self.remove_file(self._files_history[0])
-            elif self._max_memory is not None and self._max_memory > 0:
-                while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
-                    self.close_file.emit(self._files_history[0])
-                    self.remove_file(self._files_history[0])
+                if self._max_num_files is not None and self._max_num_files > 0:
+                    while len(self._files_data) >= self._max_num_files:
+                        self.close_file.emit(self._files_history[0])
+                        self.remove_file(self._files_history[0])
+                elif self._max_memory is not None and self._max_memory > 0:
+                    while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
+                        self.close_file.emit(self._files_history[0])
+                        self.remove_file(self._files_history[0])
 
-            self._files_data[entry_name] = new_file
-            self._files_history.append(entry_name)
-            self._get_all_axes_limits()
-            for data_set in self._files_data.values():
-                data_set.update_settings()
+                self._files_data[entry_name] = new_file
+                self._files_history.append(entry_name)
+                self._get_all_axes_limits()
+                for data_set in self._files_data.values():
+                    data_set.update_settings()
 
-            self.new_file_added.emit(entry_name)
+                self.new_file_added.emit(entry_name)
+                finished = True
 
-        except Exception as err:
-            self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
-                                          detailed_text=str(err))
+            except OSError as err:
+                if 'Resource temporarily unavailable' in str(err.args):
+                    time.sleep(0.5)
+                    print('Waiting for file {}'.format(file_name))
+
+            except Exception as err:
+                self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
+                                              detailed_text=str(err))
+                finished = True
 
     # ----------------------------------------------------------------------
     def remove_file(self, name):

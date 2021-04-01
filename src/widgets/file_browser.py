@@ -122,9 +122,10 @@ class FileBrowser(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_info(self, event):
         if not event.err:
-            info = str(event.attr_value.value[0])
-            if info.startswith("Operation saved in") and info.endswith('(nxs)'):
-                self.file_selected.emit(info.strip("Operation saved in").strip('(nxs)').strip())
+            if event.attr_value.value is not None:
+                info = str(event.attr_value.value[0])
+                if info.startswith("Operation saved in") and info.endswith('(nxs)'):
+                    self.file_selected.emit(info.strip("Operation saved in").strip('(nxs)').strip())
 
     # ----------------------------------------------------------------------
     def _open_folder(self):
