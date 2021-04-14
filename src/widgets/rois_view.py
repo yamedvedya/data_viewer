@@ -3,13 +3,14 @@
 WIDGET_NAME = 'ROIsView'
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from src.gui.rois_view_ui import Ui_RoisView
 
+from src.widgets.abstract_widget import AbstractWidget
+from src.gui.rois_view_ui import Ui_RoisView
 from src.widgets.section_view import SectionView
 
 
 # ----------------------------------------------------------------------
-class RoisView(QtWidgets.QWidget):
+class RoisView(AbstractWidget):
     """
     """
     PEN_COUNTER = 0
@@ -90,13 +91,3 @@ class RoisView(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_roi_range(self, roi_id):
         self._roi_widgets[roi_id].new_roi_range()
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())

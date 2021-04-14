@@ -16,7 +16,9 @@ try:
 except:
     pass
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
+
+from src.widgets.abstract_widget import AbstractWidget
 from src.gui.file_browser_ui import Ui_FileBrowser
 
 from src.utils.utils import FileFilter
@@ -27,7 +29,7 @@ def _scan_folder(folder):
 
 
 # ----------------------------------------------------------------------
-class FileBrowser(QtWidgets.QWidget):
+class FileBrowser(AbstractWidget):
     """
     """
 
@@ -196,14 +198,3 @@ class FileBrowser(QtWidgets.QWidget):
 
         if ".nxs" in event.src_path:
             self.file_selected.emit(event.src_path)
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())

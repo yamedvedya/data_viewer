@@ -3,15 +3,15 @@
 WIDGET_NAME = 'FileInspector'
 
 import pyqtgraph as pg
-import numpy as np
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets
 
+from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
 from src.gui.files_inspector_ui import Ui_FilesInspector
 
 # ----------------------------------------------------------------------
-class FilesInspector(QtWidgets.QWidget):
+class FilesInspector(AbstractWidget):
     """
     """
 
@@ -231,14 +231,3 @@ class FilesInspector(QtWidgets.QWidget):
     def _block_signals(self, flag):
         self._ui.sl_frame.blockSignals(flag)
         self._ui.cb_section.blockSignals(flag)
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())

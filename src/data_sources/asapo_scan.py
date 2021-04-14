@@ -30,11 +30,11 @@ SETTINGS = {'mask_mode': 'off',
             }
 
 
-class LambdaScan(AbstractDataFile):
+class ASAPOScan(AbstractDataFile):
 
     # ----------------------------------------------------------------------
     def __init__(self, file_name, data_pool, opened_file):
-        super(LambdaScan, self).__init__(file_name, data_pool, opened_file)
+        super(ASAPOScan, self).__init__(file_name, data_pool, opened_file)
 
         self._original_file = file_name
         self._spaces = ['real']
@@ -390,7 +390,7 @@ class LambdaScan(AbstractDataFile):
         return None, None
 
 # ----------------------------------------------------------------------
-class LambdaScanSetup(QtWidgets.QWidget):
+class ASAPOScanSetup(QtWidgets.QWidget):
     """
     settings = {'mask_mode': 'off',
                 'loaded_mask': np.array([[], []]),
@@ -406,7 +406,7 @@ class LambdaScanSetup(QtWidgets.QWidget):
     def __init__(self, main_window, data_pool):
         """
         """
-        super(LambdaScanSetup, self).__init__()
+        super(ASAPOScanSetup, self).__init__()
         self._ui = Ui_LambdaSetup()
         self._ui.setupUi(self)
 

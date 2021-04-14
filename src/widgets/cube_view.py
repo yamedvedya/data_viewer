@@ -3,11 +3,11 @@
 WIDGET_NAME = 'DataBrowser'
 import pyqtgraph.opengl as gl
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from src.widgets.abstract_widget import AbstractWidget
 from src.gui.cube_view_ui import Ui_CubeView
 
 # ----------------------------------------------------------------------
-class CubeView(QtWidgets.QWidget):
+class CubeView(AbstractWidget):
     """
     """
 
@@ -27,14 +27,3 @@ class CubeView(QtWidgets.QWidget):
         self.view_widget.setCameraPosition(0, 0, 0)
         self.view_widget.opts['distance'] = 200
         self._ui.horizontalLayout.addWidget(self.view_widget)
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
