@@ -34,7 +34,9 @@ class LambdaScan(AbstractDataFile):
 
     # ----------------------------------------------------------------------
     def __init__(self, file_name, data_pool, opened_file):
-        super(LambdaScan, self).__init__(file_name, data_pool, opened_file)
+        super(LambdaScan, self).__init__(data_pool)
+
+        self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
         self._original_file = file_name
         self._spaces = ['real']
@@ -117,10 +119,6 @@ class LambdaScan(AbstractDataFile):
             self._last_loaded_file = name
 
     # ----------------------------------------------------------------------
-    def get_scan_parameters(self):
-        return self._data['scanned_values']
-
-    # ----------------------------------------------------------------------
     def get_axis_limits(self, space):
 
         new_limits = {}
@@ -134,10 +132,6 @@ class LambdaScan(AbstractDataFile):
                 new_limits[2] = [0, 0]
 
         return new_limits
-
-    # ----------------------------------------------------------------------
-    def get_scan_params(self):
-        return self._data['scanned_values']
 
     # ----------------------------------------------------------------------
     def get_value_at_point(self, space, axis, pos):

@@ -8,8 +8,13 @@ WIDGET_NAME = None
 # ----------------------------------------------------------------------
 class AbstractWidget(QtWidgets.QWidget):
 
-    def __init__(self):
+    def __init__(self, parent):
         super(AbstractWidget, self).__init__()
+        self._parent = parent
+
+    # ----------------------------------------------------------------------
+    def set_settings(self, settings):
+        pass
 
     # ----------------------------------------------------------------------
     def load_ui_settings(self, settings):

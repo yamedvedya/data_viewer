@@ -5,6 +5,7 @@ WIDGET_NAME = 'ImageSetup'
 from PyQt5 import QtWidgets, QtCore
 
 from src.data_sources.lambda_scan import LambdaScanSetup
+from src.data_sources.asapo_scan import ASAPOScanSetup
 from src.gui.image_setup_ui import Ui_ImageSetup
 from src.main_window import APP_NAME
 
@@ -21,8 +22,9 @@ class ImageSetup(QtWidgets.QDialog):
         self._parent = parent
         self._data_pool = data_pool
 
-        self._widgets = [LambdaScanSetup(parent, data_pool)]
-        self._ui.tb_settings.addTab(self._widgets[0], self._widgets[0].get_name())
+        self._widgets = [LambdaScanSetup(parent, data_pool), ASAPOScanSetup(parent, data_pool)]
+        for widget in self._widgets:
+            self._ui.tb_settings.addTab(widget, widget.get_name())
 
     # ----------------------------------------------------------------------
     def accept(self):

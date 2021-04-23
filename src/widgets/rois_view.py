@@ -19,11 +19,10 @@ class RoisView(AbstractWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(RoisView, self).__init__()
+        super(RoisView, self).__init__(parent)
         self._ui = Ui_RoisView()
         self._ui.setupUi(self)
 
-        self._parent = parent
         self._data_pool = data_pool
 
         self.btn_add_active_tab = QtWidgets.QToolButton(self)

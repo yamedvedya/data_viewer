@@ -11,6 +11,7 @@ from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
 
 from src.widgets.file_browser import FileBrowser
+from src.widgets.asapo_browser import ASAPOBrowser
 from src.widgets.files_inspector import FilesInspector
 from src.widgets.rois_view import RoisView
 from src.data_pool import DataPool
@@ -61,11 +62,15 @@ class DataViewer(QtWidgets.QMainWindow):
                                                              QtCore.Qt.LeftDockWidgetArea,
                                                              self, self.data_pool)
 
+        self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
+                                                                     QtCore.Qt.LeftDockWidgetArea, self)
+
         # self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube iew",
         #                                                      QtCore.Qt.LeftDockWidgetArea,
         #                                                      self, self.data_pool)
 
         self.file_browser.file_selected.connect(self.data_pool.open_file)
+        self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
 
         self.data_pool.new_file_added.connect(self.files_inspector.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)
@@ -98,6 +103,8 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if 'FILE_BROWSER' in settings:
             self.file_browser.set_settings(settings['FILE_BROWSER'])
+        if 'ASAPO' in settings:
+            self.asapo_browser.set_settings(settings['ASAPO'])
         if 'FILES_INSPECTOR' in settings:
             self.files_inspector.set_settings(settings['FILES_INSPECTOR'])
         if 'ROIS_VIEW' in settings:
@@ -225,6 +232,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.file_browser.save_ui_settings(settings)
         self.rois_view.save_ui_settings(settings)
         self.files_inspector.save_ui_settings(settings)
+        self.asapo_browser.save_ui_settings(settings)
         # self.cube_view.save_ui_settings(settings)
 
         settings.setValue("MainWindow/geometry", self.saveGeometry())
@@ -251,6 +259,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.file_browser.load_ui_settings(settings)
         self.rois_view.load_ui_settings(settings)
         self.files_inspector.load_ui_settings(settings)
+        self.asapo_browser.load_ui_settings(settings)
         # self.cube_view.load_ui_settings(settings)
 
     # ----------------------------------------------------------------------

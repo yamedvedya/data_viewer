@@ -39,11 +39,9 @@ class FileBrowser(AbstractWidget):
     def __init__(self, parent):
         """
         """
-        super(FileBrowser, self).__init__()
+        super(FileBrowser, self).__init__(parent)
         self._ui = Ui_FileBrowser()
         self._ui.setupUi(self)
-
-        self._parent = parent
 
         self.file_browser = QtWidgets.QFileSystemModel()
         self.file_browser.setRootPath("")
@@ -78,7 +76,7 @@ class FileBrowser(AbstractWidget):
             self._ui.chk_monitor.setEnabled(False)
 
         self._ui.tr_file_browser.doubleClicked.connect(self._open_folder)
-        self._ui.le_filter.editingFinished.connect(self._apply_filter)
+        self._ui.le_filter.textEdited.connect(self._apply_filter)
         self._ui.chk_monitor.clicked.connect(self._toggle_watch_dog)
         self._ui.chk_door.clicked.connect(self._toggle_watch_door)
 
@@ -153,9 +151,8 @@ class FileBrowser(AbstractWidget):
                 self.file_selected.emit(file_name)
 
     # ----------------------------------------------------------------------
-    def _apply_filter(self):
+    def _apply_filter(self, text):
 
-        text = str(self._ui.le_filter.text())
         self.file_filter.setFilterRegExp(text)
         self.file_filter.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.file_filter.setDynamicSortFilter(True)

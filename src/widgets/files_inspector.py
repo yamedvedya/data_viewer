@@ -26,7 +26,7 @@ class FilesInspector(AbstractWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(FilesInspector, self).__init__()
+        super(FilesInspector, self).__init__(parent)
         self._ui = Ui_FilesInspector()
         self._ui.setupUi(self)
 
@@ -55,7 +55,6 @@ class FilesInspector(AbstractWidget):
         self.hist.item.setImageItem(self._main_view.plot_2d)
         self._ui.g_layout.addWidget(self.hist, 5, 0, 1, 2)
 
-        self._parent = parent
         self.data_pool = data_pool
 
         self._ui.cb_section.addItems(list(self.section_axes_map[self.data_pool.space].keys()))

@@ -15,11 +15,10 @@ class CubeView(AbstractWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(CubeView, self).__init__()
+        super(CubeView, self).__init__(parent)
         self._ui = Ui_CubeView()
         self._ui.setupUi(self)
 
-        self._parent = parent
         self._data_pool = data_pool
 
         self.view_widget = gl.GLViewWidget()

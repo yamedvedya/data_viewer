@@ -1,16 +1,14 @@
 # Created by matveyev at 19.01.2021,
-
+import numpy as np
 from PyQt5 import QtCore
 
-from src.devices_class import Node, DeviceNode, SerialDeviceNode, GroupNode
-
-headers = ('Name', )
+from src.asapo_browser.asapo_entries_class import Node, StreamNode
+from src.asapo_browser.asapo_table_headers import headers
 
 # ----------------------------------------------------------------------
 class ASAPOModel(QtCore.QAbstractItemModel):
 
     root_index = QtCore.QModelIndex()
-    drag_drop_signal = QtCore.pyqtSignal(str, QtCore.QModelIndex, int, QtCore.QModelIndex)
 
     # ----------------------------------------------------------------------
     def __init__(self, root=None):
@@ -58,15 +56,6 @@ class ASAPOModel(QtCore.QAbstractItemModel):
         return node.data(index.column(), role)
 
     # ----------------------------------------------------------------------
-    def setData(self, index, value, role):
-        node = self.get_node(index)
-        if role in [QtCore.Qt.EditRole, QtCore.Qt.CheckStateRole]:
-            if node.set_data(index.column(), value, role):
-                self.dataChanged.emit(index, index)
-                return True
-        return False
-
-    # ----------------------------------------------------------------------
     def flags(self, index):
         node = self.get_node(index)
         return node.flags(index.column())
@@ -75,7 +64,7 @@ class ASAPOModel(QtCore.QAbstractItemModel):
     def headerData(self, section, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             if headers and 0 <= section < len(headers):
-                return headers[section]
+                return list(headers.keys())[section]
             return None
         return super(ASAPOModel, self).headerData(section, orientation, role)
 
@@ -100,28 +89,25 @@ class ASAPOModel(QtCore.QAbstractItemModel):
         self.endRemoveRows()
 
     # ----------------------------------------------------------------------
-    def start_insert_row(self, insert_index, index=None, row=0):
-        if index is not None:
-            if index == insert_index:
-                row = 0
-            else:
-                row = self.get_node(index).row
-        row = max(0, row)
+    def start_insert_row(self, insert_index, row=0):
         self.beginInsertRows(insert_index, row, row)
-        return self.get_node(insert_index), row
 
     # ----------------------------------------------------------------------
-    def start_adding_row(self, num_elements, insert_index=0):
+    def start_adding_detector(self, insert_index=0, num_elements=1):
         self.beginInsertRows(self.root_index, insert_index, insert_index + num_elements-1)
 
     # ----------------------------------------------------------------------
     def finish_row_changes(self):
         self.endInsertRows()
 
-    # ----------------------------------------------------------------------
-    def filter_row(self, index, value_to_look):
-        node = self.get_node(index)
-        return node.filter_row(value_to_look)
+    # # ----------------------------------------------------------------------
+    # def filter_row(self, index, value_to_look):
+    #     print('filter_row')
+    #     node = self.get_node(index)
+    #     if self.filter_time and isinstance(node, StreamNode):
+    #         return node.filter_row(value_to_look) & self.filter_from < node.time_stamp < self.filter_to
+    #     else:
+    #         return node.filter_row(value_to_look)
 
     # ----------------------------------------------------------------------
     def save_columns_count(self):
@@ -142,22 +128,35 @@ class ASAPOModel(QtCore.QAbstractItemModel):
 
 
 # ----------------------------------------------------------------------
-class ProxyDeviceModel(QtCore.QSortFilterProxyModel):
+class ProxyModel(QtCore.QSortFilterProxyModel):
 
     new_version = True
+
+    filter_from = -np.Inf
+    filter_to = np.Inf
+    filter_time = False
 
     # ----------------------------------------------------------------------
     def filterAcceptsRow(self, source_row, source_parent):
 
+        if self.filter_time:
+            node = self.sourceModel().get_node(source_parent).child(source_row)
+            if isinstance(node, StreamNode):
+                time_accepted = self.filter_from < node.time_stamp < self.filter_to
+            else:
+                time_accepted = True
+        else:
+            time_accepted = True
+
         if self.new_version:
-            return super(ProxyDeviceModel, self).filterAcceptsRow(source_row, source_parent)
+            return super(ProxyModel, self).filterAcceptsRow(source_row, source_parent) & time_accepted
         else:
             match = False
             my_index = self.sourceModel().index(source_row, 0, source_parent)
             for row in range(self.sourceModel().rowCount(my_index)):
                 match |= self.filterAcceptsRow(row, my_index)
 
-            match |= super(ProxyDeviceModel, self).filterAcceptsRow(source_row, source_parent)
+            match |= super(ProxyModel, self).filterAcceptsRow(source_row, source_parent)
 
-            return match
+            return match & time_accepted
 
