@@ -4,13 +4,15 @@ import h5py
 import os
 import psutil
 import time
+import sys
 
 from collections import OrderedDict
 
 from PyQt5 import QtCore
 
 from src.data_sources.lambda_scan import LambdaScan
-from src.data_sources.asapo_scan import ASAPOScan
+if 'asapo_consumer' in sys.modules:
+    from src.data_sources.asapo_scan import ASAPOScan
 from src.utils.roi import ROI
 
 
