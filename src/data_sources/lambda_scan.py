@@ -80,6 +80,7 @@ class LambdaScan(AbstractDataFile):
     def _reload_detector_data(self, reload=True):
 
         file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
+        file_lists.sort()
 
         self._data['cube_shape'] = (0, 0, 0)
         if len(file_lists) > 0:
