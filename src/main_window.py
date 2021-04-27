@@ -12,10 +12,10 @@ from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
 
 from src.widgets.file_browser import FileBrowser
-if 'asapo_consumer' in sys.modules:
+try:
     from src.widgets.asapo_browser import ASAPOBrowser
     has_asapo = True
-else:
+except:
     has_asapo = False
 
 from src.widgets.frame_view import FrameView
