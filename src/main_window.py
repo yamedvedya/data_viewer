@@ -6,12 +6,18 @@ import os
 import logging
 import psutil
 import configparser
+import sys
 
 from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
 
 from src.widgets.file_browser import FileBrowser
-from src.widgets.asapo_browser import ASAPOBrowser
+if 'asapo_consumer' in sys.modules:
+    from src.widgets.asapo_browser import ASAPOBrowser
+    has_asapo = True
+else:
+    has_asapo = False
+
 from src.widgets.frame_view import FrameView
 from src.widgets.rois_view import RoisView
 from src.data_pool import DataPool
@@ -62,15 +68,17 @@ class DataViewer(QtWidgets.QMainWindow):
                                                              QtCore.Qt.LeftDockWidgetArea,
                                                              self, self.data_pool)
 
-        self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
-                                                                     QtCore.Qt.LeftDockWidgetArea, self)
+        if has_asapo:
+            self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
+                                                                         QtCore.Qt.LeftDockWidgetArea, self)
 
         # self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube iew",
         #                                                      QtCore.Qt.LeftDockWidgetArea,
         #                                                      self, self.data_pool)
 
         self.file_browser.file_selected.connect(self.data_pool.open_file)
-        self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
+        if has_asapo:
+            self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
 
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)
@@ -103,7 +111,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if 'FILE_BROWSER' in settings:
             self.file_browser.set_settings(settings['FILE_BROWSER'])
-        if 'ASAPO' in settings:
+        if 'ASAPO' in settings and has_asapo:
             self.asapo_browser.set_settings(settings['ASAPO'])
         if 'FRAME_VIEW' in settings:
             self.frame_view.set_settings(settings['FRAME_VIEW'])
@@ -232,8 +240,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.file_browser.save_ui_settings(settings)
         self.rois_view.save_ui_settings(settings)
         self.frame_view.save_ui_settings(settings)
-        self.asapo_browser.save_ui_settings(settings)
-        # self.cube_view.save_ui_settings(settings)
+        if has_asapo:
+            self.asapo_browser.save_ui_settings(settings)        # self.cube_view.save_ui_settings(settings)
 
         settings.setValue("MainWindow/geometry", self.saveGeometry())
         settings.setValue("MainWindow/state", self.saveState())
@@ -259,8 +267,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.file_browser.load_ui_settings(settings)
         self.rois_view.load_ui_settings(settings)
         self.frame_view.load_ui_settings(settings)
-        self.asapo_browser.load_ui_settings(settings)
-        # self.cube_view.load_ui_settings(settings)
+        if has_asapo:
+            self.asapo_browser.load_ui_settings(settings)        # self.cube_view.load_ui_settings(settings)
 
     # ----------------------------------------------------------------------
     def _init_status_bar(self):
