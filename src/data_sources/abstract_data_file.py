@@ -7,10 +7,9 @@ import os
 class AbstractDataFile(object):
 
     # ----------------------------------------------------------------------
-    def __init__(self, file_name, data_pool, opened_file):
+    def __init__(self, data_pool):
 
-        self.my_name = os.path.splitext(os.path.basename(file_name))[0]
-        self.my_dir = os.path.dirname(file_name)
+        self.my_name = ''
         self._data_pool = data_pool
         self._data = {}
         self._spaces = ['real']

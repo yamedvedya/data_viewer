@@ -36,14 +36,33 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'max_memory_usage' in settings['DATA_POOL']:
                 self._ui.sb_lim_mem.setValue(int(settings['DATA_POOL']['max_memory_usage']))
 
+        if 'ASAPO' in settings:
+            if 'host' in settings['ASAPO']:
+                self._ui.le_host.setText(settings['ASAPO']['host'])
+
+            if 'beamtime' in settings['ASAPO']:
+                self._ui.le_beamtime.setText(settings['ASAPO']['beamtime'])
+
+            if 'token' in settings['ASAPO']:
+                self._ui.le_token.setText(settings['ASAPO']['token'])
+
+            if 'detectors' in settings['ASAPO']:
+                self._ui.le_detectors.setText(settings['ASAPO']['detectors'])
+
     # ----------------------------------------------------------------------
     def accept(self):
 
         settings = configparser.ConfigParser()
+        settings.read('./settings.ini')
         settings['FILE_BROWSER'] = {'door_address': str(self._ui.le_door_address.text())}
 
         settings['DATA_POOL'] = {'max_open_files': str(self._ui.sp_lim_num.value()),
                                  'max_memory_usage': str(self._ui.sb_lim_mem.value())}
+
+        settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
+                             'beamtime': str(self._ui.le_beamtime.text()),
+                             'token': str(self._ui.le_token.text()),
+                             'detectors': str(self._ui.le_detectors.text())}
 
         self._main_window.apply_settings(settings)
 

@@ -4,12 +4,15 @@ import h5py
 import os
 import psutil
 import time
+import sys
 
 from collections import OrderedDict
 
 from PyQt5 import QtCore
 
 from src.data_sources.lambda_scan import LambdaScan
+if 'asapo_consumer' in sys.modules:
+    from src.data_sources.asapo_scan import ASAPOScan
 from src.utils.roi import ROI
 
 
@@ -61,12 +64,27 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    def open_stream(self, detector_name, stream_name):
+        entry_name = '/'.join([detector_name, stream_name])
+        if entry_name in self._files_data:
+            self.log.error("File with this name already opened")
+            return
+
+        try:
+            new_file = ASAPOScan(detector_name, stream_name, self)
+            new_file.apply_settings()
+            self._add_new_entry(entry_name, new_file)
+
+        except Exception as err:
+            self.main_window.report_error('Cannot open stream', informative_text='Cannot open {}'.format(entry_name),
+                                          detailed_text=str(err))
+
+    # ----------------------------------------------------------------------
     def open_file(self, file_name):
         entry_name = os.path.splitext(os.path.basename(file_name))[0]
 
         if entry_name in self._files_data:
             self.log.error("File with this name already opened")
-            self._open_file_error('File with this name already opened')
             return
 
         finished = False
@@ -76,24 +94,8 @@ class DataPool(QtCore.QObject):
                     if 'scan' in f.keys():
                         new_file = LambdaScan(file_name, self, f)
                         new_file.apply_settings()
-
-                if self._max_num_files is not None and self._max_num_files > 0:
-                    while len(self._files_data) >= self._max_num_files:
-                        self.close_file.emit(self._files_history[0])
-                        self.remove_file(self._files_history[0])
-                elif self._max_memory is not None and self._max_memory > 0:
-                    while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
-                        self.close_file.emit(self._files_history[0])
-                        self.remove_file(self._files_history[0])
-
-                self._files_data[entry_name] = new_file
-                self._files_history.append(entry_name)
-                self._get_all_axes_limits()
-                for data_set in self._files_data.values():
-                    data_set.update_settings()
-
-                self.new_file_added.emit(entry_name)
-                finished = True
+                    self._add_new_entry(entry_name, new_file)
+                    finished = True
 
             except OSError as err:
                 if 'Resource temporarily unavailable' in str(err.args):
@@ -104,6 +106,26 @@ class DataPool(QtCore.QObject):
                 self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
                                               detailed_text=str(err))
                 finished = True
+
+    # ----------------------------------------------------------------------
+    def _add_new_entry(self, entry_name, entry):
+
+        if self._max_num_files is not None and self._max_num_files > 0:
+            while len(self._files_data) >= self._max_num_files:
+                self.close_file.emit(self._files_history[0])
+                self.remove_file(self._files_history[0])
+        elif self._max_memory is not None and self._max_memory > 0:
+            while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
+                self.close_file.emit(self._files_history[0])
+                self.remove_file(self._files_history[0])
+
+        self._files_data[entry_name] = entry
+        self._files_history.append(entry_name)
+        self._get_all_axes_limits()
+        for data_set in self._files_data.values():
+            data_set.update_settings()
+
+        self.new_file_added.emit(entry_name)
 
     # ----------------------------------------------------------------------
     def remove_file(self, name):
@@ -139,7 +161,6 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def set_section_axis(self, roi_idx, axis):
-
         self._rois[roi_idx].set_section_axis(axis)
 
     # ----------------------------------------------------------------------

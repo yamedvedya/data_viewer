@@ -16,7 +16,9 @@ try:
 except:
     pass
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
+
+from src.widgets.abstract_widget import AbstractWidget
 from src.gui.file_browser_ui import Ui_FileBrowser
 
 from src.utils.utils import FileFilter
@@ -27,7 +29,7 @@ def _scan_folder(folder):
 
 
 # ----------------------------------------------------------------------
-class FileBrowser(QtWidgets.QWidget):
+class FileBrowser(AbstractWidget):
     """
     """
 
@@ -37,11 +39,9 @@ class FileBrowser(QtWidgets.QWidget):
     def __init__(self, parent):
         """
         """
-        super(FileBrowser, self).__init__()
+        super(FileBrowser, self).__init__(parent)
         self._ui = Ui_FileBrowser()
         self._ui.setupUi(self)
-
-        self._parent = parent
 
         self.file_browser = QtWidgets.QFileSystemModel()
         self.file_browser.setRootPath("")
@@ -76,7 +76,7 @@ class FileBrowser(QtWidgets.QWidget):
             self._ui.chk_monitor.setEnabled(False)
 
         self._ui.tr_file_browser.doubleClicked.connect(self._open_folder)
-        self._ui.le_filter.editingFinished.connect(self._apply_filter)
+        self._ui.le_filter.textEdited.connect(self._apply_filter)
         self._ui.chk_monitor.clicked.connect(self._toggle_watch_dog)
         self._ui.chk_door.clicked.connect(self._toggle_watch_door)
 
@@ -151,9 +151,8 @@ class FileBrowser(QtWidgets.QWidget):
                 self.file_selected.emit(file_name)
 
     # ----------------------------------------------------------------------
-    def _apply_filter(self):
+    def _apply_filter(self, text):
 
-        text = str(self._ui.le_filter.text())
         self.file_filter.setFilterRegExp(text)
         self.file_filter.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.file_filter.setDynamicSortFilter(True)
@@ -196,14 +195,3 @@ class FileBrowser(QtWidgets.QWidget):
 
         if ".nxs" in event.src_path:
             self.file_selected.emit(event.src_path)
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())

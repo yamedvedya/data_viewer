@@ -1,17 +1,17 @@
 # Created by matveyev at 15.02.2021
 
-WIDGET_NAME = 'FileInspector'
+WIDGET_NAME = 'FrameView'
 
 import pyqtgraph as pg
-import numpy as np
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets
 
+from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
-from src.gui.files_inspector_ui import Ui_FilesInspector
+from src.gui.frame_view_ui import Ui_FrameView
 
 # ----------------------------------------------------------------------
-class FilesInspector(QtWidgets.QWidget):
+class FrameView(AbstractWidget):
     """
     """
 
@@ -26,8 +26,8 @@ class FilesInspector(QtWidgets.QWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(FilesInspector, self).__init__()
-        self._ui = Ui_FilesInspector()
+        super(FrameView, self).__init__(parent)
+        self._ui = Ui_FrameView()
         self._ui.setupUi(self)
 
         self._main_view = View2d(self, 'main', data_pool)
@@ -55,7 +55,6 @@ class FilesInspector(QtWidgets.QWidget):
         self.hist.item.setImageItem(self._main_view.plot_2d)
         self._ui.g_layout.addWidget(self.hist, 5, 0, 1, 2)
 
-        self._parent = parent
         self.data_pool = data_pool
 
         self._ui.cb_section.addItems(list(self.section_axes_map[self.data_pool.space].keys()))
@@ -231,14 +230,3 @@ class FilesInspector(QtWidgets.QWidget):
     def _block_signals(self, flag):
         self._ui.sl_frame.blockSignals(flag)
         self._ui.cb_section.blockSignals(flag)
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())

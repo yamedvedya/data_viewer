@@ -3,13 +3,14 @@
 WIDGET_NAME = 'ROIsView'
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from src.gui.rois_view_ui import Ui_RoisView
 
+from src.widgets.abstract_widget import AbstractWidget
+from src.gui.rois_view_ui import Ui_RoisView
 from src.widgets.section_view import SectionView
 
 
 # ----------------------------------------------------------------------
-class RoisView(QtWidgets.QWidget):
+class RoisView(AbstractWidget):
     """
     """
     PEN_COUNTER = 0
@@ -18,11 +19,10 @@ class RoisView(QtWidgets.QWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(RoisView, self).__init__()
+        super(RoisView, self).__init__(parent)
         self._ui = Ui_RoisView()
         self._ui.setupUi(self)
 
-        self._parent = parent
         self._data_pool = data_pool
 
         self.btn_add_active_tab = QtWidgets.QToolButton(self)
@@ -90,13 +90,3 @@ class RoisView(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_roi_range(self, roi_id):
         self._roi_widgets[roi_id].new_roi_range()
-
-    # ----------------------------------------------------------------------
-    def load_ui_settings(self, settings):
-        try:
-            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
-        except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
-    # ----------------------------------------------------------------------
-    def save_ui_settings(self, settings):
-        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
