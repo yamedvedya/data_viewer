@@ -3,7 +3,6 @@ import numpy as np
 import hdf5plugin
 import h5py
 import zlib
-from numcodecs import Blosc
 from skimage.io import imread
 
 

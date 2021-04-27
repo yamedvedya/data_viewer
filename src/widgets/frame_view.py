@@ -1,6 +1,6 @@
 # Created by matveyev at 15.02.2021
 
-WIDGET_NAME = 'FileInspector'
+WIDGET_NAME = 'FrameView'
 
 import pyqtgraph as pg
 
@@ -8,10 +8,10 @@ from PyQt5 import QtWidgets
 
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
-from src.gui.files_inspector_ui import Ui_FilesInspector
+from src.gui.frame_view_ui import Ui_FrameView
 
 # ----------------------------------------------------------------------
-class FilesInspector(AbstractWidget):
+class FrameView(AbstractWidget):
     """
     """
 
@@ -26,8 +26,8 @@ class FilesInspector(AbstractWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(FilesInspector, self).__init__(parent)
-        self._ui = Ui_FilesInspector()
+        super(FrameView, self).__init__(parent)
+        self._ui = Ui_FrameView()
         self._ui.setupUi(self)
 
         self._main_view = View2d(self, 'main', data_pool)

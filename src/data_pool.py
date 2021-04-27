@@ -66,7 +66,6 @@ class DataPool(QtCore.QObject):
         entry_name = '/'.join([detector_name, stream_name])
         if entry_name in self._files_data:
             self.log.error("File with this name already opened")
-            self._open_file_error('File with this name already opened')
             return
 
         try:
@@ -84,7 +83,6 @@ class DataPool(QtCore.QObject):
 
         if entry_name in self._files_data:
             self.log.error("File with this name already opened")
-            self._open_file_error('File with this name already opened')
             return
 
         finished = False

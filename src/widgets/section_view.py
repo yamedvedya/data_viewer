@@ -46,7 +46,6 @@ class SectionView(QtWidgets.QWidget):
         # self._main_plot.setMenuEnabled(False)
         self._main_plot.getViewBox().setMouseMode(pg.ViewBox.RectMode)
 
-
         self._ui.gv_main.setStyleSheet("")
         self._ui.gv_main.setBackground('w')
         self._ui.gv_main.setObjectName("gvMain")
@@ -62,10 +61,11 @@ class SectionView(QtWidgets.QWidget):
         self._ruler = Ruler(self._main_plot)
         self._ruler.setEnabled(False)
 
-        self.range_line_from = pg.InfiniteLine(angle=90, movable=False)
+        range_pen = pg.mkPen(color='r', width=2, style=QtCore.Qt.DashLine)
+        self.range_line_from = pg.InfiniteLine(angle=90, movable=False, pen=range_pen)
         self.range_line_from.sigPositionChanged.connect(
             lambda: self._ui.dsp_cut_from.setValue(self.range_line_from.value()))
-        self.range_line_to = pg.InfiniteLine(angle=90, movable=False)
+        self.range_line_to = pg.InfiniteLine(angle=90, movable=False, pen=range_pen)
         self.range_line_to.sigPositionChanged.connect(
             lambda: self._ui.dsp_cut_to.setValue(self.range_line_to.value()))
 

@@ -12,7 +12,7 @@ from src.gui.main_window_ui import Ui_MainWindow
 
 from src.widgets.file_browser import FileBrowser
 from src.widgets.asapo_browser import ASAPOBrowser
-from src.widgets.files_inspector import FilesInspector
+from src.widgets.frame_view import FrameView
 from src.widgets.rois_view import RoisView
 from src.data_pool import DataPool
 from src.widgets.image_setup import ImageSetup
@@ -54,9 +54,9 @@ class DataViewer(QtWidgets.QMainWindow):
         self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
                                                                    QtCore.Qt.LeftDockWidgetArea, self)
 
-        self.files_inspector, self.files_inspector_dock = self._add_dock(FilesInspector, "Files Inspector",
-                                                                         QtCore.Qt.LeftDockWidgetArea,
-                                                                         self, self.data_pool)
+        self.frame_view, self.frame_view_dock = self._add_dock(FrameView, "Frame View",
+                                                               QtCore.Qt.LeftDockWidgetArea,
+                                                               self, self.data_pool)
 
         self.rois_view, self.rois_view_dock = self._add_dock(RoisView, "ROIs View",
                                                              QtCore.Qt.LeftDockWidgetArea,
@@ -72,17 +72,17 @@ class DataViewer(QtWidgets.QMainWindow):
         self.file_browser.file_selected.connect(self.data_pool.open_file)
         self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
 
-        self.data_pool.new_file_added.connect(self.files_inspector.add_file)
+        self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)
 
         self.data_pool.file_deleted.connect(self.rois_view.delete_file)
 
-        self.data_pool.close_file.connect(self.files_inspector.file_closed_by_pool)
+        self.data_pool.close_file.connect(self.frame_view.file_closed_by_pool)
 
-        self.data_pool.new_roi_range.connect(self.files_inspector.new_roi_range)
+        self.data_pool.new_roi_range.connect(self.frame_view.new_roi_range)
         self.data_pool.new_roi_range.connect(self.rois_view.new_roi_range)
 
-        self.data_pool.data_updated.connect(self.files_inspector.update_image)
+        self.data_pool.data_updated.connect(self.frame_view.update_image)
         self.data_pool.data_updated.connect(self.rois_view.update_plots)
 
         self._load_ui_settings()
@@ -105,8 +105,8 @@ class DataViewer(QtWidgets.QMainWindow):
             self.file_browser.set_settings(settings['FILE_BROWSER'])
         if 'ASAPO' in settings:
             self.asapo_browser.set_settings(settings['ASAPO'])
-        if 'FILES_INSPECTOR' in settings:
-            self.files_inspector.set_settings(settings['FILES_INSPECTOR'])
+        if 'FRAME_VIEW' in settings:
+            self.frame_view.set_settings(settings['FRAME_VIEW'])
         if 'ROIS_VIEW' in settings:
             self.rois_view.set_settings(settings['ROIS_VIEW'])
         if 'DATA_POOL' in settings:
@@ -118,11 +118,11 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
-        self.files_inspector.add_roi(idx)
+        self.frame_view.add_roi(idx)
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
-        self.files_inspector.delete_roi(idx)
+        self.frame_view.delete_roi(idx)
 
     # ----------------------------------------------------------------------
     def _new_space(self, space):
@@ -231,7 +231,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.file_browser.save_ui_settings(settings)
         self.rois_view.save_ui_settings(settings)
-        self.files_inspector.save_ui_settings(settings)
+        self.frame_view.save_ui_settings(settings)
         self.asapo_browser.save_ui_settings(settings)
         # self.cube_view.save_ui_settings(settings)
 
@@ -258,7 +258,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.file_browser.load_ui_settings(settings)
         self.rois_view.load_ui_settings(settings)
-        self.files_inspector.load_ui_settings(settings)
+        self.frame_view.load_ui_settings(settings)
         self.asapo_browser.load_ui_settings(settings)
         # self.cube_view.load_ui_settings(settings)
 
