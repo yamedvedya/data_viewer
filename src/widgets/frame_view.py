@@ -80,8 +80,10 @@ class FrameView(AbstractWidget):
     def add_file(self, file_name, move_from='second'):
         if move_from == 'second':
             self._main_view.add_file(file_name)
+            self.data_pool.protect_file(file_name, False)
         else:
             self._second_view.add_file(file_name)
+            self.data_pool.protect_file(file_name, True)
 
     # ----------------------------------------------------------------------
     def new_roi_range(self, roi_ind):

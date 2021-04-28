@@ -6,7 +6,6 @@ import os
 import logging
 import psutil
 import configparser
-import sys
 
 from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
@@ -23,6 +22,7 @@ from src.widgets.rois_view import RoisView
 from src.data_pool import DataPool
 from src.widgets.image_setup import ImageSetup
 from src.widgets.settings import ProgramSetup
+from src.widgets.aboutdialog import AboutDialog
 
 class DataViewer(QtWidgets.QMainWindow):
     """
@@ -163,6 +163,9 @@ class DataViewer(QtWidgets.QMainWindow):
         menu_settings = QtWidgets.QAction('Program settings', self)
         menu_settings.triggered.connect(self._show_settings)
 
+        about_action = QtWidgets.QAction('About', self)
+        about_action.triggered.connect(lambda: AboutDialog(self).exec_())
+
         menu_exit = QtWidgets.QAction('Exit', self)
         menu_exit.triggered.connect(self._exit)
 
@@ -176,6 +179,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.menuBar().addSeparator()
 
         self.menuBar().addMenu(self._menu_view)
+        self.menuBar().addAction(about_action)
         self.menuBar().addAction(menu_exit)
 
     # ----------------------------------------------------------------------

@@ -6,7 +6,7 @@ import os, subprocess
 
 aliases_path = os.path.expanduser('~/.bash_aliases')
 
-my_alias = "alias data_viewer='" + os.getcwd() + "/start_viewer.sh'"
+my_alias = "alias data_viewer='" + os.getcwd() + "/start_viewer.sh'\n"
 
 if os.path.exists(aliases_path):
     print('bash_aliases existing, modifying')

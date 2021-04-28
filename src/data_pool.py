@@ -46,6 +46,7 @@ class DataPool(QtCore.QObject):
 
         self._files_data = {}
         self._files_history = []
+        self._protected_files = []
 
         self._rois = OrderedDict()
         self._last_roi_index = -1
@@ -112,12 +113,13 @@ class DataPool(QtCore.QObject):
 
         if self._max_num_files is not None and self._max_num_files > 0:
             while len(self._files_data) >= self._max_num_files:
-                self.close_file.emit(self._files_history[0])
-                self.remove_file(self._files_history[0])
+                if not self._get_first_to_close():
+                    break
+
         elif self._max_memory is not None and self._max_memory > 0:
             while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
-                self.close_file.emit(self._files_history[0])
-                self.remove_file(self._files_history[0])
+                if not self._get_first_to_close():
+                    break
 
         self._files_data[entry_name] = entry
         self._files_history.append(entry_name)
@@ -128,11 +130,30 @@ class DataPool(QtCore.QObject):
         self.new_file_added.emit(entry_name)
 
     # ----------------------------------------------------------------------
+    def _get_first_to_close(self):
+        for name in self._files_history:
+            if name not in self._protected_files:
+                self.close_file.emit(name)
+                self.remove_file(name)
+                return True
+
+        return False
+
+    # ----------------------------------------------------------------------
     def remove_file(self, name):
         del self._files_data[name]
         self._files_history.remove(name)
         self._get_all_axes_limits()
         self.file_deleted.emit(name)
+
+    # ----------------------------------------------------------------------
+    def protect_file(self, name, status):
+        if status:
+            if name not in self._protected_files:
+                self._protected_files.append(name)
+        else:
+            if name in self._protected_files:
+                self._protected_files.remove(name)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
