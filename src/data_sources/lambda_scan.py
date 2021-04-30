@@ -50,6 +50,17 @@ class LambdaScan(AbstractDataFile):
         self._correction = None
 
         scan_data = opened_file['scan']['data']
+
+        #TODO: TEMP! Fix scans!
+        self._scan_length = None
+        for key in scan_data.keys():
+            if key != 'lmbd' and len(scan_data[key].shape) == 1:
+                if self._scan_length is None:
+                    self._scan_length = len(scan_data[key][...])
+                if len(scan_data[key][...]) == self._scan_length:
+                    self._data['scanned_values'].append(key)
+                    self._data[key] = np.array(scan_data[key][...])
+
         for key in scan_data.keys():
             if key == 'lmbd':
                 self._detector = 'lmbd'
@@ -66,16 +77,11 @@ class LambdaScan(AbstractDataFile):
                 if MEMORY_MODE == 'ram':
                     self._3d_cube = np.array(scan_data[key][...], dtype=np.float32)
 
-        for key in scan_data.keys():
-            if key != 'lmbd' and len(scan_data[key].shape) == 1:
-                if len(scan_data[key][...]) == self._data['cube_shape'][0]:
-                    self._data['scanned_values'].append(key)
-                    self._data[key] = np.array(scan_data[key][...])
-
         if 'point_nb' not in self._data['scanned_values']:
             self._data['scanned_values'].append('point_nb')
             self._data['point_nb'] = np.arange(self._data['cube_shape'][0])
 
+        self._data_modified = False
         pass
 
     # ----------------------------------------------------------------------
@@ -103,9 +109,10 @@ class LambdaScan(AbstractDataFile):
                     data = np.vstack((data, np.array(source_file['entry']['instrument']['detector']['data'],
                                                      dtype=np.float32)))
 
-                self._data['cube_shape'] = data.shape
+                # TODO: TEMP! Fix scans!
+                self._data['cube_shape'] = (self._scan_length, data.shape[1], data.shape[2])
                 if MEMORY_MODE == 'ram':
-                    self._3d_cube = data
+                    self._3d_cube = data[:self._scan_length, :, :]
             else:
                 name = self._last_loaded_file
                 start_ind = file_lists.index(self._last_loaded_file)
@@ -115,7 +122,8 @@ class LambdaScan(AbstractDataFile):
                                                np.array(source_file['entry']['instrument']['detector']['data'],
                                                         dtype=np.float32)))
 
-                self._data['cube_shape'] = self._3d_cube.shape
+                self._data['cube_shape'] = (self._scan_length, self._3d_cube.shape[1], self._3d_cube.shape[2])
+                self._3d_cube = self._3d_cube[:self._scan_length, :, :]
 
             self._last_loaded_file = name
 
@@ -175,7 +183,8 @@ class LambdaScan(AbstractDataFile):
             self._pixel_mask = None
 
         if MEMORY_MODE == 'ram':
-            self._reload_detector_data()
+            if self._data_modified:
+                self._reload_detector_data()
 
             self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
 
@@ -183,24 +192,30 @@ class LambdaScan(AbstractDataFile):
                 if SETTINGS['atten_correction'] == 'on':
                     if SETTINGS['atten_param'] in self._data['scanned_values']:
                         self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
+                        self._data_modified = True
             except Exception as err:
-                self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
+                self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name,
+                                                                                                            err))
 
             try:
                 if SETTINGS['inten_correction'] == 'on':
                     if SETTINGS['inten_param'] in self._data['scanned_values']:
                         self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0]))/\
                                            np.maximum(self._data[SETTINGS['inten_param']], 1)
+                        self._data_modified = True
+
             except Exception as err:
                 self._data_pool.main_window.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
 
             try:
                 if self._pixel_mask is not None:
+                    self._data_modified = True
                     for frame in self._3d_cube:
                         frame[self._pixel_mask] = 0
 
                 for frame, corr in zip(self._3d_cube, self._correction):
                         frame *= corr
+
             except Exception as err:
                 self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
 
