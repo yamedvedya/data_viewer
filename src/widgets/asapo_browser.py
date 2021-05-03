@@ -67,6 +67,7 @@ class ASAPOBrowser(AbstractWidget):
         self.host = ''
         self.beamtime = ''
         self.token = ''
+        self._max_depth = 100
 
         self._auto_open = False
 
@@ -111,6 +112,7 @@ class ASAPOBrowser(AbstractWidget):
             self.host = settings['host']
             self.beamtime = settings['beamtime']
             self.token = settings['token']
+            self._max_depth = int(settings['max_streams'])
             self.reset_detectors([detector.strip() for detector in settings['detectors'].split(';')])
             self.refresh_view(auto_open=False)
         except Exception as err:
@@ -146,7 +148,7 @@ class ASAPOBrowser(AbstractWidget):
             meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(self.host, "", False,
                                                                                       self.beamtime, detector,
                                                                                       self.token, 1000))
-            asapo_streams = meta_data_receiver.get_stream_list()
+            asapo_streams = meta_data_receiver.get_stream_list()[-self._max_depth:]
             possible_name_fields = headers['Name']
             asapo_streams_names = []
             asapo_streams_indexes = []
