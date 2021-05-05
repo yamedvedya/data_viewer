@@ -36,6 +36,12 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'max_memory_usage' in settings['DATA_POOL']:
                 self._ui.sb_lim_mem.setValue(int(settings['DATA_POOL']['max_memory_usage']))
 
+            if 'delimiter' in settings['DATA_POOL']:
+                self._ui.le_separator.setText(settings['DATA_POOL']['delimiter'])
+
+            if 'format' in settings['DATA_POOL']:
+                self._ui.le_format.setText(settings['DATA_POOL']['format'])
+
         if 'ASAPO' in settings:
             if 'host' in settings['ASAPO']:
                 self._ui.le_host.setText(settings['ASAPO']['host'])
@@ -54,15 +60,20 @@ class ProgramSetup(QtWidgets.QDialog):
 
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
-        settings['FILE_BROWSER'] = {'door_address': str(self._ui.le_door_address.text())}
+        if str(self._ui.le_door_address.text()) != '':
+            settings['FILE_BROWSER'] = {'door_address': str(self._ui.le_door_address.text())}
 
         settings['DATA_POOL'] = {'max_open_files': str(self._ui.sp_lim_num.value()),
-                                 'max_memory_usage': str(self._ui.sb_lim_mem.value())}
+                                 'max_memory_usage': str(self._ui.sb_lim_mem.value()),
+                                 'delimiter': str(self._ui.le_separator.text()),
+                                 'format': str(self._ui.le_format.text())}
 
-        settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
-                             'beamtime': str(self._ui.le_beamtime.text()),
-                             'token': str(self._ui.le_token.text()),
-                             'detectors': str(self._ui.le_detectors.text())}
+        if str(self._ui.le_host.text()) != '' and str(self._ui.le_beamtime.text()) != '' \
+                and str(self._ui.le_token.text()) != '' and str(self._ui.le_detectors.text()) != '':
+            settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
+                                 'beamtime': str(self._ui.le_beamtime.text()),
+                                 'token': str(self._ui.le_token.text()),
+                                 'detectors': str(self._ui.le_detectors.text())}
 
         self._main_window.apply_settings(settings)
 

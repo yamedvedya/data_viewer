@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>347</width>
-    <height>419</height>
+    <height>489</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,20 +15,30 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGroupBox" name="gb_door">
+    <widget class="QGroupBox" name="gb_max_files_3">
      <property name="title">
-      <string>Monitor door</string>
+      <string>File export:</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_2">
+     <layout class="QGridLayout" name="gridLayout_4">
       <item row="0" column="0">
-       <widget class="QLabel" name="lb_door_address">
+       <widget class="QLabel" name="label_10">
         <property name="text">
-         <string>Door address:</string>
+         <string>Separator:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>Format:</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="le_door_address"/>
+       <widget class="QLineEdit" name="le_separator"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="le_format"/>
       </item>
      </layout>
     </widget>
@@ -79,6 +89,25 @@
          <number>1000</number>
         </property>
        </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="gb_door">
+     <property name="title">
+      <string>Monitor door</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="lb_door_address">
+        <property name="text">
+         <string>Door address:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="le_door_address"/>
       </item>
      </layout>
     </widget>
