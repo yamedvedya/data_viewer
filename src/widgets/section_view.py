@@ -3,7 +3,8 @@
 WIDGET_NAME = 'SectionView'
 
 import pyqtgraph as pg
-import numpy as np
+import re
+import os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from src.gui.section_viewer_ui import Ui_SectionView
@@ -13,8 +14,6 @@ from src.utils.cursors import CrosshairCursor, Ruler
 from src.utils.range_slider import RangeSlider
 from src.utils.legend_item import addLegend
 
-import src.lookandfeel as lookandfeel
-
 
 # ----------------------------------------------------------------------
 class SectionView(QtWidgets.QWidget):
@@ -22,7 +21,7 @@ class SectionView(QtWidgets.QWidget):
     """
 
     # ----------------------------------------------------------------------
-    def __init__(self, parent, data_pool, my_id):
+    def __init__(self, parent, file_browser, data_pool, my_id):
         """
         """
         super(SectionView, self).__init__()
@@ -30,7 +29,8 @@ class SectionView(QtWidgets.QWidget):
         self._ui.setupUi(self)
         self._init_tool_bar()
 
-        self.parent = parent
+        self._parent = parent
+        self.file_browser = file_browser
         self.data_pool = data_pool
         self.my_id = my_id
 
@@ -325,16 +325,36 @@ class SectionView(QtWidgets.QWidget):
             plot.delete_fits()
 
     # ----------------------------------------------------------------------
-    def _save_picture(self):
-        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as')
-        if file_name:
-            pix = QtGui.QPixmap(self._ui.gv_main.size())
-            self._ui.gv_main.render(pix)
-            pix.save(file_name)
+    def _save(self, type):
+        default_name = self.file_browser.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_name(self.my_id))
+        if type == 'image':
+            file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
+                 'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*ppm); X11 Bitmap (*xbm);; X11 Pixmap (*xpm)')
+            if file_name:
+                pix = QtGui.QPixmap(self._ui.gv_main.size())
+                self._ui.gv_main.render(pix)
+                pix.save(file_name)
+        else:
+            save_name, file_type = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
+                                     self.file_browser.current_folder(), 'Text file (*.txt)')
+            file_type = re.compile("\((.+)\)").search(file_type).group(1).strip('*')
+            if save_name:
+                dir_name = os.path.dirname(save_name)
+                base_name = os.path.basename(save_name)
+
+                for file_name, plot in self._section_plots.items():
+                    header, data = plot.get_data_to_save()
+                    header[0] = self.data_pool.get_roi_axis_name(self.data_pool.get_roi_name(self.my_id), file_name)
+                    self.data_pool.save_roi_to_file(file_type,
+                                                    os.path.join(dir_name, file_name + "_" + base_name + file_type),
+                                                    header, data)
 
     # ----------------------------------------------------------------------
-    def _copy_to_clipboard(self):
-        QtWidgets.qApp.clipboard().setPixmap(self._ui.gv_main.grab())
+    def _copy_to_clipboard(self, type):
+        if type == 'image':
+            QtWidgets.qApp.clipboard().setPixmap(self._ui.gv_main.grab())
+        else:
+            pass
 
     # ----------------------------------------------------------------------
     def _print_plot(self):
@@ -355,14 +375,28 @@ class SectionView(QtWidgets.QWidget):
         toolbar = QtWidgets.QToolBar("Main toolbar", self)
         # toolbar.setObjectName('main_tool_bar')
 
+        label = QtWidgets.QLabel("Export image: ", self)
+        toolbar.addWidget(label)
+
         print_action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/print.png")), "Print")
         print_action.triggered.connect(self._print_plot)
 
         action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/copy.png")), "Copy to Clipboard")
-        action.triggered.connect(self._copy_to_clipboard)
+        action.triggered.connect(lambda checked, x='image': self._copy_to_clipboard(x))
 
         action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/save.png")), "Save")
-        action.triggered.connect(self._save_picture)
+        action.triggered.connect(lambda checked, x='image': self._save(x))
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("Export data: ", self)
+        toolbar.addWidget(label)
+
+        action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/copy.png")), "Copy to Clipboard")
+        action.triggered.connect(lambda checked, x='data': self._copy_to_clipboard(x))
+
+        action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/save.png")), "Save")
+        action.triggered.connect(lambda checked, x='data': self._save(x))
 
         toolbar.addSeparator()
 

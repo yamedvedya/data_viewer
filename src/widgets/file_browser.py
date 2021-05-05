@@ -23,6 +23,7 @@ from src.gui.file_browser_ui import Ui_FileBrowser
 
 from src.utils.utils import FileFilter
 
+
 # ----------------------------------------------------------------------
 def _scan_folder(folder):
     return set([f_name for f_name in os.listdir(folder) if f_name.endswith('.nxs')])

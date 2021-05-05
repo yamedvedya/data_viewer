@@ -29,7 +29,7 @@ class Node(object):
             self.children.append(child)
         else:
             self.children.insert(row, child)
-        child.parent = self
+        child._parent = self
 
     # ----------------------------------------------------------------------
     def remove_child(self, row):

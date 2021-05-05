@@ -37,11 +37,19 @@ class RoisView(AbstractWidget):
         self._last_color = -1
         self._add_roi()
 
+        self.settings = {'delimiter': ';',
+                         'format': '%.6e'}
+
+    # ----------------------------------------------------------------------
+    def set_settings(self, settings):
+
+        self.settings.update(settings)
+
     # ----------------------------------------------------------------------
     def _add_roi(self):
         idx, name = self._data_pool.add_new_roi()
         self._parent.add_roi(idx)
-        self._roi_widgets[idx] = SectionView(self, self._data_pool, idx)
+        self._roi_widgets[idx] = SectionView(self, self._parent.file_browser, self._data_pool, idx)
         self._ui.tab_main.insertTab(self._ui.tab_main.count(), self._roi_widgets[idx], 'ROI_{}'.format(name))
         self._ui.tab_main.setCurrentWidget(self._roi_widgets[idx])
 

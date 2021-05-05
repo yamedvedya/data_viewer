@@ -52,6 +52,17 @@ class SectionPlot(QtCore.QObject):
         return self.plot.getData()
 
     # ----------------------------------------------------------------------
+    def get_data_to_save(self):
+        data = np.transpose(self.plot.getData())
+        header = ['x', 'ROI value']
+        for function, plot in self._fits.items():
+            _, y = plot.getData()
+            data = np.hstack((data, np.transpose(y)[:, np.newaxis]))
+            header.append(function)
+
+        return header, data
+
+    # ----------------------------------------------------------------------
     def empty(self):
         return len(self.plot.getData()[0]) < 1
 

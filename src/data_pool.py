@@ -5,6 +5,7 @@ import os
 import psutil
 import time
 import sys
+import numpy as np
 
 from collections import OrderedDict
 
@@ -192,6 +193,10 @@ class DataPool(QtCore.QObject):
         return value
 
     # ----------------------------------------------------------------------
+    def get_roi_axis_name(self, roi_ind, file):
+        return self._files_data[file].file_axes_caption(self.space)[self._rois[roi_ind].get_param('axis')]
+
+    # ----------------------------------------------------------------------
     def get_roi_param(self, roi_ind, param):
         return self._rois[roi_ind].get_param(param)
 
@@ -209,6 +214,35 @@ class DataPool(QtCore.QObject):
 
         return axis_min, axis_max - section_params['roi_{}_width'.format(section_axis)], \
                axis_max - axis_min - section_params['roi_{}_pos'.format(section_axis)]
+
+    # ----------------------------------------------------------------------
+    def batch_process_rois(self, file_list, dir_name, file_type):
+
+        for file_name in file_list:
+            try:
+                with h5py.File(file_name, 'r') as f:
+                    if 'scan' in f.keys():
+                        new_file = LambdaScan(file_name, self, f)
+                        new_file.apply_settings()
+                        for ind, roi in enumerate(self._rois):
+                            x_axis, y_axis = new_file.get_roi_plot(self.space, roi.get_section_params())
+                            header = [new_file.file_axes_caption(self.space)[roi.get_param('axis')], 'ROI_value']
+                            self.save_roi_to_file(file_type,
+                                                  os.path.join(dir_name, file_name + "_ROI_{}".format(ind) + file_type),
+                                                  header,
+                                                  np.vstack((x_axis, y_axis)))
+
+            except Exception as err:
+                self.main_window.report_error('Cannot calculate ROI',
+                                              informative_text='Cannot calculate ROI for {}'.format(file_name),
+                                              detailed_text=str(err))
+
+    # ----------------------------------------------------------------------
+    def save_roi_to_file(self, file_type, save_name, header, data):
+        if file_type == '.txt':
+            np.savetxt(save_name, data, fmt=self._parent.settings['format'],
+                       delimiter=self._parent.settings['delimiter'],
+                       newline='\n', header=';'.join(header))
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

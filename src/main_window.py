@@ -6,6 +6,7 @@ import os
 import logging
 import psutil
 import configparser
+import re
 
 from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
@@ -133,6 +134,22 @@ class DataViewer(QtWidgets.QMainWindow):
         self.frame_view.delete_roi(idx)
 
     # ----------------------------------------------------------------------
+    def _batch_process(self, mode):
+        if mode == 'files':
+            file_names, _ = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select files',
+                                                                   self.file_browser.current_folder(),
+                                                                   'NEXUS files (*.nxs)')
+        else:
+            dir_name = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select directory',
+                                                                  self.file_browser.current_folder())
+
+            file_names = [name for name in os.listdir(dir_name) if name.endswith('.nxs')]
+
+        save_dir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save to', self.file_browser.current_folder())
+        if save_dir:
+            self.data_pool.batch_process_rois(file_names, save_dir, '.txt')
+
+    # ----------------------------------------------------------------------
     def _new_space(self, space):
         self.data_pool.set_space(space)
         pass # TODO
@@ -169,7 +186,15 @@ class DataViewer(QtWidgets.QMainWindow):
         menu_exit = QtWidgets.QAction('Exit', self)
         menu_exit.triggered.connect(self._exit)
 
-        self.menuBar().addMenu(space_menu)
+        batch_menu = QtWidgets.QMenu('Batch process', self)
+
+        action = batch_menu.addAction("Process files...")
+        action.triggered.connect(lambda checked, x='files': self._batch_process(x))
+
+        action = batch_menu.addAction("Process folder...")
+        action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
+
+        self.menuBar().addMenu(batch_menu)
 
         self.menuBar().addSeparator()
 
@@ -303,10 +328,10 @@ class DataViewer(QtWidgets.QMainWindow):
     def _refresh_status_bar(self):
         """
         """
-        # if self._test_run:
-        #     self.data_pool.open_file('./test/Bhat_B_1V_02665.nxs')
-        #     self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
-        #     self._test_run =False
+        if self._test_run:
+            # self.data_pool.open_file('./test/Bhat_B_1V_02665.nxs')
+            self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
+            self._test_run =False
 
         process = psutil.Process(os.getpid())
         mem = float(process.memory_info().rss) / (1024. * 1024.)
