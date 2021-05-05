@@ -177,8 +177,8 @@ class ASAPOBrowser(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _get_time_range(self):
-        min_time = +np.Inf
-        max_time = - np.Inf
+        min_time = 9223372036854775807
+        max_time = -9223372036854775808
         for detector in self.asapo_model.root.all_child():
             for stream in detector.all_child():
                 min_time = np.min([min_time, stream.time_stamp])

@@ -336,7 +336,8 @@ class SectionView(QtWidgets.QWidget):
                 pix.save(file_name)
         else:
             save_name, file_type = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
-                                     self.file_browser.current_folder(), 'Text file (*.txt)')
+                                                                         'Text file (*.txt);;')
+
             file_type = re.compile("\((.+)\)").search(file_type).group(1).strip('*')
             if save_name:
                 dir_name = os.path.dirname(save_name)

@@ -37,8 +37,7 @@ class RoisView(AbstractWidget):
         self._last_color = -1
         self._add_roi()
 
-        self.settings = {'delimiter': ';',
-                         'format': '%.6e'}
+        self.settings = {}
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
