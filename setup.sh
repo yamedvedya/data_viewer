@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Created by matveyev at 07.04.2021
 
 BASEDIR=`dirname $0`
