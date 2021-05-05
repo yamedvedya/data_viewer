@@ -23,8 +23,11 @@ if os.path.exists(aliases_path):
     if need_to_add_alias:
         current_file.append(my_alias)
 
-with open(aliases_path, 'w') as f:
-    f.writelines(current_file)
+    with open(aliases_path, 'w') as f:
+        f.writelines(current_file)
+else:
+    with open(aliases_path, 'w') as f:
+        f.writeline(my_alias)
 
 print('bash_aliases edited')
 

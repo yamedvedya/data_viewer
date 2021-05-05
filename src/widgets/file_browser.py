@@ -8,11 +8,15 @@ FILE_REFRESH_PERIOD = 1
 
 
 import os
-import PyTango
 
 try:
     from watchdog.observers import Observer
     from watchdog.events import PatternMatchingEventHandler
+except:
+    pass
+
+try:
+    import PyTango
 except:
     pass
 

@@ -99,7 +99,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self._init_status_bar()
 
-        self._test_run = True
         self._status_timer = QtCore.QTimer(self)
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
@@ -328,10 +327,6 @@ class DataViewer(QtWidgets.QMainWindow):
     def _refresh_status_bar(self):
         """
         """
-        if self._test_run:
-            # self.data_pool.open_file('./test/Bhat_B_1V_02665.nxs')
-            self.data_pool.open_file('./test/Bhat_B_2_02867.nxs')
-            self._test_run =False
 
         process = psutil.Process(os.getpid())
         mem = float(process.memory_info().rss) / (1024. * 1024.)
