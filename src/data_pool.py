@@ -15,6 +15,7 @@ from src.data_sources.lambda_scan import LambdaScan
 if 'asapo_consumer' in sys.modules:
     from src.data_sources.asapo_scan import ASAPOScan
 from src.utils.roi import ROI
+from src.widgets.batch_progress import BatchProgress
 
 
 class DataPool(QtCore.QObject):
@@ -54,6 +55,8 @@ class DataPool(QtCore.QObject):
 
         self.settings = {'delimiter': ';',
                          'format': '%.6e'}
+
+        self._stop_batch = False
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
@@ -224,28 +227,41 @@ class DataPool(QtCore.QObject):
                axis_max - axis_min - section_params['roi_{}_pos'.format(section_axis)]
 
     # ----------------------------------------------------------------------
+    def _interrupt_batch(self):
+        self._stop_batch = True
+
+    # ----------------------------------------------------------------------
     def batch_process_rois(self, file_list, dir_name, file_type):
 
-        for file_name in file_list:
-            try:
-                with h5py.File(file_name, 'r') as f:
-                    if 'scan' in f.keys():
-                        new_file = LambdaScan(file_name, self, f)
-                        new_file.apply_settings()
-                        for ind, roi in self._rois.items():
-                            x_axis, y_axis = new_file.get_roi_plot(self.space, roi.get_section_params())
-                            header = [new_file.file_axes_caption(self.space)[roi.get_param('axis')], 'ROI_value']
-                            save_name = ''.join(os.path.splitext(os.path.basename(file_name))[:-1]) + \
-                                        "_ROI_{}".format(ind) + file_type
-                            self.save_roi_to_file(file_type,
-                                                  os.path.join(dir_name, save_name),
-                                                  header,
-                                                  np.transpose(np.vstack((x_axis, y_axis))))
+        self._stop_batch = False
 
-            except Exception as err:
-                self.main_window.report_error('Cannot calculate ROI',
-                                              informative_text='Cannot calculate ROI for {}'.format(file_name),
-                                              detailed_text=str(err))
+        progress = BatchProgress()
+        progress.stop_batch.connect(self._interrupt_batch)
+        progress.show()
+
+        for file_name in file_list:
+            if not self._stop_batch:
+                try:
+                    with h5py.File(file_name, 'r') as f:
+                        if 'scan' in f.keys():
+                            new_file = LambdaScan(file_name, self, f)
+                            new_file.apply_settings()
+                            for ind, roi in self._rois.items():
+                                x_axis, y_axis = new_file.get_roi_plot(self.space, roi.get_section_params())
+                                header = [new_file.file_axes_caption(self.space)[roi.get_param('axis')], 'ROI_value']
+                                save_name = ''.join(os.path.splitext(os.path.basename(file_name))[:-1]) + \
+                                            "_ROI_{}".format(ind) + file_type
+                                self.save_roi_to_file(file_type,
+                                                      os.path.join(dir_name, save_name),
+                                                      header,
+                                                      np.transpose(np.vstack((x_axis, y_axis))))
+
+                except Exception as err:
+                    self.main_window.report_error('Cannot calculate ROI',
+                                                  informative_text='Cannot calculate ROI for {}'.format(file_name),
+                                                  detailed_text=str(err))
+            else:
+                break
 
     # ----------------------------------------------------------------------
     def save_roi_to_file(self, file_type, save_name, header, data):
