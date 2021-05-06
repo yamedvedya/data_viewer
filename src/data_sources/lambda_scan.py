@@ -194,8 +194,8 @@ class LambdaScan(AbstractDataFile):
                         self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
                         self._data_modified = True
             except Exception as err:
-                self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name,
-                                                                                                            err))
+                if self._data_pool is not None:
+                    self._data_pool.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
             try:
                 if SETTINGS['inten_correction'] == 'on':
@@ -205,7 +205,8 @@ class LambdaScan(AbstractDataFile):
                         self._data_modified = True
 
             except Exception as err:
-                self._data_pool.main_window.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
+                if self._data_pool is not None:
+                    self._data_pool.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
 
             try:
                 if self._pixel_mask is not None:
@@ -217,7 +218,8 @@ class LambdaScan(AbstractDataFile):
                         frame *= corr
 
             except Exception as err:
-                self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
+                if self._data_pool is not None:
+                    self._data_pool.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
     def get_2d_cut(self, space, axis, value, x_axis, y_axis):
