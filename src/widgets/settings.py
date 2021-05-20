@@ -55,6 +55,9 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'detectors' in settings['ASAPO']:
                 self._ui.le_detectors.setText(settings['ASAPO']['detectors'])
 
+            if 'max_streams' in settings['ASAPO']:
+                self._ui.sp_max_streams.setValue(int(settings['ASAPO']['max_streams']))
+
     # ----------------------------------------------------------------------
     def accept(self):
 
@@ -73,7 +76,8 @@ class ProgramSetup(QtWidgets.QDialog):
             settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
                                  'beamtime': str(self._ui.le_beamtime.text()),
                                  'token': str(self._ui.le_token.text()),
-                                 'detectors': str(self._ui.le_detectors.text())}
+                                 'detectors': str(self._ui.le_detectors.text()),
+                                 'max_streams': str(self._ui.sp_max_streams.value())}
 
         self._main_window.apply_settings(settings)
 
