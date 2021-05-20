@@ -62,17 +62,31 @@ def get_text_coordinates(plot_item, size, position='tl'):
 
 # ----------------------------------------------------------------------
 def read_mask_file(file_name):
-    mask, mask_info = None, None
+    mask = None
     try:
         with h5py.File(file_name, 'r') as f:
-            mask = np.array(f['pixel_mask'])
-            mask_info = {'file': os.path.basename(file_name)}
-            if 'energy' in f:
-                mask_info['energy'] = float(f['Energy_for_acqusition'][...])
+            for name in ['mask', 'pixel_mask']:
+                if name in f.keys():
+                    mask = np.array(f[name])
+                    break
     except:
         pass
 
-    return mask, mask_info
+    return mask
+
+# ----------------------------------------------------------------------
+def read_ff_file(file_name):
+    ff = None
+    try:
+        with h5py.File(file_name, 'r') as f:
+            for name in ['ff']:
+                if name in f.keys():
+                    ff = np.array(f[name])
+                    break
+    except:
+        pass
+
+    return ff
 
 # ----------------------------------------------------------------------
 def info_dialog(text):

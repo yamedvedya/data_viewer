@@ -39,8 +39,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self._ui = Ui_MainWindow()
         self._ui.setupUi(self)
 
-        if options.folder is not None:
-            self.folder = options.folder
+        if options.dir is not None:
+            self.folder = options.dir
         else:
             self.folder = os.getcwd()
 
@@ -102,6 +102,9 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer = QtCore.QTimer(self)
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
+
+        if options.file is not None:
+            self.data_pool.open_file(options.file)
 
     # ----------------------------------------------------------------------
     def apply_settings(self, settings=None):
