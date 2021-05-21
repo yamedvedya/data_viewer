@@ -37,8 +37,10 @@ class DetectorImage():
             if not self._need_apply_mask:
                 return np.copy(self._3d_cube)
             else:
+                self._3d_cube = None
                 _data = self._reload_data()
         else:
+            self._3d_cube = None
             _data = self._reload_data()
 
         _settings = self._get_settings()

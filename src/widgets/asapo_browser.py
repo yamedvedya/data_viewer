@@ -6,6 +6,7 @@ WIDGET_NAME = 'ASAPO Browser'
 import asapo_consumer
 
 from PyQt5 import QtCore
+from distutils.util import strtobool
 
 from src.widgets.abstract_widget import AbstractWidget
 
@@ -64,10 +65,13 @@ class ASAPOBrowser(AbstractWidget):
         self._ui.dte_from.editingFinished.connect(self._new_time_range)
         self._ui.dte_to.editingFinished.connect(self._new_time_range)
 
-        self.host = ''
-        self.beamtime = ''
-        self.token = ''
-        self._max_depth = 100
+        self.settings = {'host': '',
+                         'path': '',
+                         'has_filesystem': '',
+                         'beamtime': '',
+                         'token': '',
+                         'detectors': '',
+                         'max_depth': 100}
 
         self._auto_open = False
 
@@ -109,11 +113,9 @@ class ASAPOBrowser(AbstractWidget):
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
         try:
-            self.host = settings['host']
-            self.beamtime = settings['beamtime']
-            self.token = settings['token']
-            self._max_depth = int(settings['max_streams'])
-            self.reset_detectors([detector.strip() for detector in settings['detectors'].split(';')])
+            self.settings.update(settings)
+
+            self.reset_detectors([detector.strip() for detector in self.settings['detectors'].split(';')])
             self.refresh_view(auto_open=False)
         except Exception as err:
             self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err))
@@ -145,10 +147,14 @@ class ASAPOBrowser(AbstractWidget):
             detector_node = self.asapo_model.get_node(detector_index)
             model_streams_names = [child.my_name() for child in detector_node.all_child()]
 
-            meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(self.host, "", False,
-                                                                                      self.beamtime, detector,
-                                                                                      self.token, 1000))
-            asapo_streams = meta_data_receiver.get_stream_list()[-self._max_depth:]
+            meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(self.settings['host'],
+                                                                                      self.settings['path'],
+                                                                                      strtobool(self.settings['has_filesystem']),
+                                                                                      self.settings['beamtime'],
+                                                                                      detector,
+                                                                                      self.settings['token'], 1000))
+
+            asapo_streams = meta_data_receiver.get_stream_list()[-int(self.settings['max_streams']):]
             possible_name_fields = headers['Name']
             asapo_streams_names = []
             asapo_streams_indexes = []

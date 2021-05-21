@@ -3,7 +3,7 @@
 WIDGET_NAME = 'ASAPOScanSetup'
 
 import numpy as np
-from scipy import ndimage
+from distutils.util import strtobool
 
 import asapo_consumer
 import configparser
@@ -12,7 +12,7 @@ from src.gui.asapo_image_setup_ui import Ui_ASAPOImageSetup
 from src.data_sources.abstract_data_file import AbstractDataFile
 from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup, MEMORY_MODE
 
-from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver
+from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver, create_consumer
 from AsapoWorker.data_handler import get_image
 
 SETTINGS = {'enable_mask': False,
@@ -47,27 +47,32 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         settings.read('./settings.ini')
 
         host = settings['ASAPO']['host']
+        path = settings['ASAPO']['path']
+        has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
         beamtime = settings['ASAPO']['beamtime']
         token = settings['ASAPO']['token']
 
-        self.receiver = SerialDatasetAsapoReceiver(asapo_consumer.create_consumer(host, "", False,
-                                                                                  beamtime, detector_name,
-                                                                                  token, 1000))
+        consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
+        if settings['ASAPO']['mode'] == 'file':
+            self._mode = 'file'
+            self.receiver = SerialAsapoReceiver(consumer)
+        else:
+            self._mode = 'dataset'
+            self.receiver = SerialDatasetAsapoReceiver(consumer)
 
         self.receiver.stream = stream_name
         self.receiver.data_source = detector_name
 
         self._data['scanned_values'] = ['frame_ID']
 
-        cube = self._reload_data()
+        self._need_apply_mask = True
+        cube = self._get_data()
         self._data['cube_shape'] = cube.shape
 
         if MEMORY_MODE == 'ram':
             self._3d_cube = cube
 
         self._data['frame_ID'] = np.arange(self._data['cube_shape'][0])
-
-        self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -76,12 +81,18 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
     # -------------------------------------------------------------------
     def _reload_data(self):
 
+        def _convert_image(data, meta_data):
+            if self._mode == 'file':
+                return get_image(data, meta_data)[np.newaxis, :]
+            else:
+                return get_image(data[0], meta_data[0])[np.newaxis, :]
+
         self.receiver.set_start_id(1)
         data, meta_data = self.receiver.get_next(False)
-        cube = get_image(data[0], meta_data[0])[np.newaxis, :]
+        cube = _convert_image(data, meta_data)
         for _ in range(1, self.receiver.get_current_size()):
             data, meta_data = self.receiver.get_next(False)
-            cube = np.vstack((cube, get_image(data[0], meta_data[0])[np.newaxis, :]))
+            cube = np.vstack((cube, _convert_image(data, meta_data)))
 
         return np.array(cube, dtype=np.float32)
 

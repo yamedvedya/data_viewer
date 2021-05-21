@@ -67,7 +67,8 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 self._detector_folder = os.path.join(os.path.dirname(opened_file.filename),
                                                      os.path.splitext(os.path.basename(opened_file.filename))[0], 'lmbd')
 
-                cube = self._reload_data()
+                self._need_apply_mask = True
+                cube = self._get_data()
                 self._data['cube_shape'] = cube.shape
 
                 if MEMORY_MODE == 'ram':
@@ -76,8 +77,6 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         if 'point_nb' not in self._data['scanned_values']:
             self._data['scanned_values'].append('point_nb')
             self._data['point_nb'] = np.arange(self._data['cube_shape'][0])
-
-        self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
