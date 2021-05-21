@@ -16,3 +16,8 @@ class MissingDataError(StreamError):
 
 class EndOfStreamError(TemporaryError):
     pass
+
+
+class StreamFinishedError(StreamError):
+    pass
+

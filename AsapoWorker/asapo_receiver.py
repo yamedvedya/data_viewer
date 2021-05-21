@@ -3,13 +3,13 @@ import asapo_consumer
 from AsapoWorker.configurable import Configurable, Config
 from AsapoWorker.errors import (
     StreamError, ConfigurationError, TemporaryError, MissingDataError,
-    EndOfStreamError)
+    EndOfStreamError, StreamFinishedError)
 
 log = logging.getLogger(__name__)
 
 
 def create_consumer(
-        source, path, has_filesystem, beamtime, data_source, token, timeout):
+        source, path, has_filesystem, beamtime, data_source, token, timeout, n_resend_nacs=0):
     log.info(
         "Create new consumer (source=%s, path=%s, has_filesystem=%s, "
         "beamtime=%s, data_source=%s, token=%s, timeout=%i).",
@@ -17,6 +17,11 @@ def create_consumer(
     try:
         consumer = asapo_consumer.create_consumer(
             source, path, has_filesystem, beamtime, data_source, token, timeout)
+
+        if n_resend_nacs > 0:
+            log.info("Resend unacknowledged messages n=%s times", n_resend_nacs)
+            consumer.set_resend_nacs(True, timeout, n_resend_nacs)
+
     except asapo_consumer.AsapoWrongInputError as err:
         raise ConfigurationError("Cannot create consumer") from err
     except asapo_consumer.AsapoConsumerError as err:
@@ -49,7 +54,9 @@ class SimpleAsapoReceiver:
                 type=bool, default=False),
             timeout=Config(
                 "Allowed time in milliseconds for ASAP::O data access before "
-                "exception is thrown", type=float, default=3000)
+                "exception is thrown", type=float, default=3000),
+            n_resend_nacs=Config(
+                "Number if tries to resend unacknowledged messages", type=int, default=0)
         ))
     group_id = Config(
         "The data_source data is divided between all workers with the same "
@@ -58,7 +65,7 @@ class SimpleAsapoReceiver:
         type=str)
     stream = Config(
         "The name of the stream.", type=str, default="default", init=False)
-    data_source=Config(
+    data_source = Config(
         "Name of input data_source", type=str, default="")
 
     @group_id.default
@@ -79,6 +86,8 @@ class SimpleAsapoReceiver:
                 self.group_id, meta_only=meta_only, stream=self.stream)
         except asapo_consumer.AsapoEndOfStreamError as err:
             raise EndOfStreamError("End of data_source") from err
+        except asapo_consumer.AsapoStreamFinishedError as err:
+            raise StreamFinishedError("Finish of data_source") from err
         except (asapo_consumer.AsapoUnavailableServiceError,
                 asapo_consumer.AsapoInterruptedTransactionError,
                 asapo_consumer.AsapoNoDataError,
@@ -107,6 +116,37 @@ class SimpleAsapoReceiver:
             return self.consumer.get_stream_list()
         except asapo_consumer.AsapoConsumerError as err:
             raise StreamError("Failed to get stream list") from err
+
+    def get_stream_info(self):
+        try:
+            info = self.consumer.get_stream_list()
+            return next(x for x in info if x["name"] == self.stream)
+        except asapo_consumer.AsapoConsumerError as err:
+            raise StreamError("Failed to get stream info") from err
+
+    def acknowledge(self, ids):
+        for ack_id in ids:
+            try:
+                log.info("Acknowledging id=%s stream=%s group_id=%s", ack_id, self.stream, self.group_id)
+                self.consumer.acknowledge(self.group_id, ack_id, stream=self.stream)
+            except Exception as e:
+                log.warning("Acknowledging of id=%s stream=%s group_id=%s fails. Reason=%s",
+                            ack_id, self.stream, self.group_id, e)
+
+    def get_unacknowledged_messages(self, stream=None):
+        if stream is None:
+            stream = self.stream
+        try:
+            msgs = self.consumer.get_unacknowledged_messages(self.group_id, stream=stream)
+            return msgs
+        except asapo_consumer.AsapoConsumerError as err:
+            raise StreamError("Failed to get unacknowledged messages") from err
+
+    def get_last_acknowledged_message(self, group_id):
+        try:
+            return self.consumer.get_last_acknowledged_message(group_id, stream=self.stream)
+        except Exception as err:
+            raise StreamError("Failed to get unacknowledged messages") from err
 
 
 # TODO: Ensure also that indices are consecutive or start at 0
@@ -159,6 +199,10 @@ class SerialAsapoReceiver(SimpleAsapoReceiver):
         except asapo_consumer.AsapoEndOfStreamError as err:
             raise EndOfStreamError(
                 "End of data_source at expected_id"
+                + str(self.expected_id)) from err
+        except asapo_consumer.AsapoStreamFinishedError as err:
+            raise StreamFinishedError(
+                "Finish of data_source at expected_id"
                 + str(self.expected_id)) from err
         except asapo_consumer.AsapoUnavailableServiceError as err:
             raise TemporaryError(
@@ -282,7 +326,7 @@ class SerialDatasetAsapoReceiver(SerialAsapoReceiver):
     A wrapper for an ASAP::O consumer for dataset processing
 
     This wrapper supports functionality of SerialAsapoReceiver but
-    expects to receive a dataset 
+    expects to receive a dataset
     """
 
     def _get_next(self, meta_only):
@@ -304,6 +348,10 @@ class SerialDatasetAsapoReceiver(SerialAsapoReceiver):
         except asapo_consumer.AsapoEndOfStreamError as err:
             raise EndOfStreamError(
                 "End of data_source at expected_id"
+                + str(self.expected_id)) from err
+        except asapo_consumer.AsapoStreamFinishedError as err:
+            raise StreamFinishedError(
+                "Finish of data_source at expected_id"
                 + str(self.expected_id)) from err
         except asapo_consumer.AsapoUnavailableServiceError as err:
             raise TemporaryError(

@@ -7,15 +7,16 @@ from skimage.io import imread
 
 
 def get_image(data, metadata):
+
     if 'liveimage' in metadata["name"]:
         image = zlib.decompress(data)
-        if metadata['meta']['frame_depth'] == 24:
+        if metadata['content'][0]['meta']['frame_depth'] == 24:
             image = np.frombuffer(image, dtype=np.uint32).copy()
         else:
             image = np.frombuffer(image, dtype=np.uint16).copy()
 
-        image = np.reshape(image, (metadata['meta']['frame_height'],
-                                   metadata['meta']['frame_width']))
+        image = np.reshape(image, (metadata['content'][0]['meta']['frame_height'],
+                                   metadata['content'][0]['meta']['frame_width']))
         return image
 
     typ = metadata["name"].rpartition(".")[-1]
