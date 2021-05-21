@@ -10,7 +10,7 @@ import numpy as np
 from collections import OrderedDict
 from threading import Thread
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 
 from src.data_sources.lambda_scan import LambdaScan
 if 'asapo_consumer' in sys.modules:
@@ -58,6 +58,8 @@ class DataPool(QtCore.QObject):
                          'format': '%.6e'}
 
         self._batcher = None
+        self._opener = None
+        self._open_mgs = _open_file_dialog()
 
         self._progress = BatchProgress()
         self._progress.stop_batch.connect(self._interrupt_batch)
@@ -87,14 +89,11 @@ class DataPool(QtCore.QObject):
             self.log.error("File with this name already opened")
             return
 
-        try:
-            new_file = ASAPOScan(detector_name, stream_name, self)
-            new_file.apply_settings()
-            self._add_new_entry(entry_name, new_file)
-
-        except Exception as err:
-            self.main_window.report_error('Cannot open stream', informative_text='Cannot open {}'.format(entry_name),
-                                          detailed_text=str(err))
+        self._open_mgs.setText(f'Opening stream {stream_name}')
+        self._open_mgs.show()
+        self._opener = Opener(self, 'stream', {'detector_name': detector_name, 'stream_name': stream_name,
+                                               'entry_name': entry_name}, self._open_mgs)
+        self._opener.start()
 
     # ----------------------------------------------------------------------
     def open_file(self, file_name):
@@ -104,28 +103,14 @@ class DataPool(QtCore.QObject):
             self.log.error("File with this name already opened")
             return
 
-        finished = False
-        while not finished:
-            try:
-                with h5py.File(file_name, 'r') as f:
-                    if 'scan' in f.keys():
-                        new_file = LambdaScan(file_name, self, f)
-                        new_file.apply_settings()
-                    self._add_new_entry(entry_name, new_file)
-                    finished = True
-
-            except OSError as err:
-                if 'Resource temporarily unavailable' in str(err.args):
-                    time.sleep(0.5)
-                    print('Waiting for file {}'.format(file_name))
-
-            except Exception as err:
-                self.main_window.report_error('Cannot open file', informative_text='Cannot open {}'.format(file_name),
-                                              detailed_text=str(err))
-                finished = True
+        self._open_mgs.setText(f'Opening file {file_name}')
+        self._open_mgs.show()
+        self._opener = Opener(self, 'file', {'file_name': file_name, 'entry_name': entry_name},
+                              self._open_mgs)
+        self._opener.start()
 
     # ----------------------------------------------------------------------
-    def _add_new_entry(self, entry_name, entry):
+    def add_new_entry(self, entry_name, entry):
 
         if self._max_num_files is not None and self._max_num_files > 0:
             while len(self._files_data) >= self._max_num_files:
@@ -308,6 +293,56 @@ class DataPool(QtCore.QObject):
 
 
 # ----------------------------------------------------------------------
+class Opener(QtCore.QThread):
+
+    # ----------------------------------------------------------------------
+    def __init__(self, data_pool, mode, params, msg_box):
+        super(Opener, self).__init__()
+
+        self.data_pool = data_pool
+        self.mode = mode
+        self.params = params
+        self.msg_box = msg_box
+
+    # ----------------------------------------------------------------------
+    def run(self):
+        if self.mode == 'file':
+            finished = False
+            while not finished:
+                try:
+                    with h5py.File(self.params['file_name'], 'r') as f:
+                        if 'scan' in f.keys():
+                            new_file = LambdaScan(self.params['file_name'], self, f)
+                            new_file.apply_settings()
+                        self.data_pool.add_new_entry(self.params['entry_name'], new_file)
+                        finished = True
+
+                except OSError as err:
+                    if 'Resource temporarily unavailable' in str(err.args):
+                        time.sleep(0.5)
+                        print('Waiting for file {}'.format(self.params['file_name']))
+
+                except Exception as err:
+                    self.data_pool.main_window.report_error('Cannot open file',
+                                                            informative_text='Cannot open {}'.format(self.params['file_name']),
+                                                            detailed_text=str(err))
+                    finished = True
+
+        elif self.mode == 'stream':
+            try:
+                new_file = ASAPOScan(self.params['detector_name'], self.params['stream_name'], self)
+                new_file.apply_settings()
+                self.data_pool.add_new_entry(self.params['entry_name'], new_file)
+
+            except Exception as err:
+                self.data_pool.main_window.report_error('Cannot open stream',
+                                                        informative_text='Cannot open {}'.format(self.params['entry_name']),
+                                                        detailed_text=str(err))
+
+        self.msg_box.hide()
+
+
+# ----------------------------------------------------------------------
 class Batcher(QtCore.QThread):
     def __init__(self, data_pool, progress, file_list, dir_name, file_type):
         super(Batcher, self).__init__()
@@ -353,3 +388,13 @@ class Batcher(QtCore.QThread):
                 break
 
         self._progress.hide()
+
+
+# ----------------------------------------------------------------------
+def _open_file_dialog():
+    open_mgs = QtWidgets.QMessageBox()
+    open_mgs.setModal(False)
+    open_mgs.setIcon(QtWidgets.QMessageBox.Information)
+    open_mgs.setWindowTitle("Opening ...")
+    open_mgs.setStandardButtons(QtWidgets.QMessageBox.NoButton)
+    return open_mgs

@@ -147,9 +147,9 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 SETTINGS['all_params'].append(value)
 
     # ----------------------------------------------------------------------
-    def _get_correction(self):
+    def _get_correction(self, cube_shape):
 
-        self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
+        self._correction = np.ones(cube_shape[0], dtype=np.float32)
 
         try:
             if SETTINGS['atten_correction'] == 'on':

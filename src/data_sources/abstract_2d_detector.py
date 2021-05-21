@@ -26,9 +26,9 @@ class DetectorImage():
         raise RuntimeError('Non implemented')
 
     # ----------------------------------------------------------------------
-    def _get_correction(self):
+    def _get_correction(self, cube_shape):
 
-        self._correction = np.ones(self._data['cube_shape'][0], dtype=np.float32)
+        self._correction = np.ones(cube_shape[0], dtype=np.float32)
 
     # ----------------------------------------------------------------------
     def _get_data(self):
@@ -61,7 +61,7 @@ class DetectorImage():
         if _settings['enable_fill']:
             _fill_weights = ndimage.uniform_filter(1.-_pixel_mask, size=_settings['fill_radius'])
 
-        self._get_correction()
+        self._get_correction(_data.shape)
 
         try:
             if _pixel_mask is not None:
