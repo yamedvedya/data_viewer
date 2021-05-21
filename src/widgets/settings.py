@@ -3,6 +3,7 @@
 import configparser
 
 from PyQt5 import QtWidgets, QtCore
+from distutils.util import strtobool
 
 from src.gui.settings_ui import Ui_Settings
 from src.main_window import APP_NAME
@@ -46,6 +47,12 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'host' in settings['ASAPO']:
                 self._ui.le_host.setText(settings['ASAPO']['host'])
 
+            if 'path' in settings['ASAPO']:
+                self._ui.le_path.setText(settings['ASAPO']['path'])
+
+            if 'has_filesystem' in settings['ASAPO']:
+                self._ui.chk_filesystem.setChecked(strtobool(settings['ASAPO']['has_filesystem']))
+
             if 'beamtime' in settings['ASAPO']:
                 self._ui.le_beamtime.setText(settings['ASAPO']['beamtime'])
 
@@ -74,6 +81,8 @@ class ProgramSetup(QtWidgets.QDialog):
         if str(self._ui.le_host.text()) != '' and str(self._ui.le_beamtime.text()) != '' \
                 and str(self._ui.le_token.text()) != '' and str(self._ui.le_detectors.text()) != '':
             settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
+                                 'path': str(self._ui.le_path.text()),
+                                 'has_filsystem': str(self._ui.chk_filesystem.isChecked()),
                                  'beamtime': str(self._ui.le_beamtime.text()),
                                  'token': str(self._ui.le_token.text()),
                                  'detectors': str(self._ui.le_detectors.text()),
