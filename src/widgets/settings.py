@@ -44,6 +44,10 @@ class ProgramSetup(QtWidgets.QDialog):
                 self._ui.le_format.setText(settings['DATA_POOL']['format'])
 
         if 'ASAPO' in settings:
+            if 'mode' in settings['ASAPO']:
+                self._ui.but_mode_file.setChecked(settings['ASAPO']['mode'] == 'file')
+                self._ui.but_mode_dataset.setChecked(settings['ASAPO']['mode'] == 'dataset')
+
             if 'host' in settings['ASAPO']:
                 self._ui.le_host.setText(settings['ASAPO']['host'])
 
@@ -87,6 +91,11 @@ class ProgramSetup(QtWidgets.QDialog):
                                  'token': str(self._ui.le_token.text()),
                                  'detectors': str(self._ui.le_detectors.text()),
                                  'max_streams': str(self._ui.sp_max_streams.value())}
+
+            if self._ui.but_mode_file.isChecked():
+                settings['ASAPO']['mode'] = 'file'
+            else:
+                settings['ASAPO']['mode'] = 'dataset'
 
         self._main_window.apply_settings(settings)
 
