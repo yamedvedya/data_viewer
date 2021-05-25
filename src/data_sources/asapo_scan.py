@@ -10,7 +10,7 @@ import configparser
 
 from src.gui.asapo_image_setup_ui import Ui_ASAPOImageSetup
 from src.data_sources.abstract_data_file import AbstractDataFile
-from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup, MEMORY_MODE
+from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup
 
 from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver, create_consumer
 from AsapoWorker.data_handler import get_image
@@ -69,7 +69,7 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         cube = self._get_data()
         self._data['cube_shape'] = cube.shape
 
-        if MEMORY_MODE == 'ram':
+        if self._data_pool.memory_mode == 'ram':
             self._3d_cube = cube
 
         self._data['frame_ID'] = np.arange(self._data['cube_shape'][0])

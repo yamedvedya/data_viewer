@@ -40,6 +40,7 @@ class DataPool(QtCore.QObject):
         self._lim_mode = 'no'
         self._max_num_files = None
         self._max_memory = None
+        self.memory_mode = 'ram'
 
         self._axes_names = {'real': ['X', 'Y', 'Z']}
 
@@ -69,6 +70,9 @@ class DataPool(QtCore.QObject):
 
         if 'max_open_files' in settings:
             self._max_num_files = int(settings['max_open_files'])
+
+        if 'memory_mode' in settings:
+            self.memory_mode = settings['memory_mode']
 
         if 'max_memory_usage' in settings:
             self._max_memory = int(settings['max_memory_usage'])

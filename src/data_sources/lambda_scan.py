@@ -1,7 +1,5 @@
 # Created by matveyev at 18.02.2021
 
-MEMORY_MODE = 'ram' #'disk' or 'ram'
-
 WIDGET_NAME = 'LambdaScanSetup'
 
 import h5py
@@ -12,7 +10,7 @@ import numpy as np
 from src.gui.lambda_setup_ui import Ui_LambdaSetup
 from src.utils.utils import refresh_combo_box
 from src.data_sources.abstract_data_file import AbstractDataFile
-from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup, MEMORY_MODE
+from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup
 
 SETTINGS = {'enable_mask': False,
             'mask': None,
@@ -71,7 +69,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 cube = self._get_data()
                 self._data['cube_shape'] = cube.shape
 
-                if MEMORY_MODE == 'ram':
+                if self._data_pool.memory_mode == 'ram':
                     self._3d_cube = cube
 
         if 'point_nb' not in self._data['scanned_values']:

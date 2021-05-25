@@ -4,6 +4,7 @@ import configparser
 
 from PyQt5 import QtWidgets, QtCore
 from distutils.util import strtobool
+from src.utils.utils import refresh_combo_box
 
 from src.gui.settings_ui import Ui_Settings
 from src.main_window import APP_NAME
@@ -31,6 +32,10 @@ class ProgramSetup(QtWidgets.QDialog):
                 self._ui.le_door_address.setText(settings['FILE_BROWSER']['door_address'])
 
         if 'DATA_POOL' in settings:
+            if 'memory_mode' in settings['DATA_POOL']:
+                if settings['DATA_POOL']['memory_mode'] == 'ram':
+                    refresh_combo_box(self._ui.cmb_memory_mode, 'RAM')
+
             if 'max_open_files' in settings['DATA_POOL']:
                 self._ui.sp_lim_num.setValue(int(settings['DATA_POOL']['max_open_files']))
 
@@ -77,10 +82,15 @@ class ProgramSetup(QtWidgets.QDialog):
         if str(self._ui.le_door_address.text()) != '':
             settings['FILE_BROWSER'] = {'door_address': str(self._ui.le_door_address.text())}
 
-        settings['DATA_POOL'] = {'max_open_files': str(self._ui.sp_lim_num.value()),
-                                 'max_memory_usage': str(self._ui.sb_lim_mem.value()),
-                                 'delimiter': str(self._ui.le_separator.text()),
-                                 'format': str(self._ui.le_format.text())}
+        if self._ui.cmb_memory_mode.currentText() == 'RAM':
+            settings['DATA_POOL'] = {'memory_mode': 'ram'}
+        else:
+            settings['DATA_POOL'] = {'memory_mode': 'drive'}
+
+        settings['DATA_POOL'].update({'max_open_files': str(self._ui.sp_lim_num.value()),
+                                      'max_memory_usage': str(self._ui.sb_lim_mem.value()),
+                                      'delimiter': str(self._ui.le_separator.text()),
+                                      'format': str(self._ui.le_format.text())})
 
         if str(self._ui.le_host.text()) != '' and str(self._ui.le_beamtime.text()) != '' \
                 and str(self._ui.le_token.text()) != '' and str(self._ui.le_detectors.text()) != '':

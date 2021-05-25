@@ -1,7 +1,6 @@
 # Created by matveyev at 18.02.2021
 
 import numpy as np
-import os
 
 
 class AbstractDataFile(object):

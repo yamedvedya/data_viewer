@@ -12,7 +12,6 @@ from src.main_window import APP_NAME
 from src.utils.utils import read_mask_file, read_ff_file
 
 WIDGET_NAME = ''
-MEMORY_MODE = 'ram' #'disk' or 'ram'
 
 # ----------------------------------------------------------------------
 class DetectorImage():
@@ -33,7 +32,7 @@ class DetectorImage():
     # ----------------------------------------------------------------------
     def _get_data(self):
 
-        if MEMORY_MODE == 'ram':
+        if self._data_pool.memory_mode == 'ram':
             if not self._need_apply_mask:
                 return np.copy(self._3d_cube)
             else:
@@ -87,7 +86,7 @@ class DetectorImage():
             if self._data_pool is not None:
                 self._data_pool.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
 
-        if MEMORY_MODE == 'ram':
+        if self._data_pool.memory_mode == 'ram':
             self._need_apply_mask = False
             self._3d_cube = np.copy(_data)
 
