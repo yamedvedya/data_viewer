@@ -8,7 +8,6 @@ import sys
 import numpy as np
 
 from collections import OrderedDict
-from threading import Thread
 
 from PyQt5 import QtCore, QtWidgets
 
@@ -316,7 +315,7 @@ class Opener(QtCore.QThread):
                 try:
                     with h5py.File(self.params['file_name'], 'r') as f:
                         if 'scan' in f.keys():
-                            new_file = LambdaScan(self.params['file_name'], self, f)
+                            new_file = LambdaScan(self.params['file_name'], self.data_pool, f)
                             new_file.apply_settings()
                         self.data_pool.add_new_entry(self.params['entry_name'], new_file)
                         finished = True
@@ -334,7 +333,7 @@ class Opener(QtCore.QThread):
 
         elif self.mode == 'stream':
             try:
-                new_file = ASAPOScan(self.params['detector_name'], self.params['stream_name'], self)
+                new_file = ASAPOScan(self.params['detector_name'], self.params['stream_name'], self.data_pool)
                 new_file.apply_settings()
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 

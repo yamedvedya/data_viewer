@@ -35,6 +35,8 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'memory_mode' in settings['DATA_POOL']:
                 if settings['DATA_POOL']['memory_mode'] == 'ram':
                     refresh_combo_box(self._ui.cmb_memory_mode, 'RAM')
+                else:
+                    refresh_combo_box(self._ui.cmb_memory_mode, 'DRIVE/ASAPO')
 
             if 'max_open_files' in settings['DATA_POOL']:
                 self._ui.sp_lim_num.setValue(int(settings['DATA_POOL']['max_open_files']))
@@ -96,7 +98,7 @@ class ProgramSetup(QtWidgets.QDialog):
                 and str(self._ui.le_token.text()) != '' and str(self._ui.le_detectors.text()) != '':
             settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
                                  'path': str(self._ui.le_path.text()),
-                                 'has_filsystem': str(self._ui.chk_filesystem.isChecked()),
+                                 'has_filesystem': str(self._ui.chk_filesystem.isChecked()),
                                  'beamtime': str(self._ui.le_beamtime.text()),
                                  'token': str(self._ui.le_token.text()),
                                  'detectors': str(self._ui.le_detectors.text()),

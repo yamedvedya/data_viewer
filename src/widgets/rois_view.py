@@ -66,8 +66,8 @@ class RoisView(AbstractWidget):
         self._ui.tab_main.removeTab(idx)
         del self._roi_widgets[roi_id]
 
-        if self._ui.tab_main.count() < 1:
-            self._add_roi()
+        # if self._ui.tab_main.count() < 1:
+        #     self._add_roi()
 
         for idx in range(self._ui.tab_main.count()):
             self._ui.tab_main.setTabText(idx, 'ROI_{}'.format(self._ui.tab_main.widget(idx).refresh_name()))

@@ -66,11 +66,12 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                                                      os.path.splitext(os.path.basename(opened_file.filename))[0], 'lmbd')
 
                 self._need_apply_mask = True
-                cube = self._get_data()
-                self._data['cube_shape'] = cube.shape
 
                 if self._data_pool.memory_mode == 'ram':
-                    self._3d_cube = cube
+                    self._3d_cube = self._get_data()
+                    self._data['cube_shape'] = self._3d_cube.shape
+                else:
+                    self._data['cube_shape'] = self._get_cube_shape()
 
         if 'point_nb' not in self._data['scanned_values']:
             self._data['scanned_values'].append('point_nb')
@@ -81,25 +82,51 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         return SETTINGS
 
     # ----------------------------------------------------------------------
-    def _reload_data(self):
+    def _reload_data(self, frame_ids=None):
 
         file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
         file_lists.sort()
 
         if len(file_lists) > 0:
-            source_file = h5py.File(os.path.join(self._detector_folder, file_lists[0]), 'r')
+            if frame_ids is not None:
+                if len(file_lists) > 1:
+                    files_to_load =  file_lists[frame_ids]
+                    _need_cut = False
+                else:
+                    files_to_load = file_lists
+                    _need_cut = True
+            else:
+                files_to_load = file_lists
+                _need_cut = False
+
+            source_file = h5py.File(os.path.join(self._detector_folder, files_to_load[0]), 'r')
             cube = np.array(source_file['entry']['instrument']['detector']['data'], dtype=np.float32)
 
-            for name in file_lists[1:]:
+            for name in files_to_load[1:]:
                 source_file = h5py.File(os.path.join(self._detector_folder, name), 'r')
                 cube = np.vstack((cube, np.array(source_file['entry']['instrument']['detector']['data'],
                                                  dtype=np.float32)))
 
-            cube = cube[:self._scan_length, :, :]
-            return np.array(cube, dtype=np.float32)
+            if _need_cut:
+                cube = cube[frame_ids, :, :]
+            elif frame_ids is None:
+                cube = cube[:self._scan_length, :, :]
 
+            return np.array(cube, dtype=np.float32)
         else:
             raise RuntimeError('No lmbd file found')
+
+    # ----------------------------------------------------------------------
+    def _get_cube_shape(self):
+        file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
+        file_lists.sort()
+
+        if len(file_lists) > 1:
+            frame = self._reload_data([0])
+            return len(file_lists), frame[0], frame[1]
+        else:
+            source_file = h5py.File(os.path.join(self._detector_folder, file_lists[0]), 'r')
+            return source_file['entry']['instrument']['detector']['data'].shape
 
     # ----------------------------------------------------------------------
     def get_axis_limits(self, space):
@@ -145,14 +172,17 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 SETTINGS['all_params'].append(value)
 
     # ----------------------------------------------------------------------
-    def _get_correction(self, cube_shape):
+    def _get_correction(self, cube_shape, frame_ids=None):
 
         self._correction = np.ones(cube_shape[0], dtype=np.float32)
 
         try:
             if SETTINGS['atten_correction'] == 'on':
                 if SETTINGS['atten_param'] in self._data['scanned_values']:
-                    self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
+                    if frame_ids is not None:
+                        self._correction *= np.maximum(self._data[SETTINGS['atten_param']][frame_ids], 1)
+                    else:
+                        self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
         except Exception as err:
             if self._data_pool is not None:
                 self._data_pool.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
@@ -160,8 +190,12 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         try:
             if SETTINGS['inten_correction'] == 'on':
                 if SETTINGS['inten_param'] in self._data['scanned_values']:
-                    self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0])) / \
-                                        np.maximum(self._data[SETTINGS['inten_param']], 1)
+                    if frame_ids is not None:
+                        self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0])) / \
+                                            np.maximum(self._data[SETTINGS['inten_param']][frame_ids], 1)
+                    else:
+                        self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0])) / \
+                                            np.maximum(self._data[SETTINGS['inten_param']], 1)
 
         except Exception as err:
             if self._data_pool is not None:

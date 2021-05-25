@@ -66,11 +66,11 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         self._data['scanned_values'] = ['frame_ID']
 
         self._need_apply_mask = True
-        cube = self._get_data()
-        self._data['cube_shape'] = cube.shape
-
         if self._data_pool.memory_mode == 'ram':
-            self._3d_cube = cube
+            self._3d_cube = self._get_data()
+            self._data['cube_shape'] = self._3d_cube.shape
+        else:
+            self._data['cube_shape'] = self._get_cube_shape()
 
         self._data['frame_ID'] = np.arange(self._data['cube_shape'][0])
 
@@ -79,7 +79,7 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         return SETTINGS
 
     # -------------------------------------------------------------------
-    def _reload_data(self):
+    def _reload_data(self, frame_ids=None):
 
         def _convert_image(data, meta_data):
             if self._mode == 'file':
@@ -87,14 +87,29 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
             else:
                 return get_image(data[0], meta_data[0])[np.newaxis, :]
 
-        self.receiver.set_start_id(1)
-        data, meta_data = self.receiver.get_next(False)
-        cube = _convert_image(data, meta_data)
-        for _ in range(1, self.receiver.get_current_size()):
+        if frame_ids is not None:
+            self.receiver.set_start_id(frame_ids[0]+1)
             data, meta_data = self.receiver.get_next(False)
-            cube = np.vstack((cube, _convert_image(data, meta_data)))
+            cube = _convert_image(data, meta_data)
+            for frame in frame_ids[1:]:
+                self.receiver.set_start_id(frame+1)
+                data, meta_data = self.receiver.get_next(False)
+                cube = np.vstack((cube, _convert_image(data, meta_data)))
+        else:
+
+            self.receiver.set_start_id(1)
+            data, meta_data = self.receiver.get_next(False)
+            cube = _convert_image(data, meta_data)
+            for _ in range(1, self.receiver.get_current_size()):
+                data, meta_data = self.receiver.get_next(False)
+                cube = np.vstack((cube, _convert_image(data, meta_data)))
 
         return np.array(cube, dtype=np.float32)
+
+    # ----------------------------------------------------------------------
+    def _get_cube_shape(self):
+        frame = self._reload_data([0])
+        return self.receiver.get_current_size(), frame.shape[1], frame.shape[2]
 
     # ----------------------------------------------------------------------
     def apply_settings(self):

@@ -21,16 +21,20 @@ class DetectorImage():
         raise RuntimeError('Non implemented')
 
     # ----------------------------------------------------------------------
-    def _reload_data(self):
+    def _reload_data(self, frame_ids=None):
         raise RuntimeError('Non implemented')
 
     # ----------------------------------------------------------------------
-    def _get_correction(self, cube_shape):
+    def _get_cube_shape(self):
+        raise RuntimeError('Non implemented')
+
+    # ----------------------------------------------------------------------
+    def _get_correction(self, cube_shape, frame_ids=None):
 
         self._correction = np.ones(cube_shape[0], dtype=np.float32)
 
     # ----------------------------------------------------------------------
-    def _get_data(self):
+    def _get_data(self, frame_id=None):
 
         if self._data_pool.memory_mode == 'ram':
             if not self._need_apply_mask:
@@ -40,7 +44,7 @@ class DetectorImage():
                 _data = self._reload_data()
         else:
             self._3d_cube = None
-            _data = self._reload_data()
+            _data = self._reload_data(frame_id)
 
         _settings = self._get_settings()
 
@@ -60,7 +64,7 @@ class DetectorImage():
         if _settings['enable_fill']:
             _fill_weights = ndimage.uniform_filter(1.-_pixel_mask, size=_settings['fill_radius'])
 
-        self._get_correction(_data.shape)
+        self._get_correction(_data.shape, frame_id)
 
         try:
             if _pixel_mask is not None:
@@ -100,13 +104,16 @@ class DetectorImage():
         if space in self._spaces:
             cut_axis = self._cube_axes_map[space][axis]
 
-            data = self._get_data()
-            if cut_axis == 0:
-                data = data[value, :, :]
-            elif cut_axis == 1:
-                data = data[:, value, :]
+            if cut_axis == 0 and self._data_pool.memory_mode != 'ram':
+                data = self._get_data([value])
             else:
-                data = data[:, :, value]
+                data = self._get_data()
+                if cut_axis == 0:
+                    data = data[value, :, :]
+                elif cut_axis == 1:
+                    data = data[:, value, :]
+                else:
+                    data = data[:, :, value]
 
             if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
                 return np.transpose(data)
