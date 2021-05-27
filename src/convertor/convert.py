@@ -37,9 +37,6 @@ class Converter(QtWidgets.QMainWindow):
             getattr(self._ui, f'gv_{plot}').setCentralItem(self._plots[plot])
             getattr(self._ui, f'gv_{plot}').setRenderHints(getattr(self._ui, f'gv_{plot}').renderHints())
 
-            self._color_meshes[plot] = pg.PColorMeshItem()
-            self._plots[plot].addItem(self._color_meshes[plot])
-
         self._ui.cmd_preview.clicked.connect(self._preview)
         self._ui.cmd_save.clicked.connect(self._save)
         self._ui.cmd_cancel.clicked.connect(self.close)
@@ -60,9 +57,15 @@ class Converter(QtWidgets.QMainWindow):
     def _preview(self):
         self._convert()
         if self._gridder is not None:
-            self._plots['xy'].setData(self._gridder.yaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(0).T))
-            self._plots['xy'].setData(self._gridder.yaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(0).T))
-            self._plots['xy'].setData(self._gridder.yaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(0).T))
+
+            self._color_meshes['xy'] = pg.PColorMeshItem(self._gridder.xaxis, self._gridder.yaxis, np.log(self._gridder.data.sum(2).T))
+            self._plots['xy'].addItem(self._color_meshes['xy'])
+
+            self._color_meshes['xz'] = pg.PColorMeshItem(self._gridder.xaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(1).T))
+            self._plots['xz'].addItem(self._color_meshes['xz'])
+
+            self._color_meshes['yz'] = pg.PColorMeshItem(self._gridder.yaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(0).T))
+            self._plots['yz'].addItem(self._color_meshes['yz'])
 
     # ----------------------------------------------------------------------
     def _save(self):
