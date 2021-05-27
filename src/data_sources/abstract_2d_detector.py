@@ -97,9 +97,7 @@ class DetectorImage():
         return _data
 
     # ----------------------------------------------------------------------
-    def _get_image(self, space, axis, value, x_axis, y_axis):
-
-        _settings = self._get_settings()
+    def _get_2d_cut(self, space, axis, value, x_axis, y_axis):
 
         if space in self._spaces:
             cut_axis = self._cube_axes_map[space][axis]
@@ -124,9 +122,7 @@ class DetectorImage():
             return []
 
     # ----------------------------------------------------------------------
-    def _get_plot(self, space, sect):
-
-        _settings = self._get_settings()
+    def _get_roi_data(self, space, sect, do_sum):
 
         if space in self._spaces:
             plot_axis = self._cube_axes_map[space][sect['axis']]
@@ -142,8 +138,9 @@ class DetectorImage():
                     data = data[:,
                                 sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-                data = np.sum(data, axis=1)
-                data = np.sum(data, axis=1)
+                if do_sum:
+                    data = np.sum(data, axis=1)
+                    data = np.sum(data, axis=1)
 
             elif plot_axis == 1:
                 if cut_axis_1 == 0:
@@ -154,8 +151,9 @@ class DetectorImage():
                     data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                 :,
                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-                data = np.sum(data, axis=2)
-                data = np.sum(data, axis=0)
+                if do_sum:
+                    data = np.sum(data, axis=2)
+                    data = np.sum(data, axis=0)
 
             else:
                 if cut_axis_1 == 0:
@@ -166,8 +164,9 @@ class DetectorImage():
                     data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                 sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
                                 :]
-                data = np.sum(data, axis=0)
-                data = np.sum(data, axis=0)
+                if do_sum:
+                    data = np.sum(data, axis=0)
+                    data = np.sum(data, axis=0)
 
             return self._get_roi_axis(plot_axis), data
 
