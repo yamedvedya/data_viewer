@@ -198,6 +198,10 @@ class FrameView(AbstractWidget):
         self.update_image()
 
     # ----------------------------------------------------------------------
+    def current_file(self):
+        return self._main_view.current_file
+
+    # ----------------------------------------------------------------------
     def new_main_file(self, z_value):
 
         if self._main_view.current_file is not None:

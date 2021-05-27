@@ -60,6 +60,10 @@ class AbstractDataFile(object):
             return self._axes_names[space][real_axis], pos
 
     # ----------------------------------------------------------------------
+    def get_roi_cube(self, space, sect):
+        pass
+
+    # ----------------------------------------------------------------------
     def get_2d_cut(self, space, axis, value, x_axis, y_axis):
         if space in self._spaces:
             cut_axis = self._cube_axes_map[space][axis]
@@ -71,7 +75,6 @@ class AbstractDataFile(object):
             else:
                 data = self._3d_cube[:, :, value]
 
-            data = data.todense()
             if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
                 return np.transpose(data)
             else:
@@ -89,7 +92,16 @@ class AbstractDataFile(object):
         return 0
 
     # ----------------------------------------------------------------------
+    def get_roi_cut(self, space, sect):
+        _, cube_cut = self.get_roi_data(space, sect, False)
+        return cube_cut
+
+    # ----------------------------------------------------------------------
     def get_roi_plot(self, space, sect):
+        return self.get_roi_data(space, sect, True)
+
+    # ----------------------------------------------------------------------
+    def get_roi_data(self, space, sect, do_sum):
         if space in self._spaces:
             plot_axis = self._cube_axes_map[space][sect['axis']]
             cut_axis_1 = self._cube_axes_map[space][sect['roi_1_axis']]
@@ -103,8 +115,9 @@ class AbstractDataFile(object):
                     cube_cut = self._3d_cube[:,
                                              sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                              sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-                cube_cut = np.sum(cube_cut, axis=1)
-                cube_cut = np.sum(cube_cut, axis=1)
+                if do_sum:
+                    cube_cut = np.sum(cube_cut, axis=1)
+                    cube_cut = np.sum(cube_cut, axis=1)
 
             elif plot_axis == 1:
                 if cut_axis_1 == 0:
@@ -115,8 +128,9 @@ class AbstractDataFile(object):
                     cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                              :,
                                              sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-                cube_cut = np.sum(cube_cut, axis=2)
-                cube_cut = np.sum(cube_cut, axis=0)
+                if do_sum:
+                    cube_cut = np.sum(cube_cut, axis=2)
+                    cube_cut = np.sum(cube_cut, axis=0)
 
             else:
                 if cut_axis_1 == 0:
@@ -127,10 +141,9 @@ class AbstractDataFile(object):
                     cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
                                              sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']
                                              :]
-                cube_cut = np.sum(cube_cut, axis=0)
-                cube_cut = np.sum(cube_cut, axis=0)
-
-            cube_cut = cube_cut.todense()
+                if do_sum:
+                    cube_cut = np.sum(cube_cut, axis=0)
+                    cube_cut = np.sum(cube_cut, axis=0)
 
             return self._get_roi_axis(plot_axis), cube_cut
 

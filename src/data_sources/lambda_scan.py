@@ -9,6 +9,7 @@ import numpy as np
 
 from src.gui.lambda_setup_ui import Ui_LambdaSetup
 from src.utils.utils import refresh_combo_box
+from src.utils.fio_reader import fioReader
 from src.data_sources.abstract_data_file import AbstractDataFile
 from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup
 
@@ -57,7 +58,11 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                     self._scan_length = len(scan_data[key][...])
                 if len(scan_data[key][...]) == self._scan_length:
                     self._data['scanned_values'].append(key)
-                    self._data[key] = np.array(scan_data[key][...])
+                self._data[key] = np.array(scan_data[key][...])
+
+        if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
+            fio_file = fioReader(os.path.splitext(file_name)[0] + '.fio')
+            self._data.update(fio_file.parameters)
 
         for key in scan_data.keys():
             if key == 'lmbd':
@@ -212,7 +217,12 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None
 
-        return self._get_image(space, axis, value, x_axis, y_axis)
+        return self._get_2d_cut(space, axis, value, x_axis, y_axis)
+
+    # ----------------------------------------------------------------------
+    def get_roi_cut(self, space, sect):
+        _, cube_cut = self._get_roi_data(space, sect, False)
+        return cube_cut
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, space, sect):
@@ -220,7 +230,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None, None
 
-        return self._get_plot(space, sect)
+        return self._get_roi_data(space, sect, True)
 
 # ----------------------------------------------------------------------
 class LambdaScanSetup(DetectorImageSetup):

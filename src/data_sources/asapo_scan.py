@@ -119,12 +119,17 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
     # ----------------------------------------------------------------------
     def get_2d_cut(self, space, axis, value, x_axis, y_axis):
 
-        return self._get_image(space, axis, value, x_axis, y_axis)
+        return self._get_2d_cut(space, axis, value, x_axis, y_axis)
+
+    # ----------------------------------------------------------------------
+    def get_roi_cut(self, space, sect):
+        _, cube_cut = self._get_roi_data(space, sect, False)
+        return cube_cut
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, space, sect):
 
-        return self._get_plot(space, sect)
+        return self._get_roi_data(space, sect, True)
 
 # ----------------------------------------------------------------------
 class ASAPOScanSetup(DetectorImageSetup):

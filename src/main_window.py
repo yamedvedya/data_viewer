@@ -6,7 +6,6 @@ import os
 import logging
 import psutil
 import configparser
-import re
 
 from PyQt5 import QtWidgets, QtCore
 from src.gui.main_window_ui import Ui_MainWindow
@@ -24,6 +23,7 @@ from src.data_pool import DataPool
 from src.widgets.image_setup import ImageSetup
 from src.widgets.settings import ProgramSetup
 from src.widgets.aboutdialog import AboutDialog
+from src.convertor.convert import Converter
 
 class DataViewer(QtWidgets.QMainWindow):
     """
@@ -51,6 +51,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.parameter_action_group = None
 
         self.data_pool = DataPool(self, self.log)
+        self.converter = Converter(self.data_pool)
 
         self.setCentralWidget(None)
 
@@ -152,9 +153,8 @@ class DataViewer(QtWidgets.QMainWindow):
             self.data_pool.batch_process_rois(file_names, save_dir, '.txt')
 
     # ----------------------------------------------------------------------
-    def _new_space(self, space):
-        self.data_pool.set_space(space)
-        pass # TODO
+    def _convert(self):
+        self.converter.show(self.frame_view.current_file())
 
     # ----------------------------------------------------------------------
     def _show_settings(self):
@@ -164,17 +164,9 @@ class DataViewer(QtWidgets.QMainWindow):
     def _setup_menu(self):
         self._menu_view = QtWidgets.QMenu('Widgets', self)
 
-        space_menu = QtWidgets.QMenu('Displayed space', self)
-        space_group = QtWidgets.QActionGroup(self)
-        action = space_menu.addAction('Real')
-        action.setCheckable(True)
-        action.setChecked(True)
-        action.triggered.connect(lambda: self._new_space('real'))
-        space_group.addAction(action)
-        action = space_menu.addAction('Reciprocal')
-        action.setCheckable(True)
-        action.triggered.connect(lambda: self._new_space('reciprocal'))
-        space_group.addAction(action)
+        space_menu = QtWidgets.QMenu('Space', self)
+        action = space_menu.addAction('Convert current file')
+        action.triggered.connect(self._convert)
 
         image_setup = QtWidgets.QAction('Image setup', self)
         image_setup.triggered.connect(self._setup_image)
@@ -197,6 +189,7 @@ class DataViewer(QtWidgets.QMainWindow):
         action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
 
         self.menuBar().addMenu(batch_menu)
+        self.menuBar().addMenu(space_menu)
 
         self.menuBar().addSeparator()
 
@@ -337,6 +330,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self._lb_resources_status.setText("| {:.2f}MB | CPU {} % |".format(mem,
                                                                            cpu))
+
 
 # ----------------------------------------------------------------------
 def _init_logger():
