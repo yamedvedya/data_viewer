@@ -51,6 +51,14 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         scan_data = opened_file['scan']['data']
 
         #TODO: TEMP! Fix scans!
+        if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
+            fio_file = fioReader(os.path.splitext(file_name)[0] + '.fio')
+            for key, value in fio_file.parameters.items():
+                try:
+                    self._data[key] = float(value)
+                except:
+                    self._data[key] = value
+
         self._scan_length = None
         for key in scan_data.keys():
             if key != 'lmbd' and len(scan_data[key].shape) == 1:
@@ -59,10 +67,6 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 if len(scan_data[key][...]) == self._scan_length:
                     self._data['scanned_values'].append(key)
                 self._data[key] = np.array(scan_data[key][...])
-
-        if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
-            fio_file = fioReader(os.path.splitext(file_name)[0] + '.fio')
-            self._data.update(fio_file.parameters)
 
         for key in scan_data.keys():
             if key == 'lmbd':

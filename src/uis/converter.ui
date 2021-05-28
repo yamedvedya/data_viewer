@@ -42,12 +42,18 @@
            <property name="text">
             <string>Omega</string>
            </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
          <item row="1" column="1">
           <widget class="QCheckBox" name="chk_chi">
            <property name="text">
             <string>Chi</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -56,12 +62,18 @@
            <property name="text">
             <string>Mu</string>
            </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
           </widget>
          </item>
          <item row="2" column="1">
           <widget class="QCheckBox" name="chk_phi">
            <property name="text">
             <string>Phi</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -130,7 +142,7 @@
             <number>1</number>
            </property>
            <property name="value">
-            <number>0</number>
+            <number>1161</number>
            </property>
           </widget>
          </item>
@@ -156,7 +168,7 @@
             <number>1</number>
            </property>
            <property name="value">
-            <number>0</number>
+            <number>290</number>
            </property>
           </widget>
          </item>
@@ -260,7 +272,7 @@
             <double>360.000000000000000</double>
            </property>
            <property name="value">
-            <double>0.333000000000000</double>
+            <double>-0.333000000000000</double>
            </property>
           </widget>
          </item>
@@ -575,7 +587,7 @@
      <x>0</x>
      <y>0</y>
      <width>1004</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

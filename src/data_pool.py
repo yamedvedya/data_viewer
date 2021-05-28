@@ -189,8 +189,8 @@ class DataPool(QtCore.QObject):
         del self._rois[roi_index]
 
     # ----------------------------------------------------------------------
-    def get_roi_cube(self, file, roi_idx):
-        return self._files_data[file].get_roi_plot(self.space, self._rois[roi_idx].get_section_params())
+    def get_roi_cut(self, file, roi_idx):
+        return self._files_data[file].get_roi_cut(self.space, self._rois[roi_idx].get_section_params())
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, file, roi_idx):

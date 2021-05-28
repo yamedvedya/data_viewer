@@ -8,6 +8,8 @@ from PyQt5 import QtWidgets
 
 import src.convertor.p23lib as p23lib
 from src.gui.converter_ui import Ui_Converter
+
+
 class Converter(QtWidgets.QMainWindow):
 
     def __init__(self, data_pool):
@@ -26,8 +28,6 @@ class Converter(QtWidgets.QMainWindow):
 
         for plot in plots:
             self._plots[plot] = pg.PlotItem()
-            self._plots[plot].showAxis('left', False)
-            self._plots[plot].showAxis('bottom', False)
             self._plots[plot].setMenuEnabled(False)
 
             getattr(self._ui, f'gv_{plot}').setStyleSheet("")
@@ -37,9 +37,20 @@ class Converter(QtWidgets.QMainWindow):
             getattr(self._ui, f'gv_{plot}').setCentralItem(self._plots[plot])
             getattr(self._ui, f'gv_{plot}').setRenderHints(getattr(self._ui, f'gv_{plot}').renderHints())
 
+            self._plots[plot].scene().sigMouseClicked.connect(lambda event, source=plot:
+                                                              self._mouse_clicked(event, source))
+
         self._ui.cmd_preview.clicked.connect(self._preview)
         self._ui.cmd_save.clicked.connect(self._save)
         self._ui.cmd_cancel.clicked.connect(self.close)
+
+    # ----------------------------------------------------------------------
+    def _mouse_clicked(self, event, source):
+        if event.double():
+            try:
+                self._plots[source].autoRange()
+            except:
+                pass
 
     # ----------------------------------------------------------------------
     def show(self, file_name):
@@ -55,17 +66,43 @@ class Converter(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def _preview(self):
+
+        for plot in
+            self._plots['xy']
         self._convert()
         if self._gridder is not None:
+            try:
+                xv, yv = _make_grid(self._gridder.xaxis, self._gridder.yaxis)
+                self._color_meshes['xy'] = pg.PColorMeshItem(xv, yv, np.log(self._gridder.data.sum(2) + 1))
+                self._plots['xy'].addItem(self._color_meshes['xy'])
+                try:
+                    self._plots['xy'].autoRange()
+                except:
+                    pass
+            except:
+                pass
 
-            self._color_meshes['xy'] = pg.PColorMeshItem(self._gridder.xaxis, self._gridder.yaxis, np.log(self._gridder.data.sum(2).T))
-            self._plots['xy'].addItem(self._color_meshes['xy'])
+            try:
+                xv, zv = _make_grid(self._gridder.xaxis, self._gridder.zaxis)
+                self._color_meshes['xz'] = pg.PColorMeshItem(xv, zv, np.log(self._gridder.data.sum(1)+1))
+                self._plots['xz'].addItem(self._color_meshes['xz'])
+                try:
+                    self._plots['xz'].autoRange()
+                except:
+                    pass
+            except:
+                pass
 
-            self._color_meshes['xz'] = pg.PColorMeshItem(self._gridder.xaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(1).T))
-            self._plots['xz'].addItem(self._color_meshes['xz'])
-
-            self._color_meshes['yz'] = pg.PColorMeshItem(self._gridder.yaxis, self._gridder.zaxis, np.log(self._gridder.data.sum(0).T))
-            self._plots['yz'].addItem(self._color_meshes['yz'])
+            try:
+                yv, zv = _make_grid(self._gridder.yaxis, self._gridder.zaxis)
+                self._color_meshes['yz'] = pg.PColorMeshItem(yv, zv, np.log(self._gridder.data.sum(0) + 1))
+                self._plots['yz'].addItem(self._color_meshes['yz'])
+                try:
+                    self._plots['yz'].autoRange()
+                except:
+                    pass
+            except:
+                pass
 
     # ----------------------------------------------------------------------
     def _save(self):
@@ -89,10 +126,8 @@ class Converter(QtWidgets.QMainWindow):
         hxrd = xu.HXRD([1, 0, 0], [0, 0, 1],
                        geometry="real",
                        qconv=qconv,
-                       en=self._data_pool.get_entry_value('energy'),
+                       en=self._data_pool.get_entry_value(self._file_name, 'mnchrmtr'),
                        sampleor="y-")
-
-        roi_index = self._data_pool.get_roi_index(self._ui.cmd_roi.currentIndex())
 
         roi_cut = (self._data_pool.get_roi_param(roi_index, 'roi_1_pos'),
                    self._data_pool.get_roi_param(roi_index, 'roi_1_pos') + self._data_pool.get_roi_param(roi_index, 'roi_1_width'),
@@ -117,7 +152,7 @@ class Converter(QtWidgets.QMainWindow):
         scan_angles = dict.fromkeys(angles_set)
         for angle in angles_set:
             try:
-                scan_angles[angle] = self._data_pool.get_entry_value(angle) - getattr(self._ui, f'dsb_shift_{angle}').value()
+                scan_angles[angle] = self._data_pool.get_entry_value(self._file_name, angle) - getattr(self._ui, f'dsb_shift_{angle}').value()
             except KeyError:
                 scan_angles[angle] = - getattr(self._ui, f'dsb_shift_{angle}').value()
 
@@ -127,9 +162,25 @@ class Converter(QtWidgets.QMainWindow):
                                      scan_angles['phi'],
                                      scan_angles['gamma'],
                                      scan_angles['delta'],
-                                     en=self._data_pool.get_entry_value('energy'),
+                                     en=self._data_pool.get_entry_value(self._file_name, 'mnchrmtr'),
                                      UB=hxrd._transform.matrix)
 
         bins = int(self._ui.sb_bin_x.value()), int(self._ui.sb_bin_y.value()), int(self._ui.sb_bin_z.value())
         self._gridder = xu.FuzzyGridder3D(*bins)
         self._gridder(qx, qy, qz, self._data_pool.get_roi_cut(self._file_name, roi_index))
+
+
+# ----------------------------------------------------------------------
+def _make_grid(axis1, axis2):
+    one_step1 = axis1[1]-axis1[0]
+    axis1 = axis1 - one_step1/2
+    axis1 = np.append(axis1, axis1[-1] + one_step1)
+
+    one_step2 = axis2[1]-axis2[0]
+    axis2 = axis2 - one_step2/2
+    axis2 = np.append(axis2, axis2[-1] + one_step2)
+
+    xv, yv = np.meshgrid(axis1, axis2)
+
+    return xv.T, yv.T
+
