@@ -14,6 +14,8 @@ from PyQt5 import QtCore, QtWidgets
 from src.data_sources.lambda_scan import LambdaScan
 if 'asapo_consumer' in sys.modules:
     from src.data_sources.asapo_scan import ASAPOScan
+
+from src.data_sources.reciprocal_scan import ReciprocalScan
 from src.utils.roi import ROI
 from src.widgets.batch_progress import BatchProgress
 
@@ -34,14 +36,13 @@ class DataPool(QtCore.QObject):
 
         self.main_window = parent
         self.log = log
-        self.space = 'real'
 
         self._lim_mode = 'no'
         self._max_num_files = None
         self._max_memory = None
         self.memory_mode = 'ram'
 
-        self._axes_names = {'real': ['X', 'Y', 'Z']}
+        self._axes_names = ['X', 'Y', 'Z']
 
         self.axes_limits = {0: [0, 0],
                             1: [0, 0],
@@ -160,6 +161,26 @@ class DataPool(QtCore.QObject):
                 self._protected_files.remove(name)
 
     # ----------------------------------------------------------------------
+    def save_converted(self, entry_name, gridder):
+
+        file_name, ok = QtWidgets.QFileDialog.getSaveFileName(self.main_window, 'Select file name',
+                                                              self.main_window.get_current_folder() + "/" + entry_name,
+                                                              'HDF5 format {.h5};;')
+        if ok:
+            while file_name in self._files_data:
+                file_name, ok = QtWidgets.QFileDialog.getSaveFileName(self.main_window, 'Select file name',
+                                                                      self.main_window.get_current_folder() + "/" + entry_name,
+                                                                      'HDF5 format {.h5};;')
+            if not ok:
+                return
+
+        if not file_name.endswith('.h5'):
+            file_name += '.h5'
+
+        ReciprocalScan(self, gridder=gridder).save_file(file_name)
+        self.open_file(file_name)
+
+    # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def roi_counts(self):
@@ -190,11 +211,11 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, file, roi_idx):
-        return self._files_data[file].get_roi_cut(self.space, self._rois[roi_idx].get_section_params())
+        return self._files_data[file].get_roi_cut(self._rois[roi_idx].get_section_params())
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, file, roi_idx):
-        return self._files_data[file].get_roi_plot(self.space, self._rois[roi_idx].get_section_params())
+        return self._files_data[file].get_roi_plot(self._rois[roi_idx].get_section_params())
 
     # ----------------------------------------------------------------------
     def set_section_axis(self, roi_idx, axis):
@@ -209,7 +230,7 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def get_roi_axis_name(self, roi_ind, file):
-        return self._files_data[file].file_axes_caption(self.space)[self._rois[roi_ind].get_param('axis')]
+        return self._files_data[file].file_axes_caption()[self._rois[roi_ind].get_param('axis')]
 
     # ----------------------------------------------------------------------
     def get_roi_param(self, roi_ind, param):
@@ -254,11 +275,11 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def get_2d_cut(self, file, cut_axis, cut_value, x_axis, y_axis):
-        return self._files_data[file].get_2d_cut(self.space, cut_axis, cut_value, x_axis, y_axis)
+        return self._files_data[file].get_2d_cut(cut_axis, cut_value, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
     def get_max_frame(self, file, axis):
-        return self._files_data[file].get_max_frame(self.space, axis)
+        return self._files_data[file].get_max_frame(axis)
 
     # ----------------------------------------------------------------------
     def get_entry_value(self, file, entry):
@@ -266,36 +287,31 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def frame_for_point(self, file, axis, pos):
-        return self._files_data[file].frame_for_point(self.space, axis, pos)
+        return self._files_data[file].frame_for_point(axis, pos)
 
     # ----------------------------------------------------------------------
     def get_value_at_point(self, file, axis, pos):
-        return self._files_data[file].get_value_at_point(self.space, axis, pos)
+        return self._files_data[file].get_value_at_point(axis, pos)
 
     # ----------------------------------------------------------------------
     def get_axes(self):
-        return self._axes_names[self.space]
+        return self._axes_names
 
     # ----------------------------------------------------------------------
     def file_axes_caption(self, file):
-        return self._files_data[file].file_axes_caption(self.space)
+        return self._files_data[file].file_axes_caption()
 
     # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):
         new_limits = {0: [0, 0], 1: [0, 0], 2: [0, 0]}
 
         for data_set in self._files_data.values():
-            file_limits = data_set.get_axis_limits(self.space)
+            file_limits = data_set.get_axis_limits()
             for axis, lim in new_limits.items():
                 lim[0] = min(lim[0], file_limits[axis][0])
                 lim[1] = max(lim[1], file_limits[axis][1])
 
         self.axes_limits = new_limits
-
-    # ----------------------------------------------------------------------
-    def set_space(self, space):
-        # self.space = space
-        pass
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -327,8 +343,13 @@ class Opener(QtCore.QThread):
                 try:
                     with h5py.File(self.params['file_name'], 'r') as f:
                         if 'scan' in f.keys():
-                            new_file = LambdaScan(self.params['file_name'], self.data_pool, f)
-                            new_file.apply_settings()
+                            new_file = LambdaScan(self.data_pool, self.params['file_name'], f)
+                        elif 'reciprocal_scan' in f.keys():
+                            new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
+                        else:
+                            raise RuntimeError('Unknown file type')
+
+                        new_file.apply_settings()
                         self.data_pool.add_new_entry(self.params['entry_name'], new_file)
                         finished = True
 
@@ -383,11 +404,11 @@ class Batcher(QtCore.QThread):
                     with h5py.File(file_name, 'r') as f:
                         if 'scan' in f.keys():
                             self._progress.add_values(file_name, ind/total_files)
-                            new_file = LambdaScan(file_name, self.data_pool, f)
+                            new_file = LambdaScan(self.data_pool, file_name, f)
                             new_file.apply_settings()
                             for ind, roi in self.data_pool._rois.items():
-                                x_axis, y_axis = new_file.get_roi_plot(self.data_pool.space, roi.get_section_params())
-                                header = [new_file.file_axes_caption(self.data_pool.space)[roi.get_param('axis')], 'ROI_value']
+                                x_axis, y_axis = new_file.get_roi_plot(roi.get_section_params())
+                                header = [new_file.file_axes_caption()[roi.get_param('axis')], 'ROI_value']
                                 save_name = ''.join(os.path.splitext(os.path.basename(file_name))[:-1]) + \
                                             "_ROI_{}".format(ind) + self.file_type
                                 self.data_pool.save_roi_to_file(self.file_type,

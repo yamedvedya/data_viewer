@@ -37,11 +37,10 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
 
         self.my_name = stream_name
         self._detector_name = detector_name
-        self._spaces = ['real']
-        self._axes_names = {'real': ['frame_ID', 'detector X', 'detector Y']}
-        self._cube_axes_map = {'real': {0: 2,
-                                        1: 1,
-                                        2: 0}}
+        self._axes_names = ['frame_ID', 'detector X', 'detector Y']
+        self._cube_axes_map = {0: 2,
+                               1: 1,
+                               2: 0}
 
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
@@ -117,19 +116,19 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, space, axis, value, x_axis, y_axis):
+    def get_2d_cut(self, axis, value, x_axis, y_axis):
 
-        return self._get_2d_cut(space, axis, value, x_axis, y_axis)
+        return self._get_2d_cut(axis, value, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
-    def get_roi_cut(self, space, sect):
-        _, cube_cut = self._get_roi_data(space, sect, False)
+    def get_roi_cut(self, sect):
+        _, cube_cut = self._get_roi_data(sect, False)
         return cube_cut
 
     # ----------------------------------------------------------------------
-    def get_roi_plot(self, space, sect):
+    def get_roi_plot(self, sect):
 
-        return self._get_roi_data(space, sect, True)
+        return self._get_roi_data(sect, True)
 
 # ----------------------------------------------------------------------
 class ASAPOScanSetup(DetectorImageSetup):

@@ -2,7 +2,7 @@
 
 WIDGET_NAME = 'DataBrowser'
 
-file_formats = ["*.nxs"]
+file_formats = ["*.nxs", "*.h5"]
 
 FILE_REFRESH_PERIOD = 1
 
@@ -152,8 +152,7 @@ class FileBrowser(AbstractWidget):
                 self.file_browser.setRootPath(name)
         else:
             file_name = str(self.file_browser.filePath(file_index))
-            if ".nxs" in file_name:
-                self.file_selected.emit(file_name)
+            self.file_selected.emit(file_name)
 
     # ----------------------------------------------------------------------
     def _apply_filter(self, text):
@@ -197,6 +196,6 @@ class FileBrowser(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _on_created(self, event):
-
-        if ".nxs" in event.src_path:
-            self.file_selected.emit(event.src_path)
+        for type in file_formats:
+            if type in event.src_path:
+                self.file_selected.emit(event.src_path)

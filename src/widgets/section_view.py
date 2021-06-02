@@ -107,11 +107,19 @@ class SectionView(QtWidgets.QWidget):
     def new_roi_range(self):
         self._block_signals(True)
 
-        self._ui.sb_1_pos.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_1_pos'))
-        self._ui.sb_1_width.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_1_width'))
+        pos = self.data_pool.get_roi_param(self.my_id, 'roi_1_pos')
+        width = self.data_pool.get_roi_param(self.my_id, 'roi_1_width')
+        self._ui.sb_1_pos.setValue(pos)
+        self._ui.sb_1_width.setValue(width)
+        self.sld_1.setLow(pos)
+        self.sld_1.setMaximum(pos + width)
 
-        self._ui.sb_2_pos.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_2_pos'))
-        self._ui.sb_2_width.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_2_width'))
+        pos = self.data_pool.get_roi_param(self.my_id, 'roi_2_pos')
+        width = self.data_pool.get_roi_param(self.my_id, 'roi_2_width')
+        self._ui.sb_2_pos.setValue(pos)
+        self._ui.sb_2_width.setValue(width)
+        self.sld_2.setLow(pos)
+        self.sld_2.setMaximum(pos + width)
 
         self._block_signals(False)
 
@@ -124,11 +132,15 @@ class SectionView(QtWidgets.QWidget):
         self._ui.sb_1_pos.setMinimum(pos_min)
         self._ui.sb_1_pos.setMaximum(pos_max)
         self._ui.sb_1_width.setMaximum(width_max)
+        self.sld_1.setMinimum(pos_min)
+        self.sld_1.setMaximum(pos_max + width_max)
 
         pos_min, pos_max, width_max = self.data_pool.get_roi_limits(self.my_id, 2)
         self._ui.sb_2_pos.setMinimum(pos_min)
         self._ui.sb_2_pos.setMaximum(pos_max)
         self._ui.sb_2_width.setMaximum(width_max)
+        self.sld_2.setMinimum(pos_min)
+        self.sld_2.setMaximum(pos_max + width_max)
 
         self._roi_value_changed(1, 'pos', self._ui.sb_1_pos.value())
         self._roi_value_changed(1, 'width', self._ui.sb_1_width.value())

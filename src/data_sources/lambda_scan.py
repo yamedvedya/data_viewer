@@ -35,17 +35,16 @@ SETTINGS = {'enable_mask': False,
 class LambdaScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
-    def __init__(self, file_name, data_pool, opened_file):
+    def __init__(self, data_pool, file_name, opened_file):
         super(LambdaScan, self).__init__(data_pool)
 
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
         self._original_file = file_name
-        self._spaces = ['real']
-        self._axes_names = {'real': ['detector X', 'detector Y', 'scan point']}
-        self._cube_axes_map = {'real': {0: 2,
-                                        1: 1,
-                                        2: 0}}
+        self._axes_names = ['detector X', 'detector Y', 'scan point']
+        self._cube_axes_map ={0: 2,
+                              1: 1,
+                              2: 0}
 
         self._data['scanned_values'] = []
         scan_data = opened_file['scan']['data']
@@ -138,31 +137,29 @@ class LambdaScan(AbstractDataFile, DetectorImage):
             return source_file['entry']['instrument']['detector']['data'].shape
 
     # ----------------------------------------------------------------------
-    def get_axis_limits(self, space):
+    def get_axis_limits(self):
 
         new_limits = {}
-        if space == 'real':
-            new_limits[0] = [0, self._data['cube_shape'][2]-1]
-            new_limits[1] = [0, self._data['cube_shape'][1]-1]
-            if SETTINGS['displayed_param'] in self._data['scanned_values']:
-                new_limits[2] = [min(self._data[SETTINGS['displayed_param']]),
-                                 max(self._data[SETTINGS['displayed_param']])]
-            else:
-                new_limits[2] = [0, 0]
+        new_limits[0] = [0, self._data['cube_shape'][2]-1]
+        new_limits[1] = [0, self._data['cube_shape'][1]-1]
+        if SETTINGS['displayed_param'] in self._data['scanned_values']:
+            new_limits[2] = [min(self._data[SETTINGS['displayed_param']]),
+                             max(self._data[SETTINGS['displayed_param']])]
+        else:
+            new_limits[2] = [0, 0]
 
         return new_limits
 
     # ----------------------------------------------------------------------
-    def get_value_at_point(self, space, axis, pos):
-        if space == 'real':
-            real_axis = self._cube_axes_map[space][axis]
-            if real_axis == 0:
-                if SETTINGS['displayed_param'] in self._data['scanned_values']:
-                    if 0 <= pos < len(self._data[SETTINGS['displayed_param']]):
-                        return SETTINGS['displayed_param'], self._data[SETTINGS['displayed_param']][pos]
-                return SETTINGS['displayed_param'], np.NaN
-            else:
-                return self._axes_names['real'][axis], pos
+    def get_value_at_point(self, axis, pos):
+        real_axis = self._cube_axes_map[axis]
+        if real_axis == 0:
+            if SETTINGS['displayed_param'] in self._data['scanned_values']:
+                if 0 <= pos < len(self._data[SETTINGS['displayed_param']]):
+                    return SETTINGS['displayed_param'], self._data[SETTINGS['displayed_param']][pos]
+            return SETTINGS['displayed_param'], np.NaN
+        else:
+            return self._axes_names[axis], pos
 
     # ----------------------------------------------------------------------
     def _get_roi_axis(self, plot_axis):
@@ -216,25 +213,25 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, space, axis, value, x_axis, y_axis):
+    def get_2d_cut(self, axis, value, x_axis, y_axis):
 
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None
 
-        return self._get_2d_cut(space, axis, value, x_axis, y_axis)
+        return self._get_2d_cut(axis, value, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
-    def get_roi_cut(self, space, sect):
-        _, cube_cut = self._get_roi_data(space, sect, False)
+    def get_roi_cut(self, sect):
+        _, cube_cut = self._get_roi_data(sect, False)
         return cube_cut
 
     # ----------------------------------------------------------------------
-    def get_roi_plot(self, space, sect):
+    def get_roi_plot(self, sect):
 
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None, None
 
-        return self._get_roi_data(space, sect, True)
+        return self._get_roi_data(sect, True)
 
 # ----------------------------------------------------------------------
 class LambdaScanSetup(DetectorImageSetup):

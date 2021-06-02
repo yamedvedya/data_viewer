@@ -67,46 +67,32 @@ class Converter(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _preview(self):
 
-        for plot in
-            self._plots['xy']
         self._convert()
         if self._gridder is not None:
-            try:
-                xv, yv = _make_grid(self._gridder.xaxis, self._gridder.yaxis)
-                self._color_meshes['xy'] = pg.PColorMeshItem(xv, yv, np.log(self._gridder.data.sum(2) + 1))
-                self._plots['xy'].addItem(self._color_meshes['xy'])
+            for sect, coor in (('xy', 2),
+                               ('xz', 1),
+                               ('yz', 0)):
                 try:
-                    self._plots['xy'].autoRange()
+                    axis1, axis2 = _make_grid(getattr(self._gridder,f'{sect[0]}axis'),
+                                              getattr(self._gridder,f'{sect[1]}axis'))
+                    if self._color_meshes[sect] is None:
+                        self._color_meshes[sect] = pg.PColorMeshItem(axis1, axis2, np.log(self._gridder.data.sum(coor) + 1))
+                        self._plots[sect].addItem(self._color_meshes[sect])
+                    else:
+                        self._color_meshes[sect].setData(axis1, axis2, np.log(self._gridder.data.sum(coor) + 1))
+                    try:
+                        self._plots[sect].autoRange()
+                    except:
+                        pass
                 except:
                     pass
-            except:
-                pass
-
-            try:
-                xv, zv = _make_grid(self._gridder.xaxis, self._gridder.zaxis)
-                self._color_meshes['xz'] = pg.PColorMeshItem(xv, zv, np.log(self._gridder.data.sum(1)+1))
-                self._plots['xz'].addItem(self._color_meshes['xz'])
-                try:
-                    self._plots['xz'].autoRange()
-                except:
-                    pass
-            except:
-                pass
-
-            try:
-                yv, zv = _make_grid(self._gridder.yaxis, self._gridder.zaxis)
-                self._color_meshes['yz'] = pg.PColorMeshItem(yv, zv, np.log(self._gridder.data.sum(0) + 1))
-                self._plots['yz'].addItem(self._color_meshes['yz'])
-                try:
-                    self._plots['yz'].autoRange()
-                except:
-                    pass
-            except:
-                pass
 
     # ----------------------------------------------------------------------
     def _save(self):
-        pass
+        if self._gridder is None:
+            self._convert()
+
+        self._data_pool.save_converted(self._file_name, self._gridder)
 
     # ----------------------------------------------------------------------
     def _convert(self):
@@ -126,27 +112,21 @@ class Converter(QtWidgets.QMainWindow):
         hxrd = xu.HXRD([1, 0, 0], [0, 0, 1],
                        geometry="real",
                        qconv=qconv,
-                       en=self._data_pool.get_entry_value(self._file_name, 'mnchrmtr'),
+                       en=int(self._data_pool.get_entry_value(self._file_name, 'mnchrmtr')),
                        sampleor="y-")
-
-        roi_cut = (self._data_pool.get_roi_param(roi_index, 'roi_1_pos'),
-                   self._data_pool.get_roi_param(roi_index, 'roi_1_pos') + self._data_pool.get_roi_param(roi_index, 'roi_1_width'),
-                   self._data_pool.get_roi_param(roi_index, 'roi_2_pos'),
-                   self._data_pool.get_roi_param(roi_index, 'roi_2_pos') + self._data_pool.get_roi_param(roi_index, 'roi_2_width'))
 
         hxrd.Ang2Q.init_area('y+',
                              'z-',
                              cch1=int(self._ui.sb_cen_x.value()),
                              cch2=int(self._ui.sb_cen_y.value()),
-                             Nch1=int(self._data_pool.get_roi_param(roi_index, 'roi_1_width')),
-                             Nch2=int(self._data_pool.get_roi_param(roi_index, 'roi_2_width')),
+                             Nch1=int(self._data_pool.get_roi_param(roi_index, 'roi_2_width')),
+                             Nch2=int(self._data_pool.get_roi_param(roi_index, 'roi_1_width')),
                              pwidth1=self._ui.dsb_size_x.value()*1e-6,
                              pwidth2=self._ui.dsb_size_y.value()*1e-6,
                              distance=self._ui.dsb_det_d.value(),
                              detrot=self._ui.dsb_det_r.value(),
-                             tiltazimuth=self._ui.dsb_det_r.value(),
-                             tilt=self._ui.dsb_det_r.value(),
-                             roi=roi_cut)
+                             tiltazimuth=self._ui.dsb_det_rt.value(),
+                             tilt=self._ui.dsb_det_t.value())
 
         angles_set = ['omega', 'chi', 'phi', 'gamma', 'delta']
         scan_angles = dict.fromkeys(angles_set)

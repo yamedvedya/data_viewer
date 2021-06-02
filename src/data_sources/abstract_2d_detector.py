@@ -97,80 +97,73 @@ class DetectorImage():
         return _data
 
     # ----------------------------------------------------------------------
-    def _get_2d_cut(self, space, axis, value, x_axis, y_axis):
+    def _get_2d_cut(self, axis, value, x_axis, y_axis):
 
-        if space in self._spaces:
-            cut_axis = self._cube_axes_map[space][axis]
+        cut_axis = self._cube_axes_map[axis]
 
-            if cut_axis == 0 and self._data_pool.memory_mode != 'ram':
-                data = self._get_data([value])
-            else:
-                data = self._get_data()
-                if cut_axis == 0:
-                    data = data[value, :, :]
-                elif cut_axis == 1:
-                    data = data[:, value, :]
-                else:
-                    data = data[:, :, value]
-
-            if self._cube_axes_map[space][x_axis] > self._cube_axes_map[space][y_axis]:
-                return np.transpose(data)
-            else:
-                return data
-
+        if cut_axis == 0 and self._data_pool.memory_mode != 'ram':
+            data = self._get_data([value])
         else:
-            return []
+            data = self._get_data()
+            if cut_axis == 0:
+                data = data[value, :, :]
+            elif cut_axis == 1:
+                data = data[:, value, :]
+            else:
+                data = data[:, :, value]
+
+        if self._cube_axes_map[x_axis] > self._cube_axes_map[y_axis]:
+            return np.transpose(data)
+        else:
+            return data
 
     # ----------------------------------------------------------------------
-    def _get_roi_data(self, space, sect, do_sum):
+    def _get_roi_data(self, sect, do_sum):
 
-        if space in self._spaces:
-            plot_axis = self._cube_axes_map[space][sect['axis']]
-            cut_axis_1 = self._cube_axes_map[space][sect['roi_1_axis']]
+        plot_axis = self._cube_axes_map[sect['axis']]
+        cut_axis_1 = self._cube_axes_map[sect['roi_1_axis']]
 
-            data = self._get_data()
-            if plot_axis == 0:
-                if cut_axis_1 == 1:
-                    data = data[:,
-                                sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
-                else:
-                    data = data[:,
-                                sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-                if do_sum:
-                    data = np.sum(data, axis=1)
-                    data = np.sum(data, axis=1)
-
-            elif plot_axis == 1:
-                if cut_axis_1 == 0:
-                    data = data[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                :,
-                                sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
-                else:
-                    data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                :,
-                                sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-                if do_sum:
-                    data = np.sum(data, axis=2)
-                    data = np.sum(data, axis=0)
-
+        data = self._get_data()
+        if plot_axis == 0:
+            if cut_axis_1 == 1:
+                data = data[:,
+                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
             else:
-                if cut_axis_1 == 0:
-                    data = data[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                :]
-                else:
-                    data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                :]
-                if do_sum:
-                    data = np.sum(data, axis=0)
-                    data = np.sum(data, axis=0)
+                data = data[:,
+                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+            if do_sum:
+                data = np.sum(data, axis=1)
+                data = np.sum(data, axis=1)
 
-            return self._get_roi_axis(plot_axis), data
+        elif plot_axis == 1:
+            if cut_axis_1 == 0:
+                data = data[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                            :,
+                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
+            else:
+                data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                            :,
+                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+            if do_sum:
+                data = np.sum(data, axis=2)
+                data = np.sum(data, axis=0)
 
-        return None, None
+        else:
+            if cut_axis_1 == 0:
+                data = data[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                            :]
+            else:
+                data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
+                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
+                            :]
+            if do_sum:
+                data = np.sum(data, axis=0)
+                data = np.sum(data, axis=0)
+
+        return self._get_roi_axis(plot_axis), data
 
 
 # ----------------------------------------------------------------------
