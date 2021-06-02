@@ -112,14 +112,14 @@ class SectionView(QtWidgets.QWidget):
         self._ui.sb_1_pos.setValue(pos)
         self._ui.sb_1_width.setValue(width)
         self.sld_1.setLow(pos)
-        self.sld_1.setMaximum(pos + width)
+        self.sld_1.setHigh(pos + width)
 
         pos = self.data_pool.get_roi_param(self.my_id, 'roi_2_pos')
         width = self.data_pool.get_roi_param(self.my_id, 'roi_2_width')
         self._ui.sb_2_pos.setValue(pos)
         self._ui.sb_2_width.setValue(width)
         self.sld_2.setLow(pos)
-        self.sld_2.setMaximum(pos + width)
+        self.sld_2.setHigh(pos + width)
 
         self._block_signals(False)
 
