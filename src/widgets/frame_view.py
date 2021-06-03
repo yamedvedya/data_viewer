@@ -4,10 +4,11 @@ WIDGET_NAME = 'FrameView'
 
 import pyqtgraph as pg
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
+from src.utils.range_slider import RangeSlider
 from src.gui.frame_view_ui import Ui_FrameView
 
 # ----------------------------------------------------------------------
@@ -45,7 +46,7 @@ class FrameView(AbstractWidget):
 
         self._opened_files = []
 
-        self.current_frame = 0
+        self.current_frames = [0, 0]
         self.level_mode = 'lin'
         self.auto_levels = True
         self.max_frame = 0
@@ -62,7 +63,13 @@ class FrameView(AbstractWidget):
 
         self.current_axes = self.section_axes_map[str(self._ui.cb_section.currentText())]
 
-        self._ui.sl_frame.valueChanged.connect(lambda value: self._display_new_frame(value))
+        self.sld = RangeSlider(QtCore.Qt.Horizontal, self)
+        self._ui.h_layout.insertWidget(1, self.sld, 0)
+        self.sld.sliderMoved.connect(self._display_new_frame)
+        self.sld.setVisible(False)
+        self._ui.sl_frame.valueChanged.connect(lambda value: self._display_new_frame(value, value))
+
+        self._ui.chk_integration_mode.clicked.connect(self._switch_integration_mode)
 
         self._ui.but_first.clicked.connect(lambda: self._switch_frame('first'))
         self._ui.but_previous.clicked.connect(lambda: self._switch_frame('previous'))
@@ -177,6 +184,7 @@ class FrameView(AbstractWidget):
 
         self.max_frame = self.data_pool.get_max_frame(self._main_view.current_file, self.current_axes['z'])
         self._ui.sl_frame.setMaximum(self.max_frame)
+        self.sld.setMaximum(self.max_frame)
 
     # ----------------------------------------------------------------------
     def display_z_value(self):
@@ -184,15 +192,36 @@ class FrameView(AbstractWidget):
             self._ui.lb_value.setText('')
             return
 
-        z_name, z_value = self.data_pool.get_value_at_point(self._main_view.current_file, self.current_axes['z'],
-                                                            self.current_frame)
-        self._ui.lb_value.setText('{}: {:3f}'.format(z_name, z_value))
+        if self._ui.chk_integration_mode.isChecked():
+            z_name, z_min = self.data_pool.get_value_at_point(self._main_view.current_file, self.current_axes['z'],
+                                                              self.current_frames[0])
+            _, z_max = self.data_pool.get_value_at_point(self._main_view.current_file, self.current_axes['z'],
+                                                         self.current_frames[1])
 
+            self._ui.lb_value.setText(f'{z_name}: from {z_min:3f} to {z_max:3f}')
+        else:
+            z_name, z_value = self.data_pool.get_value_at_point(self._main_view.current_file, self.current_axes['z'],
+                                                                self.current_frames[0])
+
+            self._ui.lb_value.setText('{}: {:3f}'.format(z_name, z_value))
+
+    # ------------------------------------------------------------------
+    def _switch_integration_mode(self, state):
+        self._ui.sl_frame.setVisible(not state)
+        self.sld.setVisible(state)
+        if state:
+            self._display_new_frame(self.sld.low(), self.sld.high())
+        else:
+            self._display_new_frame(self._ui.sl_frame.value(), self._ui.sl_frame.value())
     # ----------------------------------------------------------------------
-    def _display_new_frame(self, frame):
+    def _display_new_frame(self, z_min, z_max):
         self._block_signals(True)
-        self.current_frame = min(max(frame, 0), self.max_frame)
-        self._ui.sl_frame.setValue(self.current_frame)
+
+        self.current_frames = [min(max(z_min, 0), self.max_frame), min(max(z_max, 0), self.max_frame)]
+        self.sld.setLow(self.current_frames[0])
+        self.sld.setHigh(self.current_frames[1])
+        self._ui.sl_frame.setValue(self.current_frames[0])
+
         self.display_z_value()
         self._block_signals(False)
         self.update_image()
@@ -202,7 +231,7 @@ class FrameView(AbstractWidget):
         return self._main_view.current_file
 
     # ----------------------------------------------------------------------
-    def new_main_file(self, z_value):
+    def new_main_file(self, z_min, z_max):
 
         if self._main_view.current_file is not None:
             axes_names = self.data_pool.file_axes_caption(self._main_view.current_file)
@@ -211,9 +240,16 @@ class FrameView(AbstractWidget):
                                                                                           axes_names[2]))
 
             self._setup_limits()
-            if z_value is not None:
-                self.current_frame = self.data_pool.frame_for_point(self._main_view.current_file, self.current_axes['z'], z_value)
-                self._ui.sl_frame.setValue(self.current_frame)
+            if z_min is not None:
+                self.current_frames[0] = self.data_pool.frame_for_point(self._main_view.current_file,
+                                                                    self.current_axes['z'], z_min)
+                self._ui.sl_frame.setValue(self.current_frames[0])
+                self.sld.setLow(self.current_frames[0])
+
+            if z_max is not None:
+                self.current_frames[1] = self.data_pool.frame_for_point(self._main_view.current_file,
+                                                                    self.current_axes['z'], z_max)
+                self.sld.setHigh(self.current_frames[1])
         else:
             self._ui.lb_axes_captions.setText('')
             self._ui.sl_frame.setValue(0)
@@ -223,14 +259,18 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _switch_frame(self, type):
+        shift = 0
+
         if type == 'first':
-            self._display_new_frame(0)
+            shift = -self.current_frames[0]
         elif type == 'previous':
-            self._display_new_frame(self.current_frame - 1)
+            shift = -1
         elif type == 'next':
-            self._display_new_frame(self.current_frame + 1)
+            shift = 1
         elif type == 'last':
-            self._display_new_frame(self.max_frame)
+            shift = self.max_frame - self.current_frames[1]
+
+        self._display_new_frame(self.current_frames[0] + shift, self.current_frames[1] + shift)
 
     # ----------------------------------------------------------------------
     def _block_signals(self, flag):

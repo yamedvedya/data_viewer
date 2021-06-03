@@ -38,8 +38,10 @@ class SectionView(QtWidgets.QWidget):
 
         self.sld_1 = RangeSlider(QtCore.Qt.Horizontal, self)
         self._ui.v_layout.insertWidget(7, self.sld_1, 0)
+        self.sld_1.sliderMoved.connect(lambda min, max, source=1: self._new_slider_range(min, max, source))
         self.sld_2 = RangeSlider(QtCore.Qt.Horizontal, self)
         self._ui.v_layout.insertWidget(15, self.sld_2, 0)
+        self.sld_2.sliderMoved.connect(lambda min, max, source=2: self._new_slider_range(min, max, source))
 
         self._main_plot = pg.PlotItem()
         self._main_plot.showGrid(True, True)
@@ -112,14 +114,14 @@ class SectionView(QtWidgets.QWidget):
         self._ui.sb_1_pos.setValue(pos)
         self._ui.sb_1_width.setValue(width)
         self.sld_1.setLow(pos)
-        self.sld_1.setMaximum(pos + width)
+        self.sld_1.setHigh(pos + width)
 
         pos = self.data_pool.get_roi_param(self.my_id, 'roi_2_pos')
         width = self.data_pool.get_roi_param(self.my_id, 'roi_2_width')
         self._ui.sb_2_pos.setValue(pos)
         self._ui.sb_2_width.setValue(width)
         self.sld_2.setLow(pos)
-        self.sld_2.setMaximum(pos + width)
+        self.sld_2.setHigh(pos + width)
 
         self._block_signals(False)
 
@@ -133,14 +135,14 @@ class SectionView(QtWidgets.QWidget):
         self._ui.sb_1_pos.setMaximum(pos_max)
         self._ui.sb_1_width.setMaximum(width_max)
         self.sld_1.setMinimum(pos_min)
-        self.sld_1.setMaximum(pos_max + width_max)
+        self.sld_1.setMaximum(pos_min + width_max)
 
         pos_min, pos_max, width_max = self.data_pool.get_roi_limits(self.my_id, 2)
         self._ui.sb_2_pos.setMinimum(pos_min)
         self._ui.sb_2_pos.setMaximum(pos_max)
         self._ui.sb_2_width.setMaximum(width_max)
         self.sld_2.setMinimum(pos_min)
-        self.sld_2.setMaximum(pos_max + width_max)
+        self.sld_2.setMaximum(pos_min + width_max)
 
         self._roi_value_changed(1, 'pos', self._ui.sb_1_pos.value())
         self._roi_value_changed(1, 'width', self._ui.sb_1_width.value())
@@ -209,6 +211,17 @@ class SectionView(QtWidgets.QWidget):
         for axis in [1, 2]:
             for param in ['pos', 'width']:
                 getattr(self._ui, 'sb_{}_{}'.format(axis, param)).blockSignals(flag)
+
+    # ----------------------------------------------------------------------
+    def _new_slider_range(self, min, max, source):
+        self._block_signals(True)
+        accepted_pos = self.data_pool.roi_parameter_changed(self.my_id, source, 'pos', min)
+        getattr(self._ui, 'sb_{}_pos'.format(source)).setValue(accepted_pos)
+        accepted_width = self.data_pool.roi_parameter_changed(self.my_id, source, 'width', max - min)
+        getattr(self._ui, 'sb_{}_width'.format(source)).setValue(accepted_width)
+        self._block_signals(False)
+
+        self.update_plots()
 
     # ----------------------------------------------------------------------
     def _roi_value_changed(self, axis, param, value):

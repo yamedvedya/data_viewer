@@ -12,14 +12,14 @@ from src.gui.view_2d_ui import Ui_View2D
 class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
-    def __init__(self, file_inspector, type, data_pool):
+    def __init__(self, frame_viewer, type, data_pool):
         """
         """
         super(View2d, self).__init__()
         self._ui = Ui_View2D()
         self._ui.setupUi(self)
 
-        self._file_inspector = file_inspector
+        self._frame_viewer = frame_viewer
         self._type = type
         self.data_pool = data_pool
 
@@ -82,7 +82,7 @@ class View2d(QtWidgets.QWidget):
 
         if action:
             index = self._tb_files.currentIndex()
-            self._file_inspector.add_file(self._my_files[index], self._type)
+            self._frame_viewer.add_file(self._my_files[index], self._type)
             del self._my_files[index]
             self.current_file = None
             self._tb_files.removeTab(index)
@@ -92,7 +92,7 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _range_changed(self, view_box):
-        self._file_inspector.new_view_box(self._type, view_box)
+        self._frame_viewer.new_view_box(self._type, view_box)
 
     # ----------------------------------------------------------------------
     def new_view_box(self, view_box):
@@ -112,11 +112,11 @@ class View2d(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_lookup_table(self):
         if self.plot_2d.image is not None:
-            self.plot_2d.setLookupTable(self._file_inspector.hist.item.getLookupTable(self.plot_2d.image))
+            self.plot_2d.setLookupTable(self._frame_viewer.hist.item.getLookupTable(self.plot_2d.image))
 
     # ----------------------------------------------------------------------
     def new_levels(self):
-        self.plot_2d.setLevels(self._file_inspector.hist.item.getLevels())
+        self.plot_2d.setLevels(self._frame_viewer.hist.item.getLevels())
 
     # ----------------------------------------------------------------------
     def _close_file(self, index):
@@ -165,12 +165,12 @@ class View2d(QtWidgets.QWidget):
     def new_roi_range(self, roi_ind):
         self._rois[roi_ind][0].sigRegionChanged.disconnect()
 
-        if self._file_inspector.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
-            x_pos = self.data_pool.axes_limits[self._file_inspector.current_axes['x']][0]
-            x_width = self.data_pool.axes_limits[self._file_inspector.current_axes['x']][1] - \
-                      self.data_pool.axes_limits[self._file_inspector.current_axes['x']][0]
+        if self._frame_viewer.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
+            x_pos = self.data_pool.axes_limits[self._frame_viewer.current_axes['x']][0]
+            x_width = self.data_pool.axes_limits[self._frame_viewer.current_axes['x']][1] - \
+                      self.data_pool.axes_limits[self._frame_viewer.current_axes['x']][0]
 
-        elif self._file_inspector.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
+        elif self._frame_viewer.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
             x_pos = self.data_pool.get_roi_param(roi_ind, 'roi_1_pos')
             x_width = self.data_pool.get_roi_param(roi_ind, 'roi_1_width')
 
@@ -178,12 +178,12 @@ class View2d(QtWidgets.QWidget):
             x_pos = self.data_pool.get_roi_param(roi_ind, 'roi_2_pos')
             x_width = self.data_pool.get_roi_param(roi_ind, 'roi_2_width')
 
-        if self._file_inspector.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
-            y_pos = self.data_pool.axes_limits[self._file_inspector.current_axes['y']][0]
-            y_width = self.data_pool.axes_limits[self._file_inspector.current_axes['y']][1] - \
-                      self.data_pool.axes_limits[self._file_inspector.current_axes['y']][0]
+        if self._frame_viewer.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
+            y_pos = self.data_pool.axes_limits[self._frame_viewer.current_axes['y']][0]
+            y_width = self.data_pool.axes_limits[self._frame_viewer.current_axes['y']][1] - \
+                      self.data_pool.axes_limits[self._frame_viewer.current_axes['y']][0]
 
-        elif self._file_inspector.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
+        elif self._frame_viewer.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
             y_pos = self.data_pool.get_roi_param(roi_ind, 'roi_1_pos')
             y_width = self.data_pool.get_roi_param(roi_ind, 'roi_1_width')
 
@@ -198,16 +198,16 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _roi_changed(self, roi_ind, rect):
-        if self._file_inspector.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
+        if self._frame_viewer.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
             x_axis = 0
-        elif self._file_inspector.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
+        elif self._frame_viewer.current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
             x_axis = 1
         else:
             x_axis = 2
 
-        if self._file_inspector.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
+        if self._frame_viewer.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
             y_axis = 0
-        elif self._file_inspector.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
+        elif self._frame_viewer.current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
             y_axis = 1
         else:
             y_axis = 2
@@ -241,12 +241,12 @@ class View2d(QtWidgets.QWidget):
             if self.current_file is None:
                 return
 
-            x_name, x_value = self.data_pool.get_value_at_point(self.current_file, self._file_inspector.current_axes['x'],
+            x_name, x_value = self.data_pool.get_value_at_point(self.current_file, self._frame_viewer.current_axes['x'],
                                                                 int(pos.x()))
-            y_name, y_value = self.data_pool.get_value_at_point(self.current_file, self._file_inspector.current_axes['y'],
+            y_name, y_value = self.data_pool.get_value_at_point(self.current_file, self._frame_viewer.current_axes['y'],
                                                                 int(pos.y()))
 
-            self._file_inspector.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
+            self._frame_viewer.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
 
     # ----------------------------------------------------------------------
     def move_marker(self, pos):
@@ -269,10 +269,12 @@ class View2d(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _switch_file(self, index):
 
-        z_value = None
+        z_min, z_max = None, None
         if self.current_file is not None:
-            _, z_value = self.data_pool.get_value_at_point(self.current_file, self._file_inspector.current_axes['z'],
-                                                           self._file_inspector.current_frame)
+            _, z_min = self.data_pool.get_value_at_point(self.current_file, self._frame_viewer.current_axes['z'],
+                                                         self._frame_viewer.current_frames[0])
+            _, z_max = self.data_pool.get_value_at_point(self.current_file, self._frame_viewer.current_axes['z'],
+                                                         self._frame_viewer.current_frames[1])
 
         if index > -1:
             self.current_file = self._my_files[index]
@@ -280,7 +282,7 @@ class View2d(QtWidgets.QWidget):
             self.current_file = None
 
         if self._type == 'main':
-            self._file_inspector.new_main_file(z_value)
+            self._frame_viewer.new_main_file(z_min, z_max)
 
     # ----------------------------------------------------------------------
     def update_image(self):
@@ -288,19 +290,21 @@ class View2d(QtWidgets.QWidget):
         if self.current_file is None:
             self.plot_2d.clear()
             return
-
-        data_to_display = self.data_pool.get_2d_cut(self.current_file, self._file_inspector.current_axes['z'],
-                                                    self._file_inspector.current_frame, self._file_inspector.current_axes['x'],
-                                                    self._file_inspector.current_axes['y'])
+        cut_range = self._frame_viewer.current_frames
+        data_to_display = self.data_pool.get_2d_cut(self.current_file,
+                                                    self._frame_viewer.current_axes['z'],
+                                                    [cut_range[0], cut_range[1] + 1],
+                                                    self._frame_viewer.current_axes['x'],
+                                                    self._frame_viewer.current_axes['y'])
 
         if data_to_display is None:
             self.plot_2d.clear()
             return
 
-        if self._file_inspector.level_mode == 'log':
+        if self._frame_viewer.level_mode == 'log':
             data_to_display = np.log(data_to_display + 1)
 
-        self.plot_2d.setImage(data_to_display, autoLevels=self._file_inspector.auto_levels)
+        self.plot_2d.setImage(data_to_display, autoLevels=self._frame_viewer.auto_levels)
 
 
 

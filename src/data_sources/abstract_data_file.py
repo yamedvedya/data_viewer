@@ -57,16 +57,17 @@ class AbstractDataFile(object):
         pass
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, axis, value, x_axis, y_axis):
+    def get_2d_cut(self, axis, cut_range, x_axis, y_axis):
         cut_axis = self._cube_axes_map[axis]
 
         if cut_axis == 0:
-            data = self._3d_cube[value, :, :]
+            data = self._3d_cube[cut_range[0]:cut_range[1], :, :]
         elif cut_axis == 1:
-            data = self._3d_cube[:, value, :]
+            data = self._3d_cube[:, cut_range[0]:cut_range[1], :]
         else:
-            data = self._3d_cube[:, :, value]
+            data = self._3d_cube[:, :, cut_range[0]:cut_range[1]]
 
+        data = np.sum(data, axis=cut_axis)
         if self._cube_axes_map[x_axis] > self._cube_axes_map[y_axis]:
             return np.transpose(data)
         else:
