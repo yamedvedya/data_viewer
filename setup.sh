@@ -21,6 +21,8 @@ $HOME/.local/bin/virtualenv  -p python3 --system-site-packages venv
 }
 . venv/bin/activate
 
+pip3 install --upgrade pip
+
 wget http://nims.desy.de/extra/asapo/linux_packages/debian10.7/asapo_consumer-21.03.0.tar.gz
 pip3 install asapo_consumer-21.03.0.tar.gz
 rm ./asapo_consumer-21.03.0.tar.gz
