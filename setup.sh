@@ -33,3 +33,6 @@ pip3 install attrs
 pip3 install pyqtgraph
 pip3 install psutil
 pip3 install xrayutilities
+pip3 install -U numpy
+pip3 install -U scipy
+pip3 install -U h5py

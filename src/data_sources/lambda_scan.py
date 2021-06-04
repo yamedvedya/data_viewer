@@ -97,15 +97,13 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
         if len(file_lists) > 0:
             if frame_ids is not None:
-                if len(file_lists) > 1:
-                    files_to_load =  file_lists[frame_ids]
-                    _need_cut = False
-                else:
-                    files_to_load = file_lists
-                    _need_cut = True
+                files_to_load = [file_lists[frame_ids[0]]]
+                for frame in frame_ids[1:]:
+                    files_to_load.append(file_lists[frame_ids[frame]])
+                _need_cut = False
             else:
                 files_to_load = file_lists
-                _need_cut = False
+                _need_cut = True
 
             source_file = h5py.File(os.path.join(self._detector_folder, files_to_load[0]), 'r')
             cube = np.array(source_file['entry']['instrument']['detector']['data'], dtype=np.float32)
