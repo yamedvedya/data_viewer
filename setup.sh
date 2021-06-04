@@ -30,3 +30,4 @@ pip3 install scikit-image
 pip3 install attrs
 pip3 install pyqtgraph
 pip3 install psutil
+pip3 install xrayutilities

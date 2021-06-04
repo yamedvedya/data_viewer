@@ -17,6 +17,7 @@ $HOME/.local/bin/virtualenv  -p python3 --system-site-packages venv
 
 pip3 install pyqtgraph
 pip3 install psutil
+pip3 install xrayutilities
 
 python3 ./build.py
 python3 ./make_alias.py
