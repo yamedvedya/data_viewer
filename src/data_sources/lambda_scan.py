@@ -114,8 +114,6 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                                                  dtype=np.float32)))
 
             if _need_cut:
-                cube = cube[frame_ids, :, :]
-            elif frame_ids is None:
                 cube = cube[:self._scan_length, :, :]
 
             return np.array(cube, dtype=np.float32)
