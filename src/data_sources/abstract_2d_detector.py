@@ -88,7 +88,7 @@ class DetectorImage():
 
         except Exception as err:
             if self._data_pool is not None:
-                self._data_pool.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
+                self._data_pool.main_window.report_error("{}: cannot apply mask: {}".format(self.my_name, err))
 
         if self._data_pool.memory_mode == 'ram':
             self._need_apply_mask = False

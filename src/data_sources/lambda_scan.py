@@ -99,7 +99,10 @@ class LambdaScan(AbstractDataFile, DetectorImage):
             if frame_ids is not None:
                 files_to_load = [file_lists[frame_ids[0]]]
                 for frame in frame_ids[1:]:
-                    files_to_load.append(file_lists[frame_ids[frame]])
+                    try:
+                        files_to_load.append(file_lists[frame_ids[frame]])
+                    except:
+                        pass
                 _need_cut = False
             else:
                 files_to_load = file_lists
@@ -187,7 +190,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                         self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
         except Exception as err:
             if self._data_pool is not None:
-                self._data_pool.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
+                self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
         try:
             if SETTINGS['inten_correction'] == 'on':
@@ -201,7 +204,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
         except Exception as err:
             if self._data_pool is not None:
-                self._data_pool.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
+                self._data_pool.main_window.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
