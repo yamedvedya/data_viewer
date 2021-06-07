@@ -85,6 +85,11 @@ class DataPool(QtCore.QObject):
             self.settings['format'] = '%' + settings['format']
 
     # ----------------------------------------------------------------------
+    def report_error(self, title, informative_text, detailed_text):
+        self.main_window.report_error(title,
+                                      informative_text=informative_text,
+                                      detailed_text=detailed_text)
+    # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def open_stream(self, detector_name, stream_name):
@@ -97,6 +102,7 @@ class DataPool(QtCore.QObject):
         self._open_mgs.show()
         self._opener = Opener(self, 'stream', {'detector_name': detector_name, 'stream_name': stream_name,
                                                'entry_name': entry_name}, self._open_mgs)
+        self._opener.exception.connect(self.report_error)
         self._opener.start()
 
     # ----------------------------------------------------------------------
@@ -111,6 +117,7 @@ class DataPool(QtCore.QObject):
         self._open_mgs.show()
         self._opener = Opener(self, 'file', {'file_name': file_name, 'entry_name': entry_name},
                               self._open_mgs)
+        self._opener.exception.connect(self.report_error)
         self._opener.start()
 
     # ----------------------------------------------------------------------
@@ -262,6 +269,7 @@ class DataPool(QtCore.QObject):
         self._progress.show()
 
         self._batcher = Batcher(self, self._progress, file_list, dir_name, file_type)
+        self._batcher.exception.connect(self.report_error)
         self._batcher.start()
 
     # ----------------------------------------------------------------------
@@ -326,6 +334,8 @@ class DataPool(QtCore.QObject):
 # ----------------------------------------------------------------------
 class Opener(QtCore.QThread):
 
+    exception = QtCore.pyqtSignal(str, str, str)
+
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, mode, params, msg_box):
         super(Opener, self).__init__()
@@ -358,16 +368,15 @@ class Opener(QtCore.QThread):
                         time.sleep(0.5)
                         print('Waiting for file {}'.format(self.params['file_name']))
                     else:
-                        self.data_pool.main_window.report_error('Cannot open file',
-                                                                informative_text='Cannot open {}'.format(
-                                                                    self.params['file_name']),
-                                                                detailed_text=str(err))
+                        self.exception.emit('Cannot open file',
+                                            'Cannot open {}'.format(self.params['file_name']),
+                                            str(err))
                         finished = True
 
                 except Exception as err:
-                    self.data_pool.main_window.report_error('Cannot open file',
-                                                            informative_text='Cannot open {}'.format(self.params['file_name']),
-                                                            detailed_text=str(err))
+                    self.exception.emit('Cannot open file',
+                                        'Cannot open {}'.format(self.params['file_name']),
+                                        str(err))
                     finished = True
 
         elif self.mode == 'stream':
@@ -377,15 +386,18 @@ class Opener(QtCore.QThread):
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             except Exception as err:
-                self.data_pool.main_window.report_error('Cannot open stream',
-                                                        informative_text='Cannot open {}'.format(self.params['entry_name']),
-                                                        detailed_text=str(err))
+                self.exception.emit('Cannot open stream',
+                                    'Cannot open {}'.format(self.params['entry_name']),
+                                    str(err))
 
         self.msg_box.hide()
 
 
 # ----------------------------------------------------------------------
 class Batcher(QtCore.QThread):
+
+    exception = QtCore.pyqtSignal(str, str, str)
+
     def __init__(self, data_pool, progress, file_list, dir_name, file_type):
         super(Batcher, self).__init__()
         self.file_list = file_list
@@ -423,9 +435,9 @@ class Batcher(QtCore.QThread):
                                                                 np.transpose(np.vstack((x_axis, y_axis))))
 
                 except Exception as err:
-                    self.data_pool.main_window.report_error('Cannot calculate ROI',
-                                                      informative_text='Cannot calculate ROI for {}'.format(file_name),
-                                                      detailed_text=str(err))
+                    self.exception.emit('Cannot calculate ROI',
+                                        'Cannot calculate ROI for {}'.format(file_name),
+                                        str(err))
             else:
                 break
 
