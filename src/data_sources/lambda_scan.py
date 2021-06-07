@@ -189,8 +189,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                     else:
                         self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
         except Exception as err:
-            if self._data_pool is not None:
-                self._data_pool.main_window.report_error("{}: cannot calculate atten correction: {}".format(self.my_name, err))
+            raise RuntimeError("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
         try:
             if SETTINGS['inten_correction'] == 'on':
@@ -203,8 +202,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                                             np.maximum(self._data[SETTINGS['inten_param']], 1)
 
         except Exception as err:
-            if self._data_pool is not None:
-                self._data_pool.main_window.report_error("{}: cannot calculate inten correction: {}".format(self.my_name, err))
+            raise RuntimeError("{}: cannot calculate inten correction: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
     def apply_settings(self):

@@ -357,6 +357,12 @@ class Opener(QtCore.QThread):
                     if 'Resource temporarily unavailable' in str(err.args):
                         time.sleep(0.5)
                         print('Waiting for file {}'.format(self.params['file_name']))
+                    else:
+                        self.data_pool.main_window.report_error('Cannot open file',
+                                                                informative_text='Cannot open {}'.format(
+                                                                    self.params['file_name']),
+                                                                detailed_text=str(err))
+                        finished = True
 
                 except Exception as err:
                     self.data_pool.main_window.report_error('Cannot open file',
