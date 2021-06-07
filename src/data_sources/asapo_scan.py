@@ -116,9 +116,9 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, axis, value, x_axis, y_axis):
+    def get_2d_cut(self, axis, cut_range, x_axis, y_axis):
 
-        return self._get_2d_cut(axis, value, x_axis, y_axis)
+        return self._get_2d_cut(axis, cut_range, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect):

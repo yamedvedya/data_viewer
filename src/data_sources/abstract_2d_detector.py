@@ -97,20 +97,21 @@ class DetectorImage():
         return _data
 
     # ----------------------------------------------------------------------
-    def _get_2d_cut(self, axis, value, x_axis, y_axis):
+    def _get_2d_cut(self, axis, cut_range, x_axis, y_axis):
 
         cut_axis = self._cube_axes_map[axis]
 
         if cut_axis == 0 and self._data_pool.memory_mode != 'ram':
-            data = self._get_data([value])
+            data = self._get_data(cut_range)
         else:
             data = self._get_data()
             if cut_axis == 0:
-                data = data[value, :, :]
+                data = data[cut_range[0]:cut_range[1], :, :]
             elif cut_axis == 1:
-                data = data[:, value, :]
+                data = data[:, cut_range[0]:cut_range[1], :]
             else:
-                data = data[:, :, value]
+                data = data[:, :, cut_range[0]:cut_range[1]]
+        data = np.sum(data, axis=cut_axis)
 
         if self._cube_axes_map[x_axis] > self._cube_axes_map[y_axis]:
             return np.transpose(data)

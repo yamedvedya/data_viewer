@@ -141,7 +141,7 @@
         <layout class="QHBoxLayout" name="view_layout"/>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1,0,0,0,0">
+        <layout class="QHBoxLayout" name="h_layout" stretch="0,0,0,0,0,0,0">
          <item>
           <widget class="QLabel" name="lb_value">
            <property name="text">
@@ -200,6 +200,13 @@
            <property name="icon">
             <iconset resource="icons.qrc">
              <normaloff>:/icon/last.png</normaloff>:/icon/last.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="chk_integration_mode">
+           <property name="text">
+            <string>Integration mode</string>
            </property>
           </widget>
          </item>

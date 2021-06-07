@@ -97,15 +97,13 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
         if len(file_lists) > 0:
             if frame_ids is not None:
-                if len(file_lists) > 1:
-                    files_to_load =  file_lists[frame_ids]
-                    _need_cut = False
-                else:
-                    files_to_load = file_lists
-                    _need_cut = True
+                files_to_load = [file_lists[frame_ids[0]]]
+                for frame in frame_ids[1:]:
+                    files_to_load.append(file_lists[frame_ids[frame]])
+                _need_cut = False
             else:
                 files_to_load = file_lists
-                _need_cut = False
+                _need_cut = True
 
             source_file = h5py.File(os.path.join(self._detector_folder, files_to_load[0]), 'r')
             cube = np.array(source_file['entry']['instrument']['detector']['data'], dtype=np.float32)
@@ -116,8 +114,6 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                                                  dtype=np.float32)))
 
             if _need_cut:
-                cube = cube[frame_ids, :, :]
-            elif frame_ids is None:
                 cube = cube[:self._scan_length, :, :]
 
             return np.array(cube, dtype=np.float32)
@@ -213,12 +209,12 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, axis, value, x_axis, y_axis):
+    def get_2d_cut(self, axis, cut_range, x_axis, y_axis):
 
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None
 
-        return self._get_2d_cut(axis, value, x_axis, y_axis)
+        return self._get_2d_cut(axis, cut_range, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect):

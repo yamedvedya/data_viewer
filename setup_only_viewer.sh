@@ -15,8 +15,14 @@ $HOME/.local/bin/virtualenv  -p python3 --system-site-packages venv
 }
 . venv/bin/activate
 
+pip3 install --upgrade pip
+
 pip3 install pyqtgraph
 pip3 install psutil
+pip3 install xrayutilities
+pip3 install -U numpy
+pip3 install -U scipy
+pip3 install -U h5py
 
 python3 ./build.py
 python3 ./make_alias.py
