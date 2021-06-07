@@ -287,9 +287,13 @@ class DetectorImageSetup(QtWidgets.QWidget):
             _settings[f'enable_{mode}'] = False
             getattr(self._ui, f'but_load_{mode}').setEnabled(False)
         else:
-            _settings[f'enable_{mode}'] = True
             if _settings[f'{mode}'] is None:
-                self.load_from_file(mode)
+                if not self.load_from_file(mode):
+                    _settings[f'enable_{mode}'] = False
+                    getattr(self._ui, f'but_load_{mode}').setEnabled(False)
+                    return
+            _settings[f'enable_{mode}'] = True
+
 
             getattr(self._ui, f'but_load_{mode}').setEnabled(True)
             self._ui.lb_mask_file.setText(_settings[f'{mode}_file'])
@@ -312,6 +316,10 @@ class DetectorImageSetup(QtWidgets.QWidget):
                 _settings[f'{mode}'] = data
                 _settings[f'{mode}_file'] = file_name
                 getattr(self._ui, f'lb_{mode}_file').setText(file_name)
+
+                return True
+
+        return False
 
     # ----------------------------------------------------------------------
     def _new_ff_limit(self, value, lim):
