@@ -101,8 +101,9 @@ class DataPool(QtCore.QObject):
         self._open_mgs.setText(f'Opening stream {stream_name}')
         self._open_mgs.show()
         self._opener = Opener(self, 'stream', {'detector_name': detector_name, 'stream_name': stream_name,
-                                               'entry_name': entry_name}, self._open_mgs)
+                                               'entry_name': entry_name})
         self._opener.exception.connect(self.report_error)
+        self._opener.done.connect(self._open_done)
         self._opener.start()
 
     # ----------------------------------------------------------------------
@@ -115,10 +116,14 @@ class DataPool(QtCore.QObject):
 
         self._open_mgs.setText(f'Opening file {file_name}')
         self._open_mgs.show()
-        self._opener = Opener(self, 'file', {'file_name': file_name, 'entry_name': entry_name},
-                              self._open_mgs)
+        self._opener = Opener(self, 'file', {'file_name': file_name, 'entry_name': entry_name})
         self._opener.exception.connect(self.report_error)
+        self._opener.done.connect(self._open_done)
         self._opener.start()
+
+    # ----------------------------------------------------------------------
+    def _open_done(self):
+        self._open_mgs.hide()
 
     # ----------------------------------------------------------------------
     def add_new_entry(self, entry_name, entry):
@@ -263,14 +268,25 @@ class DataPool(QtCore.QObject):
         self._batcher.interrupt_batch()
 
     # ----------------------------------------------------------------------
+    def _new_batch_file(self, fname, progress):
+        self._progress.add_values(fname, progress)
+
+    # ----------------------------------------------------------------------
+    def _new_batch_done(self):
+        self._progress.hide()
+
+    # ----------------------------------------------------------------------
     def batch_process_rois(self, file_list, dir_name, file_type):
 
         self._progress.clear()
         self._progress.show()
 
-        self._batcher = Batcher(self, self._progress, file_list, dir_name, file_type)
+        self._batcher = Batcher(self, file_list, dir_name, file_type)
         self._batcher.exception.connect(self.report_error)
+        self._batcher.new_file.connect(self._new_batch_file)
+        self._batcher.done.connect(self._new_batch_done)
         self._batcher.start()
+
 
     # ----------------------------------------------------------------------
     def save_roi_to_file(self, file_type, save_name, header, data):
@@ -335,15 +351,15 @@ class DataPool(QtCore.QObject):
 class Opener(QtCore.QThread):
 
     exception = QtCore.pyqtSignal(str, str, str)
+    done = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
-    def __init__(self, data_pool, mode, params, msg_box):
+    def __init__(self, data_pool, mode, params):
         super(Opener, self).__init__()
 
         self.data_pool = data_pool
         self.mode = mode
         self.params = params
-        self.msg_box = msg_box
 
     # ----------------------------------------------------------------------
     def run(self):
@@ -390,15 +406,18 @@ class Opener(QtCore.QThread):
                                     'Cannot open {}'.format(self.params['entry_name']),
                                     str(err))
 
-        self.msg_box.hide()
+        self.done.emit()
 
 
 # ----------------------------------------------------------------------
 class Batcher(QtCore.QThread):
 
     exception = QtCore.pyqtSignal(str, str, str)
+    new_file = QtCore.pyqtSignal(str, float)
+    done = QtCore.pyqtSignal()
 
-    def __init__(self, data_pool, progress, file_list, dir_name, file_type):
+    #----------------------------------------------------------------------
+    def __init__(self, data_pool, file_list, dir_name, file_type):
         super(Batcher, self).__init__()
         self.file_list = file_list
         self.dir_name = dir_name
@@ -407,7 +426,6 @@ class Batcher(QtCore.QThread):
         self.data_pool = data_pool
 
         self._stop_batch = False
-        self._progress = progress
 
     # ----------------------------------------------------------------------
     def interrupt_batch(self):
@@ -421,7 +439,7 @@ class Batcher(QtCore.QThread):
                 try:
                     with h5py.File(file_name, 'r') as f:
                         if 'scan' in f.keys():
-                            self._progress.add_values(file_name, ind/total_files)
+                            self.new_file.emit(file_name, ind/total_files)
                             new_file = LambdaScan(self.data_pool, file_name, f)
                             new_file.apply_settings()
                             for ind, roi in self.data_pool._rois.items():
@@ -441,8 +459,7 @@ class Batcher(QtCore.QThread):
             else:
                 break
 
-        self._progress.hide()
-
+        self.done.emit()
 
 # ----------------------------------------------------------------------
 def _open_file_dialog():
