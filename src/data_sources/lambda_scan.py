@@ -49,7 +49,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         self._data['scanned_values'] = []
         scan_data = opened_file['scan']['data']
 
-        #TODO: TEMP! Fix scans!
+        # first we load scan data from .fio
         if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
             fio_file = fioReader(os.path.splitext(file_name)[0] + '.fio')
             for key, value in fio_file.parameters.items():
@@ -58,8 +58,11 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 except:
                     self._data[key] = value
 
+        # if user did ct after scan, Lambda saves ten as scan frames, we ignore them
         self._scan_length = None
         for key in scan_data.keys():
+
+            # if this is 1D array - we add it to possible scan axes
             if key != 'lmbd' and len(scan_data[key].shape) == 1:
                 if self._scan_length is None:
                     self._scan_length = len(scan_data[key][...])
@@ -68,6 +71,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 self._data[key] = np.array(scan_data[key][...])
 
         for key in scan_data.keys():
+            # up to now only one type of scans - Lambda scans
             if key == 'lmbd':
                 self._detector = 'lmbd'
                 self._detector_folder = os.path.join(os.path.dirname(opened_file.filename),
@@ -81,9 +85,17 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 else:
                     self._data['cube_shape'] = self._get_cube_shape()
 
+        # point_nb - default axis, had to always be, it not - add it
         if 'point_nb' not in self._data['scanned_values']:
             self._data['scanned_values'].append('point_nb')
             self._data['point_nb'] = np.arange(self._data['cube_shape'][0])
+
+    # ----------------------------------------------------------------------
+    def check_file_after_load(self):
+
+        for value in self._data['scanned_values']:
+            if value not in SETTINGS['all_params']:
+                SETTINGS['all_params'].append(value)
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -91,6 +103,11 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
+        """
+        reloads lambda data
+        :param frame_ids: if not None: frames to be loaded
+        :return: np.array, 3D data cube
+        """
 
         file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
         file_lists.sort()
@@ -125,6 +142,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
     def _get_cube_shape(self):
+
         file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
         file_lists.sort()
 
@@ -151,6 +169,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
     def get_value_at_point(self, axis, pos):
+
         real_axis = self._cube_axes_map[axis]
         if real_axis == 0:
             if SETTINGS['displayed_param'] in self._data['scanned_values']:
@@ -162,6 +181,7 @@ class LambdaScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
     def _get_roi_axis(self, plot_axis):
+
         if plot_axis == 0:
             if SETTINGS['displayed_param'] in self._data['scanned_values']:
                 return self._data[SETTINGS['displayed_param']]
@@ -169,12 +189,6 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 return np.arange(0, self._data['cube_shape'][plot_axis])
         else:
             return np.arange(0, self._data['cube_shape'][plot_axis])
-
-    # ----------------------------------------------------------------------
-    def update_settings(self):
-        for value in self._data['scanned_values']:
-            if value not in SETTINGS['all_params']:
-                SETTINGS['all_params'].append(value)
 
     # ----------------------------------------------------------------------
     def _get_correction(self, cube_shape, frame_ids=None):

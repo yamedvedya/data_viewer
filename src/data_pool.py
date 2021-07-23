@@ -44,6 +44,7 @@ class DataPool(QtCore.QObject):
 
         self._axes_names = ['X', 'Y', 'Z']
 
+        # maximum and minimum values along all axes for all open files
         self.axes_limits = {0: [0, 0],
                             1: [0, 0],
                             2: [0, 0]}
@@ -53,7 +54,7 @@ class DataPool(QtCore.QObject):
         self._protected_files = []
 
         self._rois = OrderedDict()
-        self._last_roi_index = -1
+        self._last_roi_key = -1
 
         self.settings = {'delimiter': ';',
                          'format': '%.6e'}
@@ -67,6 +68,9 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
+        """
+            this function is called during startup and everytime user changes settings
+        """
 
         if 'max_open_files' in settings:
             self._max_num_files = int(settings['max_open_files'])
@@ -86,20 +90,36 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def report_error(self, title, informative_text, detailed_text):
+        """
+            this function reports error to the main window
+        """
+
         self.main_window.report_error(title,
                                       informative_text=informative_text,
                                       detailed_text=detailed_text)
+
     # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
+    #       Files/streams open/save section
     # ----------------------------------------------------------------------
     def open_stream(self, detector_name, stream_name):
+        """
+            called by signal from ASAPO browser
+
+            since we don't want the GUI to freeze during stream load - we make an QThread, which in really reads data
+
+        """
+
+        # all opened files are entry to self._files_data dict
+        # first we check, that this stream in not yet opened
         entry_name = '/'.join([detector_name, stream_name])
         if entry_name in self._files_data:
             self.log.error("File with this name already opened")
             return
 
+        # create popup message for user
         self._open_mgs.setText(f'Opening stream {stream_name}')
         self._open_mgs.show()
+
         self._opener = Opener(self, 'stream', {'detector_name': detector_name, 'stream_name': stream_name,
                                                'entry_name': entry_name})
         self._opener.exception.connect(self.report_error)
@@ -108,14 +128,24 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def open_file(self, file_name):
-        entry_name = os.path.splitext(os.path.basename(file_name))[0]
+        """
+            called by signal from file browser
 
+            since we don't want the GUI to freeze during stream load - we make an QThread, which in really reads data
+
+        """
+
+        # all opened files are entry to self._files_data dict
+        # first we check, that this stream in not yet opened
+        entry_name = os.path.splitext(os.path.basename(file_name))[0]
         if entry_name in self._files_data:
             self.log.error("File with this name already opened")
             return
 
+        # create popup message for user
         self._open_mgs.setText(f'Opening file {file_name}')
         self._open_mgs.show()
+
         self._opener = Opener(self, 'file', {'file_name': file_name, 'entry_name': entry_name})
         self._opener.exception.connect(self.report_error)
         self._opener.done.connect(self._open_done)
@@ -123,31 +153,51 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def _open_done(self):
+        """
+            called by Opener, closes popup message
+        """
         self._open_mgs.hide()
 
     # ----------------------------------------------------------------------
     def add_new_entry(self, entry_name, entry):
+        """
+            called from Opener, after the data are read, and add entry to the self._files_data
 
+        """
+
+        # first we check, that we do not overcome user limit to max opened files
         if self._max_num_files is not None and self._max_num_files > 0:
             while len(self._files_data) >= self._max_num_files:
                 if not self._get_first_to_close():
                     break
 
+        # or that we do not overcome user limit to memory use
         elif self._max_memory is not None and self._max_memory > 0:
             while float(psutil.Process(os.getpid()).memory_info().rss) / (1024. * 1024.) >= self._max_memory:
                 if not self._get_first_to_close():
                     break
 
         self._files_data[entry_name] = entry
+
+        # since the dict is not order according to the adding time and there are "protected" files,
+        # we just track history of opened files in separate list. TODO: use OrderedDict
         self._files_history.append(entry_name)
+
+        # than we need to update all axes rages and re-update all settings for all opened files
         self._get_all_axes_limits()
         for data_set in self._files_data.values():
-            data_set.update_settings()
+            data_set.check_file_after_load()
 
+        # now we read to notify the GUI about new added file
         self.new_file_added.emit(entry_name)
 
     # ----------------------------------------------------------------------
     def _get_first_to_close(self):
+        """
+            all files, moved to comparison are protected to be closed, so we return first non-protected from history
+            :returns True is file was close, False if there is no file to be closed
+        """
+
         for name in self._files_history:
             if name not in self._protected_files:
                 self.close_file.emit(name)
@@ -158,6 +208,7 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def remove_file(self, name):
+
         del self._files_data[name]
         self._files_history.remove(name)
         self._get_all_axes_limits()
@@ -165,6 +216,10 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def protect_file(self, name, status):
+        """
+            when user moves file to comparison, we don not close it in automatic mode (max files opened, max memory)
+        """
+
         if status:
             if name not in self._protected_files:
                 self._protected_files.append(name)
@@ -174,11 +229,15 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def save_converted(self, entry_name, gridder):
+        """
+            saves files after conversion to reciprocal space
+        """
 
         file_name, ok = QtWidgets.QFileDialog.getSaveFileName(self.main_window, 'Select file name',
                                                               self.main_window.get_current_folder() + "/" + entry_name,
                                                               'HDF5 format {.h5};;')
         if ok:
+            # since we automatically open saved file, file name has to be unique
             while file_name in self._files_data:
                 file_name, ok = QtWidgets.QFileDialog.getSaveFileName(self.main_window, 'Select file name',
                                                                       self.main_window.get_current_folder() + "/" + entry_name,
@@ -193,64 +252,99 @@ class DataPool(QtCore.QObject):
         self.open_file(file_name)
 
     # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
+    #       ROIs plots section
     # ----------------------------------------------------------------------
     def roi_counts(self):
         return len(self._rois)
 
     # ----------------------------------------------------------------------
-    def get_roi_index(self, roi_num):
+    def get_roi_key(self, roi_num):
+        """
+            :returns the key for Ns roi in dict
+        """
         return list(self._rois.keys())[roi_num]
 
     # ----------------------------------------------------------------------
     def add_new_roi(self):
-        self._last_roi_index += 1
-        self._rois[self._last_roi_index] = ROI(self, self._last_roi_index)
+        """
+            all ROI are kept in OrderedDict with unique key
+        """
+        self._last_roi_key += 1
+        self._rois[self._last_roi_key] = ROI(self, self._last_roi_key)
 
-        return self._last_roi_index, self.get_roi_name(self._last_roi_index)
+        return self._last_roi_key, self.get_roi_index(self._last_roi_key)
 
     # ----------------------------------------------------------------------
-    def get_roi_name(self, roi_index):
+    def get_roi_index(self, roi_key):
         for idx, key in enumerate(self._rois.keys()):
-            if key == roi_index:
+            if key == roi_key:
                 return idx
 
         return None
 
     # ----------------------------------------------------------------------
-    def delete_roi(self, roi_index):
-        del self._rois[roi_index]
+    def delete_roi(self, roi_key):
+        del self._rois[roi_key]
 
     # ----------------------------------------------------------------------
-    def get_roi_cut(self, file, roi_idx):
-        return self._files_data[file].get_roi_cut(self._rois[roi_idx].get_section_params())
+    def get_roi_cut(self, file, roi_key):
+        """
+            calculate 3D cut from the data cube, defined by the ROI[roi_key]
+            :returns 3d np.array
+        """
+        return self._files_data[file].get_roi_cut(self._rois[roi_key].get_section_params())
 
     # ----------------------------------------------------------------------
-    def get_roi_plot(self, file, roi_idx):
-        return self._files_data[file].get_roi_plot(self._rois[roi_idx].get_section_params())
+    def get_roi_plot(self, file, roi_key):
+        """
+            calculate 1D plot from the data cube, defined by the ROI[roi_key]
+            :returns two 1D np.arrays (X, Y)
+        """
+        return self._files_data[file].get_roi_plot(self._rois[roi_key].get_section_params())
 
     # ----------------------------------------------------------------------
-    def set_section_axis(self, roi_idx, axis):
-        self._rois[roi_idx].set_section_axis(axis)
+    def set_section_axis(self, roi_key, axis):
+
+        self._rois[roi_key].set_section_axis(axis)
 
     # ----------------------------------------------------------------------
-    def roi_parameter_changed(self, roi_ind, section_axis, param, value):
-
-        value = self._rois[roi_ind].roi_parameter_changed(section_axis, param, value, self.axes_limits)
-        self.new_roi_range.emit(roi_ind)
+    def roi_parameter_changed(self, roi_key, section_axis, param, value):
+        """
+            function checks if the requested ROI`s value is valid. If value is valid - returns it,
+            if not, returns the most close valid one
+            :param roi_key - key for ROIs dict,
+            :param section_axis - which axes is modified,
+            :param param - 'width', 'pos'
+            :param value - requested by user value
+            :returns accepted value
+        """
+        value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, self.axes_limits)
+        self.new_roi_range.emit(roi_key)
         return value
 
     # ----------------------------------------------------------------------
-    def get_roi_axis_name(self, roi_ind, file):
-        return self._files_data[file].file_axes_caption()[self._rois[roi_ind].get_param('axis')]
+    def get_roi_axis_name(self, roi_key, file):
+        """
+            :returns axis name, along which ROI is calculated, for particular file
+        """
+        return self._files_data[file].file_axes_caption()[self._rois[roi_key].get_param('axis')]
 
     # ----------------------------------------------------------------------
-    def get_roi_param(self, roi_ind, param):
-        return self._rois[roi_ind].get_param(param)
+    def get_roi_param(self, roi_key, param):
+        """
+            :param roi_key
+            :param param: 'axis': 'roi_1_axis', 'roi_1_pos', 'roi_1_width', 'roi_2_axis', 'roi_2_pos', 'roi_2_width'
+
+            :returns requested value
+        """
+        return self._rois[roi_key].get_param(param)
 
     # ----------------------------------------------------------------------
-    def get_roi_limits(self, roi_ind, section_axis):
-        section_params = self._rois[roi_ind].get_section_params()
+    def get_roi_limits(self, roi_key, section_axis):
+        """
+            :returns max and min values for particular axis and ROI
+        """
+        section_params = self._rois[roi_key].get_section_params()
 
         if section_axis == 0:
             real_axis = section_params['axis']
@@ -263,6 +357,8 @@ class DataPool(QtCore.QObject):
         return axis_min, axis_max - section_params['roi_{}_width'.format(section_axis)], \
                axis_max - axis_min - section_params['roi_{}_pos'.format(section_axis)]
 
+    # ----------------------------------------------------------------------
+    #       ROIs batch processing section
     # ----------------------------------------------------------------------
     def _interrupt_batch(self):
         self._batcher.interrupt_batch()
@@ -277,7 +373,15 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def batch_process_rois(self, file_list, dir_name, file_type):
+        """
 
+        :param file_list: list of files to be processed
+        :param dir_name: output directory
+        :param file_type: output file type
+        :return:
+
+        """
+        # first we reset progress bar
         self._progress.clear()
         self._progress.show()
 
@@ -287,46 +391,109 @@ class DataPool(QtCore.QObject):
         self._batcher.done.connect(self._new_batch_done)
         self._batcher.start()
 
-
     # ----------------------------------------------------------------------
     def save_roi_to_file(self, file_type, save_name, header, data):
+        """
+        called from Batcher to save processed data
+        :param file_type:
+        :param save_name:
+        :param header:
+        :param data:
+        :return:
+        """
         if file_type == '.txt':
             np.savetxt(save_name, data, fmt=self.settings['format'],
                        delimiter=self.settings['delimiter'],
                        newline='\n', header=';'.join(header))
 
     # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
+    #       2D frames section
     # ----------------------------------------------------------------------
     def get_2d_cut(self, file, cut_axis, cut_value, x_axis, y_axis):
+        """
+
+        :param file: key for self._files_data
+        :param cut_axis: axis index, along which 2D cut has to be done
+        :param cut_value: value, at which 2D cut has to be done
+        :param x_axis: index or current X axis in frame viewer
+        :param y_axis: index or current X axis in frame viewer
+        :return: 2D np.array
+        """
         return self._files_data[file].get_2d_cut(cut_axis, cut_value, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
     def get_max_frame(self, file, axis):
+        """
+
+        :param file: key for self._files_data
+        :param axis:
+        :return: maximum value along requested axis
+        """
         return self._files_data[file].get_max_frame(axis)
 
     # ----------------------------------------------------------------------
     def get_entry_value(self, file, entry):
+        """
+        for some file types we can store additional information
+        :param file:
+        :param entry:
+        :return: if file has requested entry - returns it, else None
+        """
         return self._files_data[file].get_entry(entry)
 
     # ----------------------------------------------------------------------
     def frame_for_point(self, file, axis, pos):
+        """
+        for some file types user can select the displayed unit for some axis
+        e.g. for Sardana scan we can display point_nb, or motor position etc...
+
+        here we return the frame number along this axis for particular unit value
+
+        :param file:
+        :param axis:
+        :param pos:
+        :return:
+        """
         return self._files_data[file].frame_for_point(axis, pos)
 
     # ----------------------------------------------------------------------
     def get_value_at_point(self, file, axis, pos):
+        """
+        for some file types user can select the displayed unit for some axis
+        e.g. for Sardana scan we can display point_nb, or motor position etc...
+
+        here we return the unit value along this axis for particular frame number
+        :param file:
+        :param axis:
+        :param pos:
+        :return:
+        """
         return self._files_data[file].get_value_at_point(axis, pos)
 
     # ----------------------------------------------------------------------
     def get_axes(self):
+        """
+        was reserved for future
+
+        :return: ['X', 'Y', 'Z']
+        """
         return self._axes_names
 
     # ----------------------------------------------------------------------
     def file_axes_caption(self, file):
+        """
+        some files can have own axes captions
+        :param file:
+        :return: dict {axis_index: axis_name}
+        """
         return self._files_data[file].file_axes_caption()
 
     # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):
+        """
+        recalculates the limits for all files
+        :return:
+        """
         new_limits = {0: [0, 0], 1: [0, 0], 2: [0, 0]}
 
         for data_set in self._files_data.values():
@@ -349,6 +516,9 @@ class DataPool(QtCore.QObject):
 
 # ----------------------------------------------------------------------
 class Opener(QtCore.QThread):
+    """
+    separate QThread, that reads new file
+    """
 
     exception = QtCore.pyqtSignal(str, str, str)
     done = QtCore.pyqtSignal()
@@ -412,6 +582,10 @@ class Opener(QtCore.QThread):
 # ----------------------------------------------------------------------
 class Batcher(QtCore.QThread):
 
+    """
+    separate QThread, that calculates ROIs for list of files
+    """
+
     exception = QtCore.pyqtSignal(str, str, str)
     new_file = QtCore.pyqtSignal(str, float)
     done = QtCore.pyqtSignal()
@@ -461,8 +635,13 @@ class Batcher(QtCore.QThread):
 
         self.done.emit()
 
+
 # ----------------------------------------------------------------------
 def _open_file_dialog():
+    """
+        displays popup message during file open
+    :return:
+    """
     open_mgs = QtWidgets.QMessageBox()
     open_mgs.setModal(False)
     open_mgs.setIcon(QtWidgets.QMessageBox.Information)

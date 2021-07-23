@@ -97,7 +97,7 @@ class Converter(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _convert(self):
 
-        roi_index = self._data_pool.get_roi_index(self._ui.cmd_roi.currentIndex())
+        roi_index = self._data_pool.get_roi_key(self._ui.cmd_roi.currentIndex())
         if self._data_pool.get_roi_param(roi_index, 'axis') != 2:
             raise RuntimeError('Only sections along detector Z can be processed!')
 

@@ -1,5 +1,16 @@
 # Created by matveyev at 20.05.2021
 
+"""
+Abstract class for images, obtained by 2D detectors
+provide general functionality:
+
+1) applying pixel mask to individual frame
+2) excluding pixels based on flat filed detector map
+3) filling detector gaps with interpolation of neighbor pixels
+4) correction of intensity individual frame
+
+"""
+
 import pyqtgraph as pg
 import numpy as np
 from scipy import ndimage
@@ -12,6 +23,7 @@ from src.main_window import APP_NAME
 from src.utils.utils import read_mask_file, read_ff_file
 
 WIDGET_NAME = ''
+
 
 # ----------------------------------------------------------------------
 class DetectorImage():
@@ -30,13 +42,24 @@ class DetectorImage():
 
     # ----------------------------------------------------------------------
     def _get_correction(self, cube_shape, frame_ids=None):
+        """
+        some files can require correction for individual frames (e.g. for incoming beam intensity)
 
+        :param cube_shape: 3D data cube shape
+        :param frame_ids: if not None: frame ids for which correction has to be calculated
+        :return: np.array if correction factors
+        """
         self._correction = np.ones(cube_shape[0], dtype=np.float32)
 
     # ----------------------------------------------------------------------
     def _get_data(self, frame_id=None):
-
+        """
+        return 3D data cube with applied activated parameters
+        :param frame_id: if not None: indicate cut from 3D cube along first axis
+        :return: np.array
+        """
         if self._data_pool.memory_mode == 'ram':
+            # if since last reload program parameters were not changed - we just return already COPY of loaded data
             if not self._need_apply_mask:
                 return np.copy(self._3d_cube)
             else:
@@ -51,6 +74,7 @@ class DetectorImage():
         _pixel_mask = None
         _fill_weights = None
 
+        # here we calculate pixel mask for selected set of options
         if _settings['enable_mask'] and _settings['mask'] is not None:
             _pixel_mask = _settings['mask'] > 0
 
@@ -61,6 +85,7 @@ class DetectorImage():
             else:
                 _pixel_mask += (_ff < _settings['ff_min']) + (_ff > _settings['ff_max'])
 
+        # here we calculate pixel mask gap filling
         if _settings['enable_fill']:
             _fill_weights = ndimage.uniform_filter(1.-_pixel_mask, size=_settings['fill_radius'])
 
@@ -97,7 +122,15 @@ class DetectorImage():
 
     # ----------------------------------------------------------------------
     def _get_2d_cut(self, axis, cut_range, x_axis, y_axis):
+        """
 
+        :param axis: axis index, along which cut has to be done
+        :param cut_range: values, at which cut has to be done
+        :param x_axis: index or current X axis in frame viewer
+        :param y_axis: index or current Y axis in frame viewer
+        :return: 3D np.array
+
+        """
         cut_axis = self._cube_axes_map[axis]
 
         if cut_axis == 0 and self._data_pool.memory_mode != 'ram':
@@ -119,7 +152,12 @@ class DetectorImage():
 
     # ----------------------------------------------------------------------
     def _get_roi_data(self, sect, do_sum):
-
+        """
+        gets ROI cut from data cube
+        :param sect: ROI parameters
+        :param do_sum: if True - return 1D plot, in False - return 3D cut
+        :return: np.array
+        """
         plot_axis = self._cube_axes_map[sect['axis']]
         cut_axis_1 = self._cube_axes_map[sect['roi_1_axis']]
 
@@ -169,6 +207,10 @@ class DetectorImage():
 # ----------------------------------------------------------------------
 class DetectorImageSetup(QtWidgets.QWidget):
     """
+    General class, which provides GUI interface to setup parameters
+
+    These are common parameters:
+
     SETTINGS = {'enable_mask': False,
                 'mask': None,
                 'mask_file': '',
@@ -195,6 +237,7 @@ class DetectorImageSetup(QtWidgets.QWidget):
         self._main_window = main_window
         self._data_pool = data_pool
 
+        # pyqtgraph instance to display pixel mask
         self._main_plot = pg.PlotItem()
         self._main_plot.showAxis('left', False)
         self._main_plot.showAxis('bottom', False)
@@ -209,6 +252,11 @@ class DetectorImageSetup(QtWidgets.QWidget):
 
         self._main_plot.getViewBox().setAspectLocked()
 
+        self._plot_2d = pg.ImageItem()
+        self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients['grey']["ticks"])).getLookupTable())
+        self._main_plot.addItem(self._plot_2d)
+
+        # display current setting
         _settings = self.get_settings()
 
         self._old_settings = dict(_settings)
@@ -231,12 +279,9 @@ class DetectorImageSetup(QtWidgets.QWidget):
         else:
             self._ui.rb_fill_off.setChecked(True)
 
-        self._plot_2d = pg.ImageItem()
-        self._plot_2d.setLookupTable(pg.ColorMap(*zip(*Gradients['grey']["ticks"])).getLookupTable())
-        self._main_plot.addItem(self._plot_2d)
-
         self._display_mask()
 
+        # signals from interface
         self._ui.bg_mask_option.buttonClicked.connect(lambda button: self.change_mode(button, 'mask'))
         self._ui.bg_ff_option.buttonClicked.connect(lambda button: self.change_mode(button, 'ff'))
         self._ui.bg_fill_option.buttonClicked.connect(self.change_fill)
@@ -279,7 +324,6 @@ class DetectorImageSetup(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def change_mode(self, button, mode):
-
         _settings = self.get_settings()
 
         if button == getattr(self._ui, f'rb_{mode}_off'):
@@ -301,6 +345,12 @@ class DetectorImageSetup(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def load_from_file(self, mode):
+        """
+        load mask of flat filed mask form file
+
+        :param mode: 'mask' or 'ff' (flat filed)
+        :return:
+        """
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, f'Open file with {mode}',
                                                              self._main_window.get_current_folder())
 
@@ -328,6 +378,10 @@ class DetectorImageSetup(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _display_mask(self):
+        """
+        calculated mask for current setting and displays it
+        :return:
+        """
 
         _mask = self._calculate_mask()
 

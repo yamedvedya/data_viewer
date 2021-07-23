@@ -142,7 +142,7 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def add_roi(self,idx):
-        roi_id = self.data_pool.get_roi_name(idx)
+        roi_id = self.data_pool.get_roi_index(idx)
         self._rois[idx] = (pg.RectROI([0, 0], [1, 1], pen=(0, 9)),
                            pg.TextItem(text='ROI {}'.format(roi_id), color=(255, 0, 0)),
                            idx)
@@ -159,7 +159,7 @@ class View2d(QtWidgets.QWidget):
         del self._rois[idx]
 
         for _, label, my_id in self._rois.values():
-            label.setText('ROI {}'.format(self.data_pool.get_roi_name(my_id)))
+            label.setText('ROI {}'.format(self.data_pool.get_roi_index(my_id)))
 
     # ----------------------------------------------------------------------
     def new_roi_range(self, roi_ind):

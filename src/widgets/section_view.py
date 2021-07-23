@@ -103,7 +103,7 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def refresh_name(self):
-        return self.data_pool.get_roi_name(self.my_id)
+        return self.data_pool.get_roi_index(self.my_id)
 
     # ----------------------------------------------------------------------
     def new_roi_range(self):
@@ -351,7 +351,7 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _save(self, type):
-        default_name = self.file_browser.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_name(self.my_id))
+        default_name = self.file_browser.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
         if type == 'image':
             file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
                  'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*ppm); X11 Bitmap (*xbm);; X11 Pixmap (*xpm)')
@@ -370,7 +370,7 @@ class SectionView(QtWidgets.QWidget):
 
                 for file_name, plot in self._section_plots.items():
                     header, data = plot.get_data_to_save()
-                    header[0] = self.data_pool.get_roi_axis_name(self.data_pool.get_roi_name(self.my_id), file_name)
+                    header[0] = self.data_pool.get_roi_axis_name(self.data_pool.get_roi_index(self.my_id), file_name)
                     self.data_pool.save_roi_to_file(file_type,
                                                     os.path.join(dir_name, file_name + "_" + base_name + file_type),
                                                     header, data)

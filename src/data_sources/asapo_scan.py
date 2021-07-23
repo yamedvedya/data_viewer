@@ -1,5 +1,15 @@
 # Created by matveyev at 18.02.2021
 
+"""
+Class for ASAPO stream
+inherit from AbstractDataFile and DetectorImage
+
+after creation loads all frames from stream and merges data from them to one 3D cube [frameID, X, Y]
+and apply current parameters (maks, flat field etc)
+
+if user change parameters - reloads data from stream, makes new cube and applies new parameters
+"""
+
 WIDGET_NAME = 'ASAPOScanSetup'
 
 import numpy as np
@@ -42,6 +52,7 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
                                1: 1,
                                2: 0}
 
+        # read the current settings
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
 
@@ -52,6 +63,8 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         token = settings['ASAPO']['token']
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
+
+        # TODO autodetect mode
         if settings['ASAPO']['mode'] == 'file':
             self._mode = 'file'
             self.receiver = SerialAsapoReceiver(consumer)
@@ -59,9 +72,11 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
             self._mode = 'dataset'
             self.receiver = SerialDatasetAsapoReceiver(consumer)
 
+        # save source for reload
         self.receiver.stream = stream_name
         self.receiver.data_source = detector_name
 
+        # only one option
         self._data['scanned_values'] = ['frame_ID']
 
         self._need_apply_mask = True
@@ -79,7 +94,11 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
 
     # -------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
-
+        """
+        reloads stream
+        :param frame_ids: if not None: frames to be loaded
+        :return: np.array, 3D data cube
+        """
         def _convert_image(data, meta_data):
             if self._mode == 'file':
                 return get_image(data, meta_data)[np.newaxis, :]
@@ -112,12 +131,10 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
-
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
     def get_2d_cut(self, axis, cut_range, x_axis, y_axis):
-
         return self._get_2d_cut(axis, cut_range, x_axis, y_axis)
 
     # ----------------------------------------------------------------------
@@ -127,7 +144,6 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):
-
         return self._get_roi_data(sect, True)
 
 # ----------------------------------------------------------------------
