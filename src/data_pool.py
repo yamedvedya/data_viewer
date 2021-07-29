@@ -6,6 +6,7 @@ import psutil
 import time
 import sys
 import numpy as np
+import traceback
 
 from collections import OrderedDict
 
@@ -572,9 +573,15 @@ class Opener(QtCore.QThread):
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             except Exception as err:
+                error_msg = f'{err.__class__.__module__}.{err.__class__.__name__}: {err}'
+                error_cause = err.__cause__
+                while error_cause is not None:
+                    error_msg += f'\n\nCaused by {error_cause.__class__.__module__}.{error_cause.__class__.__name__}: {error_cause}'
+                    error_cause = error_cause.__cause__
+
                 self.exception.emit('Cannot open stream',
-                                    'Cannot open {}'.format(self.params['entry_name']),
-                                    str(err))
+                                    f'Cannot open {self.params["entry_name"]}',
+                                    error_msg)
 
         self.done.emit()
 
@@ -627,9 +634,15 @@ class Batcher(QtCore.QThread):
                                                                 np.transpose(np.vstack((x_axis, y_axis))))
 
                 except Exception as err:
+                    error_msg = f'{err.__class__.__module__}.{err.__class__.__name__}: {err}'
+                    error_cause = err.__cause__
+                    while error_cause is not None:
+                        error_msg += f'\n\nCaused by {error_cause.__class__.__module__}.{error_cause.__class__.__name__}: {error_cause}'
+                        error_cause = error_cause.__cause__
+
                     self.exception.emit('Cannot calculate ROI',
                                         'Cannot calculate ROI for {}'.format(file_name),
-                                        str(err))
+                                        error_msg)
             else:
                 break
 

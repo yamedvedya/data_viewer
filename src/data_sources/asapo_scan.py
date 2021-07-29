@@ -101,26 +101,29 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         """
         def _convert_image(data, meta_data):
             if self._mode == 'file':
-                return get_image(data, meta_data)[np.newaxis, :]
+                return get_image(data, meta_data)
             else:
-                return get_image(data[0], meta_data[0])[np.newaxis, :]
+                return get_image(data[0], meta_data[0])
 
         if frame_ids is not None:
             self.receiver.set_start_id(frame_ids[0]+1)
             data, meta_data = self.receiver.get_next(False)
             cube = _convert_image(data, meta_data)
-            for frame in frame_ids[1:]:
-                self.receiver.set_start_id(frame+1)
-                data, meta_data = self.receiver.get_next(False)
-                cube = np.vstack((cube, _convert_image(data, meta_data)))
+            if len(cube.shape) != 3: # TODO check all possibilities
+                for frame in frame_ids[1:]:
+                    self.receiver.set_start_id(frame+1)
+                    data, meta_data = self.receiver.get_next(False)
+                    cube = np.vstack((cube[np.newaxis, :], _convert_image(data, meta_data)[np.newaxis, :]))
+            else:
+                cube = cube[frame_ids, :, :]
         else:
-
             self.receiver.set_start_id(1)
             data, meta_data = self.receiver.get_next(False)
             cube = _convert_image(data, meta_data)
-            for _ in range(1, self.receiver.get_current_size()):
-                data, meta_data = self.receiver.get_next(False)
-                cube = np.vstack((cube, _convert_image(data, meta_data)))
+            if len(cube.shape) != 3: # TODO check all possibilities
+                for _ in range(1, self.receiver.get_current_size()):
+                    data, meta_data = self.receiver.get_next(False)
+                    cube = np.vstack((cube[np.newaxis, :], _convert_image(data, meta_data)[np.newaxis, :]))
 
         return np.array(cube, dtype=np.float32)
 
