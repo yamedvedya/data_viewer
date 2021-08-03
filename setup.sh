@@ -27,6 +27,10 @@ wget http://nims.desy.de/extra/asapo/linux_packages/debian10.7/asapo_consumer-21
 pip3 install asapo_consumer-21.03.0.tar.gz
 rm ./asapo_consumer-21.03.0.tar.gz
 
+wget http://nims.desy.de/extra/asapo/linux_packages/debian10.7/asapo_producer-21.03.0.tar.gz
+pip3 install asapo_producer-21.03.0.tar.gz
+rm ./asapo_producer-21.03.0.tar.gz
+
 pip3 install hdf5plugin
 pip3 install scikit-image
 pip3 install attrs
@@ -36,3 +40,5 @@ pip3 install xrayutilities
 pip3 install -U numpy
 pip3 install -U scipy
 pip3 install -U h5py
+
+pip3 install  git+https://gitlab.desy.de/fs-sc/asapoworker.git
