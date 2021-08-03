@@ -118,7 +118,7 @@ class ASAPOBrowser(AbstractWidget):
             self.reset_detectors([detector.strip() for detector in self.settings['detectors'].split(';')])
             self.refresh_view(auto_open=False)
         except Exception as err:
-            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err))
+            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
     def reset_detectors(self, new_detector_list):
@@ -165,19 +165,17 @@ class ASAPOBrowser(AbstractWidget):
                         asapo_streams_indexes.append(ind)
 
             _streams_to_delete = list(set(model_streams_names) - set(asapo_streams_names))
-            for stream in _streams_to_delete:
-                ind = model_streams_names.index(stream)
+            for stream_name in _streams_to_delete:
+                ind = model_streams_names.index(stream_name)
                 self.asapo_model.remove(self.asapo_model.index(ind, 0, detector_index))
 
-            _streams_to_add = list(set(asapo_streams_names) - set(model_streams_names))
-            _streams_to_add.sort()
-            for stream in _streams_to_add:
-                ind = asapo_streams_names.index(stream)
-                self.asapo_model.start_insert_row(detector_index, ind)
-                StreamNode(detector_node, ind, asapo_streams[asapo_streams_indexes[ind]])
-                self.asapo_model.finish_row_changes()
-                if auto_open and self._auto_open:
-                    self.stream_selected.emit(detector_node.my_name(), stream)
+            for stream_name in asapo_streams_names:
+                ind = asapo_streams_names.index(stream_name)
+                stream_ind = asapo_streams_indexes[ind]
+                if stream_name in model_streams_names:
+                    self.asapo_model.update_stream(detector_ind, ind, asapo_streams[stream_ind])
+                else:
+                    self.asapo_model.add_stream(detector_ind, ind, asapo_streams[stream_ind])
 
         self._get_time_range()
 

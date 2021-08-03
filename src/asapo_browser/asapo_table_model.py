@@ -89,6 +89,38 @@ class ASAPOModel(QtCore.QAbstractItemModel):
         self.endRemoveRows()
 
     # ----------------------------------------------------------------------
+    def add_stream(self, detector_ind, stream_ind, stream_info):
+        """Add new stream (child) to given data_source (node)
+
+        Parameters:
+            detector_ind (int): Index of the node
+            stream_ind (int): Index of stream in stream list
+            stream_info (dict): Information about stream
+        """
+
+        detector_index = self.index(detector_ind, 0)
+        detector_node = self.get_node(detector_index)
+        self.start_insert_row(detector_index, stream_ind)
+        StreamNode(detector_node, stream_ind, stream_info)
+        self.finish_row_changes()
+
+    # ----------------------------------------------------------------------
+    def update_stream(self, detector_ind, stream_ind, stream_info):
+        """Update stream information
+
+        Parameters:
+            detector_ind (int): Index of the node
+            stream_ind (int): Index of stream in stream list
+            stream_info (dict): Information about stream
+        """
+
+        detector_index = self.index(detector_ind, 0)
+        detector_node = self.get_node(detector_index)
+        stream = detector_node.child(stream_ind)
+        if stream is not None:
+            stream.info = stream_info
+
+    # ----------------------------------------------------------------------
     def start_insert_row(self, insert_index, row=0):
         self.beginInsertRows(insert_index, row, row)
 
