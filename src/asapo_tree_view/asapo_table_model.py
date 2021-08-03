@@ -2,8 +2,8 @@
 import numpy as np
 from PyQt5 import QtCore
 
-from src.asapo_browser.asapo_entries_class import Node, StreamNode
-from src.asapo_browser.asapo_table_headers import headers
+from src.asapo_tree_view.asapo_entries_class import Node, StreamNode
+from src.asapo_tree_view.asapo_table_headers import headers
 
 # ----------------------------------------------------------------------
 class ASAPOModel(QtCore.QAbstractItemModel):
@@ -101,8 +101,10 @@ class ASAPOModel(QtCore.QAbstractItemModel):
         detector_index = self.index(detector_ind, 0)
         detector_node = self.get_node(detector_index)
         self.start_insert_row(detector_index, stream_ind)
-        StreamNode(detector_node, stream_ind, stream_info)
+        stream = StreamNode(detector_node, stream_ind, stream_info)
         self.finish_row_changes()
+
+        return stream
 
     # ----------------------------------------------------------------------
     def update_stream(self, detector_ind, stream_ind, stream_info):

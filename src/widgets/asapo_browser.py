@@ -10,9 +10,9 @@ from distutils.util import strtobool
 
 from src.widgets.abstract_widget import AbstractWidget
 
-from src.asapo_browser.asapo_table_model import ASAPOModel, ProxyModel
-from src.asapo_browser.asapo_entries_class import StreamNode, DetectorNode
-from src.asapo_browser.asapo_table_headers import headers
+from src.asapo_tree_view.asapo_table_model import ASAPOModel, ProxyModel
+from src.asapo_tree_view.asapo_entries_class import StreamNode, DetectorNode
+from src.asapo_tree_view.asapo_table_headers import headers
 from AsapoWorker.asapo_receiver import AsapoMetadataReceiver
 
 
@@ -116,7 +116,8 @@ class ASAPOBrowser(AbstractWidget):
             self.settings.update(settings)
 
             self.reset_detectors([detector.strip() for detector in self.settings['detectors'].split(';')])
-            self.refresh_view(auto_open=False)
+            self.refresh_view()
+
         except Exception as err:
             self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
@@ -141,12 +142,17 @@ class ASAPOBrowser(AbstractWidget):
         pass
 
     # ----------------------------------------------------------------------
-    def refresh_view(self, auto_open=True):
+    def refresh_view(self):
+        # user can select several detectors to view, for each detector we create personal tree
         for detector_ind, detector in enumerate([child.my_name() for child in self.asapo_model.root.all_child()]):
+
             detector_index = self.asapo_model.index(detector_ind, 0)
             detector_node = self.asapo_model.get_node(detector_index)
+
+            # first we save all already added streams for this detector
             model_streams_names = [child.my_name() for child in detector_node.all_child()]
 
+            # then we get all streams from asapo
             meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(self.settings['host'],
                                                                                       self.settings['path'],
                                                                                       strtobool(self.settings['has_filesystem']),
@@ -154,34 +160,44 @@ class ASAPOBrowser(AbstractWidget):
                                                                                       detector,
                                                                                       self.settings['token'], 1000))
 
+            # Note, that to speed up, user can ask to show only N last streams
             asapo_streams = meta_data_receiver.get_stream_list()[-int(self.settings['max_streams']):]
-            possible_name_fields = headers['Name']
+
             asapo_streams_names = []
             asapo_streams_indexes = []
+
+            # potentially, we can use different fields as a Name for stream. All variants are saved in headers['Name']
+            possible_name_fields = headers['Name']
             for ind, stream in enumerate(asapo_streams):
                 for name in possible_name_fields:
                     if name in stream:
                         asapo_streams_names.append(stream[name])
                         asapo_streams_indexes.append(ind)
 
+            # if there is a limits of displayed streams, we need first to delete those, which should not be displayed
             _streams_to_delete = list(set(model_streams_names) - set(asapo_streams_names))
             for stream_name in _streams_to_delete:
                 ind = model_streams_names.index(stream_name)
                 self.asapo_model.remove(self.asapo_model.index(ind, 0, detector_index))
 
+            # then we either update exiting one, either add it.
+            # TODO: update only those, which info was changed (e.g. current stream only)
             for stream_name in asapo_streams_names:
                 ind = asapo_streams_names.index(stream_name)
                 stream_ind = asapo_streams_indexes[ind]
                 if stream_name in model_streams_names:
                     self.asapo_model.update_stream(detector_ind, ind, asapo_streams[stream_ind])
                 else:
-                    self.asapo_model.add_stream(detector_ind, ind, asapo_streams[stream_ind])
+                    stream = self.asapo_model.add_stream(detector_ind, ind, asapo_streams[stream_ind])
+            # TODO: test auto_open feature
+                    if self._auto_open:
+                        self.stream_selected.emit(detector_node.my_name(), stream.my_name())
 
         self._get_time_range()
 
     # ----------------------------------------------------------------------
     def _get_time_range(self):
-        min_time = 9223372036854775807
+        min_time = 9223372036854775807  # magic number :-)
         max_time = -9223372036854775808
         for detector in self.asapo_model.root.all_child():
             for stream in detector.all_child():

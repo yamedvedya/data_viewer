@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from PyQt5 import QtCore, QtGui
-from src.asapo_browser.asapo_table_headers import headers
+from src.asapo_tree_view.asapo_table_headers import headers
 
 # ----------------------------------------------------------------------
 class Node(object):
