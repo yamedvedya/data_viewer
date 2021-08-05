@@ -328,7 +328,7 @@ class DataPool(QtCore.QObject):
         """
             :returns axis name, along which ROI is calculated, for particular file
         """
-        return self._files_data[file].file_axes_caption()[self._rois[roi_key].get_param('axis')]
+        return self._files_data[file].get_file_axes()[self._rois[roi_key].get_param('axis')]
 
     # ----------------------------------------------------------------------
     def get_roi_param(self, roi_key, param):
@@ -410,17 +410,15 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     #       2D frames section
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, file, cut_axis, cut_value, x_axis, y_axis):
+    def get_2d_cut(self, file, frame_axes, section):
         """
-
+        returns 2D frame to be displayed in Frame viewer
         :param file: key for self._files_data
-        :param cut_axis: axis index, along which 2D cut has to be done
-        :param cut_value: value, at which 2D cut has to be done
-        :param x_axis: index or current X axis in frame viewer
-        :param y_axis: index or current X axis in frame viewer
+        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
+        :param section: list of tuples (section axes, from, to)
         :return: 2D np.array
         """
-        return self._files_data[file].get_2d_cut(cut_axis, cut_value, x_axis, y_axis)
+        return self._files_data[file].get_2d_cut(frame_axes, section)
 
     # ----------------------------------------------------------------------
     def get_max_frame(self, file, axis):
@@ -443,7 +441,7 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_entry(entry)
 
     # ----------------------------------------------------------------------
-    def frame_for_point(self, file, axis, pos):
+    def frame_for_value(self, file, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -455,10 +453,10 @@ class DataPool(QtCore.QObject):
         :param pos:
         :return:
         """
-        return self._files_data[file].frame_for_point(axis, pos)
+        return self._files_data[file].frame_for_value(axis, pos)
 
     # ----------------------------------------------------------------------
-    def get_value_at_point(self, file, axis, pos):
+    def value_for_frame(self, file, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -469,25 +467,16 @@ class DataPool(QtCore.QObject):
         :param pos:
         :return:
         """
-        return self._files_data[file].get_value_at_point(axis, pos)
+        return self._files_data[file].value_for_frame(axis, pos)
 
     # ----------------------------------------------------------------------
-    def get_axes(self):
-        """
-        was reserved for future
-
-        :return: ['X', 'Y', 'Z']
-        """
-        return self._axes_names
-
-    # ----------------------------------------------------------------------
-    def file_axes_caption(self, file):
+    def get_file_axes(self, file):
         """
         some files can have own axes captions
         :param file:
         :return: dict {axis_index: axis_name}
         """
-        return self._files_data[file].file_axes_caption()
+        return self._files_data[file].get_file_axes()
 
     # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):

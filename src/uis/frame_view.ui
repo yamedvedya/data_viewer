@@ -18,7 +18,7 @@
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <layout class="QGridLayout" name="g_layout">
-       <item row="2" column="1">
+       <item row="1" column="1">
         <widget class="QRadioButton" name="rb_lin_level">
          <property name="text">
           <string>Linear</string>
@@ -31,35 +31,7 @@
          </attribute>
         </widget>
        </item>
-       <item row="3" column="1">
-        <widget class="QRadioButton" name="rb_log_level">
-         <property name="text">
-          <string>Log</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">bg_level</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_3">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Section to display:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="1">
+       <item row="4" column="1">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -72,36 +44,14 @@
          </property>
         </spacer>
        </item>
-       <item row="1" column="1">
-        <widget class="QComboBox" name="cb_section">
-         <property name="minimumSize">
-          <size>
-           <width>85</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QCheckBox" name="chk_auto_levels">
+       <item row="2" column="1">
+        <widget class="QRadioButton" name="rb_log_level">
          <property name="text">
-          <string>Auto levels</string>
+          <string>Log</string>
          </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label">
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Levels mode:</string>
-         </property>
+         <attribute name="buttonGroup">
+          <string notr="true">bg_level</string>
+         </attribute>
         </widget>
        </item>
        <item row="0" column="0" colspan="2">
@@ -116,24 +66,39 @@
          </property>
         </widget>
        </item>
+       <item row="3" column="0">
+        <widget class="QCheckBox" name="chk_auto_levels">
+         <property name="text">
+          <string>Auto levels</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Levels mode:</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0">
        <item>
-        <widget class="QLabel" name="lb_axes_captions">
-         <property name="font">
-          <font>
-           <pointsize>12</pointsize>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>X: Detector X, Y: Detector Y, Z: Scan point,</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
+        <widget class="QWidget" name="axis_selectors" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>330</width>
+           <height>0</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -141,76 +106,14 @@
         <layout class="QHBoxLayout" name="view_layout"/>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="h_layout" stretch="0,0,0,0,0,0,0">
-         <item>
-          <widget class="QLabel" name="lb_value">
-           <property name="text">
-            <string>Value:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSlider" name="sl_frame">
-           <property name="maximum">
-            <number>5</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="but_first">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icon/first.png</normaloff>:/icon/first.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="but_previous">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icon/previous.png</normaloff>:/icon/previous.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="but_next">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icon/next.png</normaloff>:/icon/next.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="but_last">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icon/last.png</normaloff>:/icon/last.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="chk_integration_mode">
-           <property name="text">
-            <string>Integration mode</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QWidget" name="cut_selectors" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>330</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>

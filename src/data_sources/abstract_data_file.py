@@ -29,7 +29,7 @@ class AbstractDataFile(object):
         pass
 
     # ----------------------------------------------------------------------
-    def file_axes_caption(self):
+    def get_file_axes(self):
         """
         some files can have own axes captions
         :param file:
@@ -61,7 +61,7 @@ class AbstractDataFile(object):
         return new_limits
 
     # ----------------------------------------------------------------------
-    def frame_for_point(self, axis, pos):
+    def frame_for_value(self, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -78,7 +78,7 @@ class AbstractDataFile(object):
         return np.argmin(np.abs(axis_value-pos))
 
     # ----------------------------------------------------------------------
-    def get_value_at_point(self, axis, pos):
+    def value_for_frame(self, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -94,28 +94,23 @@ class AbstractDataFile(object):
         return self._axes_names[real_axis], pos
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, axis, cut_range, x_axis, y_axis):
+    def get_2d_cut(self, frame_sect, section):
         """
 
-        :param axis: axis index, along which cut has to be done
-        :param cut_range: values, at which cut has to be done
-        :param x_axis: index or current X axis in frame viewer
-        :param y_axis: index or current Y axis in frame viewer
-        :return: 3D np.array
+        returns 2D frame to be displayed in Frame viewer
+        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
+        :param section: list of tuples (section axes, from, to)
+        :return: 2D np.array
 
         """
+        section.sort(key=lambda tup: tup[0])
+        data = self._3d_cube
+        for axis, start, stop in section[::-1]:
+            cut_axis = self._cube_axes_map[axis]
+            data = data.take(indices=range(start, stop + 1), axis=cut_axis)
+            data = np.sum(data, axis=cut_axis)
 
-        cut_axis = self._cube_axes_map[axis]
-
-        if cut_axis == 0:
-            data = self._3d_cube[cut_range[0]:cut_range[1], :, :]
-        elif cut_axis == 1:
-            data = self._3d_cube[:, cut_range[0]:cut_range[1], :]
-        else:
-            data = self._3d_cube[:, :, cut_range[0]:cut_range[1]]
-
-        data = np.sum(data, axis=cut_axis)
-        if self._cube_axes_map[x_axis] > self._cube_axes_map[y_axis]:
+        if self._cube_axes_map[frame_sect['x']] > self._cube_axes_map[frame_sect['y']]:
             return np.transpose(data)
         else:
             return data

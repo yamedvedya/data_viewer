@@ -109,7 +109,7 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
             self.receiver.set_start_id(frame_ids[0]+1)
             data, meta_data = self.receiver.get_next(False)
             cube = _convert_image(data, meta_data)
-            if len(cube.shape) != 3: # TODO check all possibilities
+            if len(cube.shape) != 3:# TODO check all possibilities
                 for frame in frame_ids[1:]:
                     self.receiver.set_start_id(frame+1)
                     data, meta_data = self.receiver.get_next(False)
@@ -120,7 +120,7 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
             self.receiver.set_start_id(1)
             data, meta_data = self.receiver.get_next(False)
             cube = _convert_image(data, meta_data)
-            if len(cube.shape) != 3: # TODO check all possibilities
+            if len(cube.shape) != 3:# TODO check all possibilities
                 for _ in range(1, self.receiver.get_current_size()):
                     data, meta_data = self.receiver.get_next(False)
                     cube = np.vstack((cube[np.newaxis, :], _convert_image(data, meta_data)[np.newaxis, :]))

@@ -14,6 +14,8 @@ from src.utils.cursors import CrosshairCursor, Ruler
 from src.utils.range_slider import RangeSlider
 from src.utils.legend_item import addLegend
 
+AXES_NAMES = ['X', 'Y', 'Z']
+
 
 # ----------------------------------------------------------------------
 class SectionView(QtWidgets.QWidget):
@@ -77,13 +79,11 @@ class SectionView(QtWidgets.QWidget):
         self._legend = addLegend(self._main_plot)
         self._legend.hide()
 
-        self._ui.cb_section_axis.addItems(self.data_pool.get_axes())
+        self._ui.cb_section_axis.addItems(AXES_NAMES)
         self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis'))
 
-        self._ui.lb_axis_1.setText('{} ROI'.format(self.data_pool.get_axes()
-                                                   [self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
-        self._ui.lb_axis_2.setText('{} ROI'.format(self.data_pool.get_axes()
-                                                   [self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
+        self._ui.lb_axis_1.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
+        self._ui.lb_axis_2.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
 
         self._ui.cb_section_axis.currentIndexChanged.connect(self._set_new_section_axis)
 
@@ -198,10 +198,8 @@ class SectionView(QtWidgets.QWidget):
         self._ui.sb_1_pos.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_2_pos'))
         self._ui.sb_1_width.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_2_width'))
 
-        self._ui.lb_axis_1.setText('{} ROI'.format(self.data_pool.get_axes()
-                                                   [self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
-        self._ui.lb_axis_2.setText('{} ROI'.format(self.data_pool.get_axes()
-                                                   [self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
+        self._ui.lb_axis_1.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
+        self._ui.lb_axis_2.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
         self.update_plots()
         self.update_limits()
 
@@ -237,7 +235,7 @@ class SectionView(QtWidgets.QWidget):
         if self._main_plot.sceneBoundingRect().contains(pos):
             pos = self._main_plot.vb.mapSceneToView(pos)
 
-            axis_name = self.data_pool.get_axes()[self.data_pool.get_roi_param(self.my_id, 'axis')]
+            axis_name = AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'axis')]
 
             self._cross.setPos(axis_name, pos.x(), pos.y())
             self._ruler.mouseMoved(pos.x(), pos.y())

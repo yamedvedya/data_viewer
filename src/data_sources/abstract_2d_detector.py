@@ -121,31 +121,28 @@ class DetectorImage():
         return _data
 
     # ----------------------------------------------------------------------
-    def _get_2d_cut(self, axis, cut_range, x_axis, y_axis):
+    def _get_2d_cut(self, frame_axes, section):
         """
 
-        :param axis: axis index, along which cut has to be done
-        :param cut_range: values, at which cut has to be done
-        :param x_axis: index or current X axis in frame viewer
-        :param y_axis: index or current Y axis in frame viewer
-        :return: 3D np.array
+        returns 2D frame to be displayed in Frame viewer
+        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
+        :param section: list of tuples (section axes, from, to)
+        :return: 2D np.array
 
         """
-        cut_axis = self._cube_axes_map[axis]
 
-        if cut_axis == 0 and self._data_pool.memory_mode != 'ram':
-            data = self._get_data(cut_range)
+        section.sort(key=lambda tup: tup[0])
+        if self._data_pool.memory_mode != 'ram' and self._cube_axes_map[section[0][0]] == 0:
+            data = self._get_data((section[0][0],section[0][1]))
         else:
             data = self._get_data()
-            if cut_axis == 0:
-                data = data[cut_range[0]:cut_range[1], :, :]
-            elif cut_axis == 1:
-                data = data[:, cut_range[0]:cut_range[1], :]
-            else:
-                data = data[:, :, cut_range[0]:cut_range[1]]
-        data = np.sum(data, axis=cut_axis)
 
-        if self._cube_axes_map[x_axis] > self._cube_axes_map[y_axis]:
+        for axis, start, stop in section[::-1]:
+            cut_axis = self._cube_axes_map[axis]
+            data = data.take(indices=range(start, stop + 1), axis=cut_axis)
+            data = np.sum(data, axis=cut_axis)
+
+        if self._cube_axes_map[frame_axes['x']] > self._cube_axes_map[frame_axes['y']]:
             return np.transpose(data)
         else:
             return data
