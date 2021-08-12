@@ -1,17 +1,15 @@
 WIDGET_NAME = 'ReciprocalScanSetup'
 
 import h5py
-import os
 
 import numpy as np
 
-from src.gui.lambda_setup_ui import Ui_LambdaSetup
-from src.data_sources.abstract_data_file import AbstractDataFile
+from src.data_sources.base_classes.base_data_set import BaseDataSet
 
 SETTINGS = {
             }
 
-class ReciprocalScan(AbstractDataFile):
+class ReciprocalScan(BaseDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, file_name=None, opened_file=None, gridder=None):

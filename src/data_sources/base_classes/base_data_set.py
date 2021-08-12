@@ -7,7 +7,7 @@ General class for opened file/stream
 import numpy as np
 
 
-class AbstractDataFile(object):
+class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
@@ -16,9 +16,6 @@ class AbstractDataFile(object):
         self._data_pool = data_pool
         self._data = {}
         self._axes_names = ['X', 'Y', 'Z']
-        self._cube_axes_map = {0: 0,
-                               1: 1,
-                               2: 2}
 
     # ----------------------------------------------------------------------
     def check_file_after_load(self):
@@ -55,8 +52,8 @@ class AbstractDataFile(object):
         :return: dict {axis_index: [min, max]}, limits for each axis
         """
         new_limits = {}
-        for display_axis, cube_axis in self._cube_axes_map.items():
-            new_limits[display_axis] = [0, self._data['cube_shape'][cube_axis] - 1]
+        for axis_ind in range(len(self._axes_names)):
+            new_limits[axis_ind] = [0, self._data['cube_shape'][axis_ind] - 1]
 
         return new_limits
 
@@ -73,8 +70,7 @@ class AbstractDataFile(object):
         :return: frame index
         """
 
-        real_axis = self._cube_axes_map[axis]
-        axis_value = self._get_roi_axis(real_axis)
+        axis_value = self._get_roi_axis(axis)
         return np.argmin(np.abs(axis_value-pos))
 
     # ----------------------------------------------------------------------
@@ -90,8 +86,7 @@ class AbstractDataFile(object):
         :return: unit value
         """
 
-        real_axis = self._cube_axes_map[axis]
-        return self._axes_names[real_axis], pos
+        return self._axes_names[axis], pos
 
     # ----------------------------------------------------------------------
     def get_2d_cut(self, frame_sect, section):
@@ -103,14 +98,15 @@ class AbstractDataFile(object):
         :return: 2D np.array
 
         """
+
         section.sort(key=lambda tup: tup[0])
         data = self._3d_cube
-        for axis, start, stop in section[::-1]:
-            cut_axis = self._cube_axes_map[axis]
-            data = data.take(indices=range(start, stop + 1), axis=cut_axis)
-            data = np.sum(data, axis=cut_axis)
 
-        if self._cube_axes_map[frame_sect['x']] > self._cube_axes_map[frame_sect['y']]:
+        for axis, start, stop in section[::-1]:
+            data = data.take(indices=range(start, stop + 1), axis=axis)
+            data = np.sum(data, axis=axis)
+
+        if frame_sect['x'] > frame_sect['y']:
             return np.transpose(data)
         else:
             return data
@@ -122,8 +118,7 @@ class AbstractDataFile(object):
         :param axis:
         :return: maximum index along axis
         """
-        cut_axis = self._cube_axes_map[axis]
-        return self._data['cube_shape'][cut_axis] - 1
+        return self._data['cube_shape'][axis] - 1
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect):
@@ -153,49 +148,22 @@ class AbstractDataFile(object):
         :return: np.array
         """
 
-        plot_axis = self._cube_axes_map[sect['axis']]
-        cut_axis_1 = self._cube_axes_map[sect['roi_1_axis']]
+        data = self._get_data()
+        if len(data.shape) > sect['dimensions']:
+            return 0, 0
 
-        if plot_axis == 0:
-            if cut_axis_1 == 1:
-                cube_cut = self._3d_cube[:,
-                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
-            else:
-                cube_cut = self._3d_cube[:,
-                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
+        slices = []
+        for axis in range(1, len(data.shape)):
+            slices.append((sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'],
+                           sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width']))
+
+        slices.sort(key=lambda tup: tup[0])
+        for axis, start, stop in slices[::-1]:
+            data = data.take(indices=range(start, stop + 1), axis=axis)
             if do_sum:
-                cube_cut = np.sum(cube_cut, axis=1)
-                cube_cut = np.sum(cube_cut, axis=1)
+                data = np.sum(data, axis=axis)
 
-        elif plot_axis == 1:
-            if cut_axis_1 == 0:
-                cube_cut = self._3d_cube[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                         :,
-                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
-            else:
-                cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                         :,
-                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-            if do_sum:
-                cube_cut = np.sum(cube_cut, axis=2)
-                cube_cut = np.sum(cube_cut, axis=0)
-
-        else:
-            if cut_axis_1 == 0:
-                cube_cut = self._3d_cube[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                                         sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']
-                                         :]
-            else:
-                cube_cut = self._3d_cube[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                                         sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']
-                                         :]
-            if do_sum:
-                cube_cut = np.sum(cube_cut, axis=0)
-                cube_cut = np.sum(cube_cut, axis=0)
-
-        return self._get_roi_axis(plot_axis), cube_cut
+        return self._get_roi_axis(sect['axis_0']), data
 
     # ----------------------------------------------------------------------
     def _get_roi_axis(self, plot_axis):

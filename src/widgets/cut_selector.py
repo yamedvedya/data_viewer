@@ -53,7 +53,7 @@ class CutSelector(QtWidgets.QWidget):
 
         self.block_signals(True)
 
-        max_frame = self._parent.get_max_frame(self._my_id)
+        max_frame = self._parent.get_max_frame(self._parent.get_cut_axis(self._my_id))
 
         current_frames = [min(max(z_min, 0), max_frame), min(max(z_max, 0), max_frame)]
         self.sld.setLow(current_frames[0])
@@ -69,7 +69,7 @@ class CutSelector(QtWidgets.QWidget):
 
         self.block_signals(True)
         need_update = False
-        max_frame = self._parent.get_max_frame(self._my_id)
+        max_frame = self._parent.get_max_frame(self._parent.get_cut_axis(self._my_id))
         if max_frame > self._ui.sl_frame.value():
             need_update = True
 
@@ -91,35 +91,35 @@ class CutSelector(QtWidgets.QWidget):
 
         current_frames = (self.sld.low(), self.sld.high())
         if self._ui.chk_integration_mode.isChecked():
-            z_name, z_min = self._parent.get_value_at_point(self._my_id, current_frames[0])
-            _,      z_max = self._parent.get_value_at_point(self._my_id, current_frames[1])
+            z_name, z_min = self._parent.value_for_frame(self._parent.get_cut_axis(self._my_id), current_frames[0])
+            _,      z_max = self._parent.value_for_frame(self._parent.get_cut_axis(self._my_id), current_frames[1])
 
             self._ui.lb_value.setText(f'{z_name}: from {z_min:3f} to {z_max:3f}')
         else:
-            z_name, z_value = self._parent.get_value_at_point(self._my_id, current_frames[0])
+            z_name, z_value = self._parent.value_for_frame(self._parent.get_cut_axis(self._my_id), current_frames[0])
 
             self._ui.lb_value.setText('{}: {:3f}'.format(z_name, z_value))
 
     # ----------------------------------------------------------------------
     def get_section(self):
         if self._ui.chk_integration_mode.isChecked():
-            return self._my_id, self.sld.low(), self.sld.high()
+            return self._parent.get_cut_axis(self._my_id), self.sld.low(), self.sld.high()
         else:
-            return self._my_id, self._ui.sl_frame.value(), self._ui.sl_frame.value()
+            return self._parent.get_cut_axis(self._my_id), self._ui.sl_frame.value(), self._ui.sl_frame.value()
 
     # ----------------------------------------------------------------------
     def new_file(self, z_min, z_max):
 
         if z_min is not None:
-            frame = self.data_pool.frame_for_value(self._main_view.current_file, self._my_id, z_min)
+            frame = self._parent.frame_for_value(self._parent.get_cut_axis(self._my_id), z_min)
             self._ui.sl_frame.setValue(frame)
             self.sld.setLow(frame)
 
         if z_max is not None:
-            frame = self.data_pool.frame_for_value(self._main_view.current_file, self._my_id, z_max)
+            frame = self._parent.frame_for_value(self._parent.get_cut_axis(self._my_id), z_max)
             self.sld.setHigh(frame)
 
-        self.display_z_value()
+        self.display_value()
 
     # ----------------------------------------------------------------------
     def _switch_frame(self, type):

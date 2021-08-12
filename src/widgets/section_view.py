@@ -10,12 +10,9 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from src.gui.section_viewer_ui import Ui_SectionView
 
 from src.utils.section_plot import SectionPlot
+from src.widgets.section_range import SectionRange
 from src.utils.cursors import CrosshairCursor, Ruler
-from src.utils.range_slider import RangeSlider
 from src.utils.legend_item import addLegend
-
-AXES_NAMES = ['X', 'Y', 'Z']
-
 
 # ----------------------------------------------------------------------
 class SectionView(QtWidgets.QWidget):
@@ -37,13 +34,6 @@ class SectionView(QtWidgets.QWidget):
         self.my_id = my_id
 
         self._enabled_fits = []
-
-        self.sld_1 = RangeSlider(QtCore.Qt.Horizontal, self)
-        self._ui.v_layout.insertWidget(7, self.sld_1, 0)
-        self.sld_1.sliderMoved.connect(lambda min, max, source=1: self._new_slider_range(min, max, source))
-        self.sld_2 = RangeSlider(QtCore.Qt.Horizontal, self)
-        self._ui.v_layout.insertWidget(15, self.sld_2, 0)
-        self.sld_2.sliderMoved.connect(lambda min, max, source=2: self._new_slider_range(min, max, source))
 
         self._main_plot = pg.PlotItem()
         self._main_plot.showGrid(True, True)
@@ -79,18 +69,14 @@ class SectionView(QtWidgets.QWidget):
         self._legend = addLegend(self._main_plot)
         self._legend.hide()
 
-        self._ui.cb_section_axis.addItems(AXES_NAMES)
-        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis'))
+        self._current_axes_num = 0
+        self._section_ranger = []
+        self._selector_layout = QtWidgets.QVBoxLayout(self._ui.range_selectors)
+        self._selector_layout.setSpacing(0)
+        self._selector_layout.setContentsMargins(0, 0, 0, 0)
 
-        self._ui.lb_axis_1.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
-        self._ui.lb_axis_2.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
-
+        self.update_axes()
         self._ui.cb_section_axis.currentIndexChanged.connect(self._set_new_section_axis)
-
-        for axis in [1, 2]:
-            for param in ['pos', 'width']:
-                getattr(self._ui, 'sb_{}_{}'.format(axis, param)).valueChanged.connect(
-                    lambda value, a=axis, p=param: self._roi_value_changed(a, p, int(value)))
 
         self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
         self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
@@ -102,62 +88,66 @@ class SectionView(QtWidgets.QWidget):
         self._main_plot.sigXRangeChanged.connect(self._new_range)
 
     # ----------------------------------------------------------------------
+    def get_current_file(self):
+        return self._parent.get_current_file()
+
+    # ----------------------------------------------------------------------
+    def update_axes(self):
+        need_update = False
+        current_file = self.get_current_file()
+        if current_file is None:
+            axes = []
+        else:
+            axes = self.data_pool.get_file_axes(current_file)
+        if self._current_axes_num != len(axes):
+            need_update = True
+        self._ui.cb_section_axis.clear()
+        self._ui.cb_section_axis.addItems(axes)
+        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
+
+        if need_update:
+            self._section_ranger = []
+            layout = self._selector_layout.layout()
+            for i in reversed(range(layout.count())):
+                item = layout.itemAt(i)
+                if item:
+                    w = layout.itemAt(i).widget()
+                    if w:
+                        layout.removeWidget(w)
+                        w.setVisible(False)
+
+            for ind in range(1, len(axes)):
+                widget = SectionRange(self, self.data_pool, self.my_id, ind)
+                widget.refresh_view()
+                self._section_ranger.append(widget)
+                layout.addWidget(widget)
+
+    # ----------------------------------------------------------------------
     def refresh_name(self):
         return self.data_pool.get_roi_index(self.my_id)
 
     # ----------------------------------------------------------------------
-    def new_roi_range(self):
+    def roi_changed(self):
         self._block_signals(True)
 
-        pos = self.data_pool.get_roi_param(self.my_id, 'roi_1_pos')
-        width = self.data_pool.get_roi_param(self.my_id, 'roi_1_width')
-        self._ui.sb_1_pos.setValue(pos)
-        self._ui.sb_1_width.setValue(width)
-        self.sld_1.setLow(pos)
-        self.sld_1.setHigh(pos + width)
+        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
 
-        pos = self.data_pool.get_roi_param(self.my_id, 'roi_2_pos')
-        width = self.data_pool.get_roi_param(self.my_id, 'roi_2_width')
-        self._ui.sb_2_pos.setValue(pos)
-        self._ui.sb_2_width.setValue(width)
-        self.sld_2.setLow(pos)
-        self.sld_2.setHigh(pos + width)
+        for widget in self._section_ranger:
+            widget.refresh_view()
 
         self._block_signals(False)
 
         self.update_plots()
 
     # ----------------------------------------------------------------------
-    def update_limits(self):
-
-        pos_min, pos_max, width_max = self.data_pool.get_roi_limits(self.my_id, 1)
-        self._ui.sb_1_pos.setMinimum(pos_min)
-        self._ui.sb_1_pos.setMaximum(pos_max)
-        self._ui.sb_1_width.setMaximum(width_max)
-        self.sld_1.setMinimum(pos_min)
-        self.sld_1.setMaximum(pos_min + width_max)
-
-        pos_min, pos_max, width_max = self.data_pool.get_roi_limits(self.my_id, 2)
-        self._ui.sb_2_pos.setMinimum(pos_min)
-        self._ui.sb_2_pos.setMaximum(pos_max)
-        self._ui.sb_2_width.setMaximum(width_max)
-        self.sld_2.setMinimum(pos_min)
-        self.sld_2.setMaximum(pos_min + width_max)
-
-        self._roi_value_changed(1, 'pos', self._ui.sb_1_pos.value())
-        self._roi_value_changed(1, 'width', self._ui.sb_1_width.value())
-        self._roi_value_changed(2, 'pos', self._ui.sb_2_pos.value())
-        self._roi_value_changed(2, 'width', self._ui.sb_2_width.value())
-
-    # ----------------------------------------------------------------------
     def add_file(self, file_name, color):
+        self.update_axes()
         self._section_plots[file_name] = SectionPlot(self._main_plot, file_name, self._normalized, color)
         x, y = self.data_pool.get_roi_plot(file_name, self.my_id)
         x_min, x_max = self._get_fit_range()
         self._section_plots[file_name].update_plot(x, y, x_min, x_max)
         for function in self._enabled_fits:
             self._section_plots[file_name].make_fit(function, x_min, x_max)
-        self.update_limits()
 
     # ----------------------------------------------------------------------
     def delete_file(self, file_name):
@@ -183,64 +173,28 @@ class SectionView(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _set_new_section_axis(self, axis):
         self.data_pool.set_section_axis(self.my_id, axis)
+        for widget in self._section_ranger:
+            widget.refresh_view()
 
-        self._ui.sb_1_pos.setMinimum(-1e6)
-        self._ui.sb_1_pos.setMaximum(1e6)
-        self._ui.sb_1_width.setMaximum(1e6)
-
-        self._ui.sb_1_pos.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_1_pos'))
-        self._ui.sb_1_width.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_1_width'))
-
-        self._ui.sb_2_pos.setMinimum(-1e6)
-        self._ui.sb_2_pos.setMaximum(1e6)
-        self._ui.sb_2_width.setMaximum(1e6)
-
-        self._ui.sb_1_pos.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_2_pos'))
-        self._ui.sb_1_width.setValue(self.data_pool.get_roi_param(self.my_id, 'roi_2_width'))
-
-        self._ui.lb_axis_1.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_1_axis')]))
-        self._ui.lb_axis_2.setText('{} ROI'.format(AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'roi_2_axis')]))
         self.update_plots()
-        self.update_limits()
 
     # ----------------------------------------------------------------------
     def _block_signals(self, flag):
         self._ui.cb_section_axis.blockSignals(flag)
-        for axis in [1, 2]:
-            for param in ['pos', 'width']:
-                getattr(self._ui, 'sb_{}_{}'.format(axis, param)).blockSignals(flag)
-
-    # ----------------------------------------------------------------------
-    def _new_slider_range(self, min, max, source):
-        self._block_signals(True)
-        accepted_pos = self.data_pool.roi_parameter_changed(self.my_id, source, 'pos', min)
-        getattr(self._ui, 'sb_{}_pos'.format(source)).setValue(accepted_pos)
-        accepted_width = self.data_pool.roi_parameter_changed(self.my_id, source, 'width', max - min)
-        getattr(self._ui, 'sb_{}_width'.format(source)).setValue(accepted_width)
-        self._block_signals(False)
-
-        self.update_plots()
-
-    # ----------------------------------------------------------------------
-    def _roi_value_changed(self, axis, param, value):
-        self._block_signals(True)
-        accepted_value = self.data_pool.roi_parameter_changed(self.my_id, axis, param, value)
-        getattr(self._ui, 'sb_{}_{}'.format(axis, param)).setValue(accepted_value)
-        self._block_signals(False)
-
-        self.update_plots()
 
     # ----------------------------------------------------------------------
     def _mouse_moved(self, pos):
         if self._main_plot.sceneBoundingRect().contains(pos):
             pos = self._main_plot.vb.mapSceneToView(pos)
 
-            axis_name = AXES_NAMES[self.data_pool.get_roi_param(self.my_id, 'axis')]
+            current_file = self.get_current_file()
+            if current_file is not None:
+                axis_name = self.data_pool.get_file_axes(current_file)[self.data_pool.get_roi_param(self.my_id, 'axis_0')]
 
-            self._cross.setPos(axis_name, pos.x(), pos.y())
-            self._ruler.mouseMoved(pos.x(), pos.y())
+                self._cross.setPos(axis_name, pos.x(), pos.y())
+                self._ruler.mouseMoved(pos.x(), pos.y())
 
-            self._ui.lb_status.setText('{}: {:3f}, Value: {:.3f}'.format(axis_name, pos.x(), pos.y()))
+                self._ui.lb_status.setText('{}: {:3f}, Value: {:.3f}'.format(axis_name, pos.x(), pos.y()))
 
     # ----------------------------------------------------------------------
     def _mouse_clicked(self, event):

@@ -10,8 +10,7 @@ import numpy as np
 from src.gui.lambda_setup_ui import Ui_LambdaSetup
 from src.utils.utils import refresh_combo_box
 from src.utils.fio_reader import fioReader
-from src.data_sources.abstract_data_file import AbstractDataFile
-from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup
+from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, Base2DDetectorSetup
 
 SETTINGS = {'enable_mask': False,
             'mask': None,
@@ -32,19 +31,16 @@ SETTINGS = {'enable_mask': False,
             }
 
 
-class LambdaScan(AbstractDataFile, DetectorImage):
+class LambdaDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, file_name, opened_file):
-        super(LambdaScan, self).__init__(data_pool)
+        super(LambdaDataSet, self).__init__(data_pool)
 
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
         self._original_file = file_name
         self._axes_names = ['detector X', 'detector Y', 'scan point']
-        self._cube_axes_map ={0: 2,
-                              1: 1,
-                              2: 0}
 
         self._data['scanned_values'] = []
         scan_data = opened_file['scan']['data']
@@ -76,8 +72,6 @@ class LambdaScan(AbstractDataFile, DetectorImage):
                 self._detector = 'lmbd'
                 self._detector_folder = os.path.join(os.path.dirname(opened_file.filename),
                                                      os.path.splitext(os.path.basename(opened_file.filename))[0], 'lmbd')
-
-                self._need_apply_mask = True
 
                 if self._data_pool.memory_mode == 'ram':
                     self._3d_cube = self._get_data()
@@ -229,12 +223,15 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None
 
-        return self._get_2d_cut(frame_axes, section)
+        return super(LambdaDataSet, self).get_2d_cut(frame_axes, section)
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect):
-        _, cube_cut = self._get_roi_data(sect, False)
-        return cube_cut
+
+        if SETTINGS['displayed_param'] not in self._data['scanned_values']:
+            return None, None
+
+        return super(LambdaDataSet, self).get_roi_cut(sect)
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):
@@ -242,10 +239,11 @@ class LambdaScan(AbstractDataFile, DetectorImage):
         if SETTINGS['displayed_param'] not in self._data['scanned_values']:
             return None, None
 
-        return self._get_roi_data(sect, True)
+        return super(LambdaDataSet, self).get_roi_plot(sect)
+
 
 # ----------------------------------------------------------------------
-class LambdaScanSetup(DetectorImageSetup):
+class LambdaScanSetup(Base2DDetectorSetup):
     """
     SETTINGS = {'enable_mask': False,
                 'loaded_mask': None,

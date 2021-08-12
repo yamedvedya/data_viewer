@@ -19,11 +19,12 @@ import asapo_consumer
 import configparser
 
 from src.gui.asapo_image_setup_ui import Ui_ASAPOImageSetup
-from src.data_sources.abstract_data_file import AbstractDataFile
-from src.data_sources.abstract_2d_detector import DetectorImage, DetectorImageSetup
+from src.data_sources.base_classes.base_data_set import BaseDataSet
+from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, Base2DDetectorSetup
 
-from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver, create_consumer
-from AsapoWorker.data_handler import get_image
+from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
+# from AsapoWorker.data_handler import get_image
+from temp.data_handler import get_image
 
 SETTINGS = {'enable_mask': False,
             'mask': None,
@@ -39,18 +40,15 @@ SETTINGS = {'enable_mask': False,
             }
 
 
-class ASAPOScan(AbstractDataFile, DetectorImage):
+class ASAPODataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, detector_name, stream_name, data_pool):
-        super(ASAPOScan, self).__init__(data_pool)
+        super(ASAPODataSet, self).__init__(data_pool)
 
         self.my_name = stream_name
         self._detector_name = detector_name
         self._axes_names = ['frame_ID', 'detector X', 'detector Y']
-        self._cube_axes_map = {0: 2,
-                               1: 1,
-                               2: 0}
 
         # read the current settings
         settings = configparser.ConfigParser()
@@ -79,7 +77,6 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         # only one option
         self._data['scanned_values'] = ['frame_ID']
 
-        self._need_apply_mask = True
         if self._data_pool.memory_mode == 'ram':
             self._3d_cube = self._get_data()
             self._data['cube_shape'] = self._3d_cube.shape
@@ -101,29 +98,27 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
         """
         def _convert_image(data, meta_data):
             if self._mode == 'file':
-                return get_image(data, meta_data)
+                return get_image(data, meta_data)[np.newaxis, :]
             else:
-                return get_image(data[0], meta_data[0])
+                return get_image(data[0], meta_data[0])[np.newaxis, :]
 
         if frame_ids is not None:
             self.receiver.set_start_id(frame_ids[0]+1)
             data, meta_data = self.receiver.get_next(False)
             cube = _convert_image(data, meta_data)
-            if len(cube.shape) != 3:# TODO check all possibilities
-                for frame in frame_ids[1:]:
-                    self.receiver.set_start_id(frame+1)
-                    data, meta_data = self.receiver.get_next(False)
-                    cube = np.vstack((cube[np.newaxis, :], _convert_image(data, meta_data)[np.newaxis, :]))
+            for frame in frame_ids[1:]:
+                self.receiver.set_start_id(frame+1)
+                data, meta_data = self.receiver.get_next(False)
+                cube = np.vstack((cube, _convert_image(data, meta_data)))
             else:
                 cube = cube[frame_ids, :, :]
         else:
             self.receiver.set_start_id(1)
             data, meta_data = self.receiver.get_next(False)
             cube = _convert_image(data, meta_data)
-            if len(cube.shape) != 3:# TODO check all possibilities
-                for _ in range(1, self.receiver.get_current_size()):
-                    data, meta_data = self.receiver.get_next(False)
-                    cube = np.vstack((cube[np.newaxis, :], _convert_image(data, meta_data)[np.newaxis, :]))
+            for _ in range(1, self.receiver.get_current_size()):
+                data, meta_data = self.receiver.get_next(False)
+                cube = np.vstack((cube, _convert_image(data, meta_data)))
 
         return np.array(cube, dtype=np.float32)
 
@@ -136,21 +131,9 @@ class ASAPOScan(AbstractDataFile, DetectorImage):
     def apply_settings(self):
         self._need_apply_mask = True
 
-    # ----------------------------------------------------------------------
-    def get_2d_cut(self, frame_axes, section):
-        return self._get_2d_cut(frame_axes, section)
-
-    # ----------------------------------------------------------------------
-    def get_roi_cut(self, sect):
-        _, cube_cut = self._get_roi_data(sect, False)
-        return cube_cut
-
-    # ----------------------------------------------------------------------
-    def get_roi_plot(self, sect):
-        return self._get_roi_data(sect, True)
 
 # ----------------------------------------------------------------------
-class ASAPOScanSetup(DetectorImageSetup):
+class ASAPOScanSetup(Base2DDetectorSetup):
 
     # ----------------------------------------------------------------------
     def _get_ui(self):

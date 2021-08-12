@@ -19,6 +19,7 @@ from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
 
 from PyQt5 import QtWidgets, QtCore
 
+from src.data_sources.base_classes.base_data_set import BaseDataSet
 from src.main_window import APP_NAME
 from src.utils.utils import read_mask_file, read_ff_file
 
@@ -26,7 +27,12 @@ WIDGET_NAME = ''
 
 
 # ----------------------------------------------------------------------
-class DetectorImage():
+class Base2DDetectorDataSet(BaseDataSet):
+    
+    def __init__(self, data_pool):
+        super(Base2DDetectorDataSet, self).__init__(data_pool)
+        
+        self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -121,7 +127,7 @@ class DetectorImage():
         return _data
 
     # ----------------------------------------------------------------------
-    def _get_2d_cut(self, frame_axes, section):
+    def get_2d_cut(self, frame_axes, section):
         """
 
         returns 2D frame to be displayed in Frame viewer
@@ -132,77 +138,22 @@ class DetectorImage():
         """
 
         section.sort(key=lambda tup: tup[0])
-        if self._data_pool.memory_mode != 'ram' and self._cube_axes_map[section[0][0]] == 0:
+        if self._data_pool.memory_mode != 'ram' and section[0][0] == 0:
             data = self._get_data((section[0][0],section[0][1]))
         else:
             data = self._get_data()
 
         for axis, start, stop in section[::-1]:
-            cut_axis = self._cube_axes_map[axis]
-            data = data.take(indices=range(start, stop + 1), axis=cut_axis)
-            data = np.sum(data, axis=cut_axis)
+            data = data.take(indices=range(start, stop + 1), axis=axis)
+            data = np.sum(data, axis=axis)
 
-        if self._cube_axes_map[frame_axes['x']] > self._cube_axes_map[frame_axes['y']]:
+        if frame_axes['x'] > frame_axes['y']:
             return np.transpose(data)
         else:
             return data
 
-    # ----------------------------------------------------------------------
-    def _get_roi_data(self, sect, do_sum):
-        """
-        gets ROI cut from data cube
-        :param sect: ROI parameters
-        :param do_sum: if True - return 1D plot, in False - return 3D cut
-        :return: np.array
-        """
-        plot_axis = self._cube_axes_map[sect['axis']]
-        cut_axis_1 = self._cube_axes_map[sect['roi_1_axis']]
-
-        data = self._get_data()
-        if plot_axis == 0:
-            if cut_axis_1 == 1:
-                data = data[:,
-                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
-            else:
-                data = data[:,
-                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-            if do_sum:
-                data = np.sum(data, axis=1)
-                data = np.sum(data, axis=1)
-
-        elif plot_axis == 1:
-            if cut_axis_1 == 0:
-                data = data[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                            :,
-                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width']]
-            else:
-                data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                            :,
-                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width']]
-            if do_sum:
-                data = np.sum(data, axis=2)
-                data = np.sum(data, axis=0)
-
-        else:
-            if cut_axis_1 == 0:
-                data = data[sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                            sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                            :]
-            else:
-                data = data[sect['roi_2_pos']:sect['roi_2_pos'] + sect['roi_2_width'],
-                            sect['roi_1_pos']:sect['roi_1_pos'] + sect['roi_1_width'],
-                            :]
-            if do_sum:
-                data = np.sum(data, axis=0)
-                data = np.sum(data, axis=0)
-
-        return self._get_roi_axis(plot_axis), data
-
-
 # ----------------------------------------------------------------------
-class DetectorImageSetup(QtWidgets.QWidget):
+class Base2DDetectorSetup(QtWidgets.QWidget):
     """
     General class, which provides GUI interface to setup parameters
 
@@ -226,7 +177,7 @@ class DetectorImageSetup(QtWidgets.QWidget):
     def __init__(self, main_window, data_pool):
         """
         """
-        super(DetectorImageSetup, self).__init__()
+        super(Base2DDetectorSetup, self).__init__()
 
         self._ui = self._get_ui()
         self._ui.setupUi(self)

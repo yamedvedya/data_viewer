@@ -25,6 +25,7 @@ class View2d(QtWidgets.QWidget):
 
         self._my_files = []
         self.current_file = None
+        self.previous_file = None
 
         self._tb_files = QtWidgets.QTabBar(self)
         self._tb_files.setObjectName("tb_main")
@@ -184,36 +185,37 @@ class View2d(QtWidgets.QWidget):
             label.setText('ROI {}'.format(self.data_pool.get_roi_index(my_id)))
 
     # ----------------------------------------------------------------------
-    def new_roi_range(self, roi_ind):
+    def roi_changed(self, roi_ind):
         self._rois[roi_ind][0].sigRegionChanged.disconnect()
 
         current_axes = self._frame_viewer.get_current_axes()
 
-        if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
+        x_pos, y_pos = 0, 0
+        x_width, y_width = 1, 1
+
+        if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis_0'):
             x_pos = self.data_pool.axes_limits[current_axes['x']][0]
-            x_width = self.data_pool.axes_limits[current_axes['x']][1] - \
-                      self.data_pool.axes_limits[current_axes['x']][0]
-
-        elif current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
-            x_pos = self.data_pool.get_roi_param(roi_ind, 'roi_1_pos')
-            x_width = self.data_pool.get_roi_param(roi_ind, 'roi_1_width')
-
+            x_width = self.data_pool.axes_limits[current_axes['x']][1] - self.data_pool.axes_limits[current_axes['x']][0]
         else:
-            x_pos = self.data_pool.get_roi_param(roi_ind, 'roi_2_pos')
-            x_width = self.data_pool.get_roi_param(roi_ind, 'roi_2_width')
+            axis = 1
+            while axis < 100:
+                if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, f'axis_{axis}'):
+                    x_pos = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_pos')
+                    x_width = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_width')
+                    break
+                axis += 1
 
-        if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
+        if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis_0'):
             y_pos = self.data_pool.axes_limits[current_axes['y']][0]
-            y_width = self.data_pool.axes_limits[current_axes['y']][1] - \
-                      self.data_pool.axes_limits[current_axes['y']][0]
-
-        elif current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
-            y_pos = self.data_pool.get_roi_param(roi_ind, 'roi_1_pos')
-            y_width = self.data_pool.get_roi_param(roi_ind, 'roi_1_width')
-
+            y_width = self.data_pool.axes_limits[current_axes['y']][1] - self.data_pool.axes_limits[current_axes['y']][0]
         else:
-            y_pos = self.data_pool.get_roi_param(roi_ind, 'roi_2_pos')
-            y_width = self.data_pool.get_roi_param(roi_ind, 'roi_2_width')
+            axis = 1
+            while axis < 100:
+                if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, f'axis_{axis}'):
+                    y_pos = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_pos')
+                    y_width = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_width')
+                    break
+                axis += 1
 
         self._rois[roi_ind][0].setPos([x_pos, y_pos])
         self._rois[roi_ind][0].setSize([x_width, y_width])
@@ -225,26 +227,12 @@ class View2d(QtWidgets.QWidget):
 
         current_axes = self._frame_viewer.get_current_axes()
 
-        if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
-            x_axis = 0
-        elif current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
-            x_axis = 1
-        else:
-            x_axis = 2
-
-        if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis'):
-            y_axis = 0
-        elif current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'roi_1_axis'):
-            y_axis = 1
-        else:
-            y_axis = 2
-
         pos, size = rect.pos(), rect.size()
-        accepted_x_pos = self.data_pool.roi_parameter_changed(roi_ind, x_axis, 'pos', int(pos.x()))
-        accepted_x_width = self.data_pool.roi_parameter_changed(roi_ind, x_axis, 'width', int(size.x()))
+        accepted_x_pos = self.data_pool.roi_parameter_changed(roi_ind, current_axes['x'], 'pos', int(pos.x()))
+        accepted_x_width = self.data_pool.roi_parameter_changed(roi_ind, current_axes['x'], 'width', int(size.x()))
 
-        accepted_y_pos = self.data_pool.roi_parameter_changed(roi_ind, y_axis, 'pos', int(pos.y()))
-        accepted_y_width = self.data_pool.roi_parameter_changed(roi_ind, y_axis, 'width', int(size.y()))
+        accepted_y_pos = self.data_pool.roi_parameter_changed(roi_ind, current_axes['y'], 'pos', int(pos.y()))
+        accepted_y_width = self.data_pool.roi_parameter_changed(roi_ind, current_axes['y'], 'width', int(size.y()))
 
         self._rois[roi_ind][0].sigRegionChanged.disconnect()
         self._rois[roi_ind][0].setPos([accepted_x_pos, accepted_y_pos])
@@ -256,10 +244,11 @@ class View2d(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_axes(self):
         for idx in range(len(self._rois)):
-            self.new_roi_range(idx)
+            self.roi_changed(idx)
 
     # ----------------------------------------------------------------------
     def _mouse_moved(self, pos):
+
         if self._main_plot.sceneBoundingRect().contains(pos):
             pos = self._main_plot.vb.mapSceneToView(pos)
 
@@ -270,10 +259,8 @@ class View2d(QtWidgets.QWidget):
 
             current_axes = self._frame_viewer.get_current_axes()
 
-            x_name, x_value = self.data_pool.value_for_frame(self.current_file, current_axes['x'],
-                                                             int(pos.x()))
-            y_name, y_value = self.data_pool.value_for_frame(self.current_file, current_axes['y'],
-                                                             int(pos.y()))
+            x_name, x_value = self.data_pool.value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
+            y_name, y_value = self.data_pool.value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
 
             self._frame_viewer.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
 
@@ -298,15 +285,7 @@ class View2d(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _switch_file(self, index):
 
-        raise RuntimeError('We have a problem there')
-
-        z_min, z_max = None, None
-        if self.current_file is not None:
-
-            _, z_min = self.data_pool.value_for_frame(self.current_file, self._frame_viewer.current_axes['z'],
-                                                      self._frame_viewer.current_frames[0])
-            _, z_max = self.data_pool.value_for_frame(self.current_file, self._frame_viewer.current_axes['z'],
-                                                      self._frame_viewer.current_frames[1])
+        self.previous_file = self.current_file
 
         if index > -1:
             self.current_file = self._my_files[index]
@@ -314,7 +293,7 @@ class View2d(QtWidgets.QWidget):
             self.current_file = None
 
         if self._type == 'main':
-            self._frame_viewer.new_main_file(z_min, z_max)
+            self._frame_viewer.new_main_file()
 
     # ----------------------------------------------------------------------
     def update_image(self, frame_sect, section):
@@ -333,6 +312,9 @@ class View2d(QtWidgets.QWidget):
             data_to_display = np.log(data_to_display + 1)
 
         self.plot_2d.setImage(data_to_display, autoLevels=self._frame_viewer.auto_levels)
+
+        for ind in range(len(self._rois)):
+            self.roi_changed(ind)
 
 
 

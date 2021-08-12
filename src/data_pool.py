@@ -12,9 +12,9 @@ from collections import OrderedDict
 
 from PyQt5 import QtCore, QtWidgets
 
-from src.data_sources.lambda_scan import LambdaScan
+from src.data_sources.lambda_scan import LambdaDataSet
 if 'asapo_consumer' in sys.modules:
-    from src.data_sources.asapo_scan import ASAPOScan
+    from src.data_sources.asapo_scan import ASAPODataSet
 
 from src.data_sources.reciprocal_scan import ReciprocalScan
 from src.utils.roi import ROI
@@ -27,7 +27,7 @@ class DataPool(QtCore.QObject):
     file_deleted = QtCore.pyqtSignal(str)
     close_file = QtCore.pyqtSignal(str)
 
-    new_roi_range = QtCore.pyqtSignal(int)
+    roi_changed = QtCore.pyqtSignal(int)
     data_updated = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
@@ -307,6 +307,7 @@ class DataPool(QtCore.QObject):
     def set_section_axis(self, roi_key, axis):
 
         self._rois[roi_key].set_section_axis(axis)
+        self.roi_changed.emit(roi_key)
 
     # ----------------------------------------------------------------------
     def roi_parameter_changed(self, roi_key, section_axis, param, value):
@@ -320,7 +321,7 @@ class DataPool(QtCore.QObject):
             :returns accepted value
         """
         value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, self.axes_limits)
-        self.new_roi_range.emit(roi_key)
+        self.roi_changed.emit(roi_key)
         return value
 
     # ----------------------------------------------------------------------
@@ -328,7 +329,7 @@ class DataPool(QtCore.QObject):
         """
             :returns axis name, along which ROI is calculated, for particular file
         """
-        return self._files_data[file].get_file_axes()[self._rois[roi_key].get_param('axis')]
+        return self._files_data[file].get_file_axes()[self._rois[roi_key].get_param('axis_0')]
 
     # ----------------------------------------------------------------------
     def get_roi_param(self, roi_key, param):
@@ -348,15 +349,15 @@ class DataPool(QtCore.QObject):
         section_params = self._rois[roi_key].get_section_params()
 
         if section_axis == 0:
-            real_axis = section_params['axis']
+            real_axis = section_params['axis_0']
         else:
-            real_axis = section_params['roi_{}_axis'.format(section_axis)]
+            real_axis = section_params['axis_{}'.format(section_axis)]
 
         axis_min = self.axes_limits[real_axis][0]
         axis_max = self.axes_limits[real_axis][1]
 
-        return axis_min, axis_max - section_params['roi_{}_width'.format(section_axis)], \
-               axis_max - axis_min - section_params['roi_{}_pos'.format(section_axis)]
+        return axis_min, axis_max - section_params['axis_{}_width'.format(section_axis)], \
+               axis_max - axis_min - section_params['axis_{}_pos'.format(section_axis)]
 
     # ----------------------------------------------------------------------
     #       ROIs batch processing section
@@ -529,7 +530,7 @@ class Opener(QtCore.QThread):
                 try:
                     with h5py.File(self.params['file_name'], 'r') as f:
                         if 'scan' in f.keys():
-                            new_file = LambdaScan(self.data_pool, self.params['file_name'], f)
+                            new_file = LambdaDataSet(self.data_pool, self.params['file_name'], f)
                         elif 'reciprocal_scan' in f.keys():
                             new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
                         else:
@@ -557,7 +558,7 @@ class Opener(QtCore.QThread):
 
         elif self.mode == 'stream':
             try:
-                new_file = ASAPOScan(self.params['detector_name'], self.params['stream_name'], self.data_pool)
+                new_file = ASAPODataSet(self.params['detector_name'], self.params['stream_name'], self.data_pool)
                 new_file.apply_settings()
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
@@ -610,11 +611,11 @@ class Batcher(QtCore.QThread):
                     with h5py.File(file_name, 'r') as f:
                         if 'scan' in f.keys():
                             self.new_file.emit(file_name, ind/total_files)
-                            new_file = LambdaScan(self.data_pool, file_name, f)
+                            new_file = LambdaDataSet(self.data_pool, file_name, f)
                             new_file.apply_settings()
                             for ind, roi in self.data_pool._rois.items():
                                 x_axis, y_axis = new_file.get_roi_plot(roi.get_section_params())
-                                header = [new_file.file_axes_caption()[roi.get_param('axis')], 'ROI_value']
+                                header = [new_file.file_axes_caption()[roi.get_param('axis_0')], 'ROI_value']
                                 save_name = ''.join(os.path.splitext(os.path.basename(file_name))[:-1]) + \
                                             "_ROI_{}".format(ind) + self.file_type
                                 self.data_pool.save_roi_to_file(self.file_type,

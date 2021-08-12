@@ -24,6 +24,7 @@ class RoisView(AbstractWidget):
         self._ui.setupUi(self)
 
         self._data_pool = data_pool
+        self._parent = parent
 
         self.btn_add_active_tab = QtWidgets.QToolButton(self)
         self.btn_add_active_tab.setIcon(QtGui.QIcon(":/icon/plus_small.png"))
@@ -38,6 +39,10 @@ class RoisView(AbstractWidget):
         self._add_roi()
 
         self.settings = {}
+
+    # ----------------------------------------------------------------------
+    def get_current_file(self):
+        return self._parent.get_current_file()
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
@@ -92,5 +97,5 @@ class RoisView(AbstractWidget):
             widget.update_plots()
 
     # ----------------------------------------------------------------------
-    def new_roi_range(self, roi_id):
-        self._roi_widgets[roi_id].new_roi_range()
+    def roi_changed(self, roi_id):
+        self._roi_widgets[roi_id].roi_changed()

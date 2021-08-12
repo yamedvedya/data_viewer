@@ -89,8 +89,8 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.data_pool.close_file.connect(self.frame_view.file_closed_by_pool)
 
-        self.data_pool.new_roi_range.connect(self.frame_view.new_roi_range)
-        self.data_pool.new_roi_range.connect(self.rois_view.new_roi_range)
+        self.data_pool.roi_changed.connect(self.frame_view.roi_changed)
+        self.data_pool.roi_changed.connect(self.rois_view.roi_changed)
 
         self.data_pool.data_updated.connect(self.frame_view.update_image)
         self.data_pool.data_updated.connect(self.rois_view.update_plots)
@@ -123,6 +123,10 @@ class DataViewer(QtWidgets.QMainWindow):
             self.rois_view.set_settings(settings['ROIS_VIEW'])
         if 'DATA_POOL' in settings:
             self.data_pool.set_settings(settings['DATA_POOL'])
+
+    # ----------------------------------------------------------------------
+    def get_current_file(self):
+        return self.frame_view.current_file()
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):

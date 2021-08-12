@@ -32,7 +32,7 @@ class FrameView(AbstractWidget):
         self._ui.view_layout.addWidget(self._second_view, 0)
 
         self._status_bar = QtWidgets.QStatusBar(self)
-        self._ui.gv_layout.addWidget(self._status_bar, 0)
+        self._ui.l_general.addWidget(self._status_bar, 0)
 
         self._coordinate_label = QtWidgets.QLabel("")
         self._status_bar.addPermanentWidget(self._coordinate_label)
@@ -43,14 +43,18 @@ class FrameView(AbstractWidget):
         self.max_frame = 0
 
         self._axis_selectors = []
-        self._axis_grid = QtWidgets.QHBoxLayout(self._ui.axis_selectors)
+        self._axis_grid = QtWidgets.QVBoxLayout(self._ui.axis_selectors)
+        self._axis_grid.setSpacing(0)
+        self._axis_grid.setContentsMargins(0, 0, 0, 0)
         self._cut_selectors = []
         self._cut_grid = QtWidgets.QVBoxLayout(self._ui.cut_selectors)
+        self._cut_grid.setSpacing(0)
+        self._cut_grid.setContentsMargins(0, 0, 0, 0)
 
         self.hist = pg.HistogramLUTWidget(self)
         self.hist.setBackground('w')
         self.hist.item.setImageItem(self._main_view.plot_2d)
-        self._ui.g_layout.addWidget(self.hist, 4, 0, 1, 2)
+        self._ui.l_pic_setup.addWidget(self.hist, 1)
 
         self.data_pool = data_pool
 
@@ -124,9 +128,9 @@ class FrameView(AbstractWidget):
         self._setup_limits()
 
     # ----------------------------------------------------------------------
-    def new_roi_range(self, roi_ind):
-        self._main_view.new_roi_range(roi_ind)
-        self._second_view.new_roi_range(roi_ind)
+    def roi_changed(self, roi_ind):
+        self._main_view.roi_changed(roi_ind)
+        self._second_view.roi_changed(roi_ind)
 
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
@@ -208,6 +212,10 @@ class FrameView(AbstractWidget):
                 'y': self._axis_selectors[1].get_current_value()}
 
     # ----------------------------------------------------------------------
+    def get_cut_axis(self, cut_selector_id):
+        return self._axis_selectors[cut_selector_id].get_current_value()
+
+    # ----------------------------------------------------------------------
     def update_image(self):
 
         section = []
@@ -229,7 +237,7 @@ class FrameView(AbstractWidget):
             selector.setup_limits()
 
     # ----------------------------------------------------------------------
-    def get_value_at_point(self, axis, frame):
+    def value_for_frame(self, axis, frame):
         return self.data_pool.value_for_frame(self._main_view.current_file, axis, frame)
 
     # ----------------------------------------------------------------------
@@ -237,17 +245,30 @@ class FrameView(AbstractWidget):
         return self.data_pool.get_max_frame(self._main_view.current_file, axis)
 
     # ----------------------------------------------------------------------
-    def frame_for_point(self, axis, point):
-        return self.data_pool.get_max_frame(self._main_view.current_file, axis)
+    def frame_for_value(self, axis, value):
+        return self.data_pool.frame_for_value(self._main_view.current_file, axis, value)
+
+    # ----------------------------------------------------------------------
+    def get_current_selection(self):
+        sect = []
+        for selector in self._cut_selectors:
+            sect.append(selector.get_section())
+
+        return sect
 
     # ----------------------------------------------------------------------
     def current_file(self):
         return self._main_view.current_file
 
     # ----------------------------------------------------------------------
-    def new_main_file(self, z_min, z_max):
+    def new_main_file(self):
 
-        if self._main_view.current_file is not None:
-            for selector in self._cut_selectors:
+        if self._main_view.current_file is not None and self._main_view.previous_file is not None:
+            sections = self.get_current_selection()
+
+            for (axis, min, max), selector in zip(sections, self._cut_selectors):
+                _, z_min = self.data_pool.value_for_frame(self._main_view.previous_file, axis, min)
+                _, z_max = self.data_pool.value_for_frame(self._main_view.previous_file, axis, min)
                 selector.new_file(z_min, z_max)
+
         self.update_image()
