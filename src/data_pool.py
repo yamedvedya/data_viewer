@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 from PyQt5 import QtCore, QtWidgets
 
-from src.data_sources.lambda_scan import LambdaDataSet
+from src.data_sources.sardana.sardana_data_set import SardanaDataSet
 if 'asapo_consumer' in sys.modules:
     from src.data_sources.asapo.asapo_data_set import ASAPODataSet
 
@@ -532,7 +532,7 @@ class Opener(QtCore.QThread):
                 try:
                     with h5py.File(self.params['file_name'], 'r') as f:
                         if 'scan' in f.keys():
-                            new_file = LambdaDataSet(self.data_pool, self.params['file_name'], f)
+                            new_file = SardanaDataSet(self.data_pool, self.params['file_name'], f)
                         elif 'reciprocal_scan' in f.keys():
                             new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
                         else:
@@ -613,7 +613,7 @@ class Batcher(QtCore.QThread):
                     with h5py.File(file_name, 'r') as f:
                         if 'scan' in f.keys():
                             self.new_file.emit(file_name, ind/total_files)
-                            new_file = LambdaDataSet(self.data_pool, file_name, f)
+                            new_file = SardanaDataSet(self.data_pool, file_name, f)
                             new_file.apply_settings()
                             for ind, roi in self.data_pool._rois.items():
                                 x_axis, y_axis = new_file.get_roi_plot(roi.get_section_params())

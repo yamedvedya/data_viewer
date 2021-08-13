@@ -6,7 +6,7 @@ import sys
 
 from PyQt5 import QtWidgets, QtCore
 
-from src.data_sources.lambda_scan import LambdaScanSetup
+from src.data_sources.sardana.sardana_data_set_setup import SardanaScanSetup
 if 'asapo_consumer' in sys.modules:
     from src.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
 
@@ -30,7 +30,7 @@ class ImageSetup(QtWidgets.QDialog):
         self._parent = parent
         self._data_pool = data_pool
 
-        self._widgets = [LambdaScanSetup(parent, data_pool)]
+        self._widgets = [SardanaScanSetup(parent, data_pool)]
         if has_asapo:
             self._widgets.append(ASAPOScanSetup(parent, data_pool))
 

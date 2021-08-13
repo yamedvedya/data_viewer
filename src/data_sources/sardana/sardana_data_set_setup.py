@@ -1,12 +1,13 @@
 # Created by matveyev at 13.08.2021
+from src.data_sources.sardana.sardana_data_set import SETTINGS
 from src.data_sources.base_classes.base_2d_detector_setup import Base2DDetectorSetup
 from src.gui.lambda_setup_ui import Ui_LambdaSetup
 from src.utils.utils import refresh_combo_box
 
-WIDGET_NAME = 'LambdaScanSetup'
+WIDGET_NAME = 'SardanaScanSetup'
 
 
-class LambdaScanSetup(Base2DDetectorSetup):
+class SardanaScanSetup(Base2DDetectorSetup):
     """
     SETTINGS = {'enable_mask': False,
                 'loaded_mask': None,
@@ -29,7 +30,7 @@ class LambdaScanSetup(Base2DDetectorSetup):
     def __init__(self, main_window, data_pool):
         """
         """
-        super(LambdaScanSetup, self).__init__( main_window, data_pool)
+        super(SardanaScanSetup, self).__init__(main_window, data_pool)
 
         self._ui.cmb_attenuator.addItems(SETTINGS['all_params'])
         self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'] == 'on')
@@ -88,4 +89,4 @@ class LambdaScanSetup(Base2DDetectorSetup):
 
         SETTINGS['displayed_param'] = str(self._ui.cmb_z_axis.currentText())
 
-        super(LambdaScanSetup, self).accept()
+        super(SardanaScanSetup, self).accept()

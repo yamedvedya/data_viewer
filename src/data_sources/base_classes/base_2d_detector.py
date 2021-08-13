@@ -134,10 +134,6 @@ class Base2DDetectorDataSet(BaseDataSet):
         else:
             data = self._cut_data(self._get_data(), section, True)
 
-        for axis, start, stop in section[::-1]:
-            data = data.take(indices=range(start, stop + 1), axis=axis)
-            data = np.sum(data, axis=axis)
-
         if frame_axes['x'] > frame_axes['y']:
             return np.transpose(data)
         else:

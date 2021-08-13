@@ -27,11 +27,11 @@ SETTINGS = {'enable_mask': False,
             }
 
 
-class LambdaDataSet(Base2DDetectorDataSet):
+class SardanaDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, file_name, opened_file):
-        super(LambdaDataSet, self).__init__(data_pool)
+        super(SardanaDataSet, self).__init__(data_pool)
 
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
@@ -94,7 +94,7 @@ class LambdaDataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
         """
-        reloads lambda data
+        reloads sardana data
         :param frame_ids: if not None: frames to be loaded
         :return: np.array, 3D data cube
         """
@@ -223,7 +223,7 @@ class LambdaDataSet(Base2DDetectorDataSet):
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None
 
-        return super(LambdaDataSet, self).get_2d_picture(frame_axes, section)
+        return super(SardanaDataSet, self).get_2d_picture(frame_axes, section)
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect):
@@ -231,7 +231,7 @@ class LambdaDataSet(Base2DDetectorDataSet):
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None, None
 
-        return super(LambdaDataSet, self).get_roi_cut(sect)
+        return super(SardanaDataSet, self).get_roi_cut(sect)
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):
@@ -239,7 +239,7 @@ class LambdaDataSet(Base2DDetectorDataSet):
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None, None
 
-        return super(LambdaDataSet, self).get_roi_plot(sect)
+        return super(SardanaDataSet, self).get_roi_plot(sect)
 
 
 # ----------------------------------------------------------------------
