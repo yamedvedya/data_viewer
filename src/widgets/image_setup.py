@@ -8,7 +8,8 @@ from PyQt5 import QtWidgets, QtCore
 
 from src.data_sources.lambda_scan import LambdaScanSetup
 if 'asapo_consumer' in sys.modules:
-    from src.data_sources.asapo_scan import ASAPOScanSetup
+    from src.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
+
     has_asapo = True
 else:
     has_asapo = False

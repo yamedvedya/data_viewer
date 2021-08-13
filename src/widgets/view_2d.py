@@ -259,8 +259,8 @@ class View2d(QtWidgets.QWidget):
 
             current_axes = self._frame_viewer.get_current_axes()
 
-            x_name, x_value = self.data_pool.value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
-            y_name, y_value = self.data_pool.value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
+            x_name, x_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
+            y_name, y_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
 
             self._frame_viewer.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
 
@@ -302,7 +302,7 @@ class View2d(QtWidgets.QWidget):
             self.plot_2d.clear()
             return
 
-        data_to_display = self.data_pool.get_2d_cut(self.current_file, frame_sect, section)
+        data_to_display = self.data_pool.get_2d_picture(self.current_file, frame_sect, section)
 
         if data_to_display is None:
             self.plot_2d.clear()

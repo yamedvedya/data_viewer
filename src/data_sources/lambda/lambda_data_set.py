@@ -1,16 +1,12 @@
 # Created by matveyev at 18.02.2021
 
-WIDGET_NAME = 'LambdaScanSetup'
-
 import h5py
 import os
 
 import numpy as np
 
-from src.gui.lambda_setup_ui import Ui_LambdaSetup
-from src.utils.utils import refresh_combo_box
 from src.utils.fio_reader import fioReader
-from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, Base2DDetectorSetup
+from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
 
 SETTINGS = {'enable_mask': False,
             'mask': None,
@@ -42,7 +38,7 @@ class LambdaDataSet(Base2DDetectorDataSet):
         self._original_file = file_name
         self._axes_names = ['detector X', 'detector Y', 'scan point']
 
-        self._data['scanned_values'] = []
+        self._additional_data['scanned_values'] = []
         scan_data = opened_file['scan']['data']
 
         # first we load scan data from .fio
@@ -50,9 +46,9 @@ class LambdaDataSet(Base2DDetectorDataSet):
             fio_file = fioReader(os.path.splitext(file_name)[0] + '.fio')
             for key, value in fio_file.parameters.items():
                 try:
-                    self._data[key] = float(value)
+                    self._additional_data[key] = float(value)
                 except:
-                    self._data[key] = value
+                    self._additional_data[key] = value
 
         # if user did ct after scan, Lambda saves ten as scan frames, we ignore them
         self._scan_length = None
@@ -63,8 +59,8 @@ class LambdaDataSet(Base2DDetectorDataSet):
                 if self._scan_length is None:
                     self._scan_length = len(scan_data[key][...])
                 if len(scan_data[key][...]) == self._scan_length:
-                    self._data['scanned_values'].append(key)
-                self._data[key] = np.array(scan_data[key][...])
+                    self._additional_data['scanned_values'].append(key)
+                self._additional_data[key] = np.array(scan_data[key][...])
 
         for key in scan_data.keys():
             # up to now only one type of scans - Lambda scans
@@ -74,20 +70,20 @@ class LambdaDataSet(Base2DDetectorDataSet):
                                                      os.path.splitext(os.path.basename(opened_file.filename))[0], 'lmbd')
 
                 if self._data_pool.memory_mode == 'ram':
-                    self._3d_cube = self._get_data()
-                    self._data['cube_shape'] = self._3d_cube.shape
+                    self._nD_data_array = self._get_data()
+                    self._data_shape = self._nD_data_array.shape
                 else:
-                    self._data['cube_shape'] = self._get_cube_shape()
+                    self._data_shape = self._get_data_shape()
 
         # point_nb - default axis, had to always be, it not - add it
-        if 'point_nb' not in self._data['scanned_values']:
-            self._data['scanned_values'].append('point_nb')
-            self._data['point_nb'] = np.arange(self._data['cube_shape'][0])
+        if 'point_nb' not in self._additional_data['scanned_values']:
+            self._additional_data['scanned_values'].append('point_nb')
+            self._additional_data['point_nb'] = np.arange(self._data_shape[0])
 
     # ----------------------------------------------------------------------
     def check_file_after_load(self):
 
-        for value in self._data['scanned_values']:
+        for value in self._additional_data['scanned_values']:
             if value not in SETTINGS['all_params']:
                 SETTINGS['all_params'].append(value)
 
@@ -135,7 +131,11 @@ class LambdaDataSet(Base2DDetectorDataSet):
             raise RuntimeError('No lmbd file found')
 
     # ----------------------------------------------------------------------
-    def _get_cube_shape(self):
+    def _get_data_shape(self):
+        """
+        in case user select 'disk' mode (data is not kept in memory) - we calculate data shape without loading all data
+        :return: tuple with data shape
+        """
 
         file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
         file_lists.sort()
@@ -151,24 +151,24 @@ class LambdaDataSet(Base2DDetectorDataSet):
     def get_axis_limits(self):
 
         new_limits = {}
-        new_limits[0] = [0, self._data['cube_shape'][2]-1]
-        new_limits[1] = [0, self._data['cube_shape'][1]-1]
-        if SETTINGS['displayed_param'] in self._data['scanned_values']:
-            new_limits[2] = [min(self._data[SETTINGS['displayed_param']]),
-                             max(self._data[SETTINGS['displayed_param']])]
+        new_limits[0] = [0, self._data_shape[2]-1]
+        new_limits[1] = [0, self._data_shape[1]-1]
+        if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
+            new_limits[2] = [min(self._additional_data[SETTINGS['displayed_param']]),
+                             max(self._additional_data[SETTINGS['displayed_param']])]
         else:
             new_limits[2] = [0, 0]
 
         return new_limits
 
     # ----------------------------------------------------------------------
-    def value_for_frame(self, axis, pos):
+    def get_value_for_frame(self, axis, pos):
 
         real_axis = self._cube_axes_map[axis]
         if real_axis == 0:
-            if SETTINGS['displayed_param'] in self._data['scanned_values']:
-                if 0 <= pos < len(self._data[SETTINGS['displayed_param']]):
-                    return SETTINGS['displayed_param'], self._data[SETTINGS['displayed_param']][pos]
+            if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
+                if 0 <= pos < len(self._additional_data[SETTINGS['displayed_param']]):
+                    return SETTINGS['displayed_param'], self._additional_data[SETTINGS['displayed_param']][pos]
             return SETTINGS['displayed_param'], np.NaN
         else:
             return self._axes_names[axis], pos
@@ -177,37 +177,37 @@ class LambdaDataSet(Base2DDetectorDataSet):
     def _get_roi_axis(self, plot_axis):
 
         if plot_axis == 0:
-            if SETTINGS['displayed_param'] in self._data['scanned_values']:
-                return self._data[SETTINGS['displayed_param']]
+            if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
+                return self._additional_data[SETTINGS['displayed_param']]
             else:
-                return np.arange(0, self._data['cube_shape'][plot_axis])
+                return np.arange(0, self._data_shape[plot_axis])
         else:
-            return np.arange(0, self._data['cube_shape'][plot_axis])
+            return np.arange(0, self._data_shape[plot_axis])
 
     # ----------------------------------------------------------------------
-    def _get_correction(self, cube_shape, frame_ids=None):
+    def _calculate_correction(self, data_shape, frame_ids=None):
 
-        self._correction = np.ones(cube_shape[0], dtype=np.float32)
+        self._correction = np.ones(data_shape[0], dtype=np.float32)
 
         try:
             if SETTINGS['atten_correction'] == 'on':
-                if SETTINGS['atten_param'] in self._data['scanned_values']:
+                if SETTINGS['atten_param'] in self._additional_data['scanned_values']:
                     if frame_ids is not None:
-                        self._correction *= np.maximum(self._data[SETTINGS['atten_param']][frame_ids], 1)
+                        self._correction *= np.maximum(self._additional_data[SETTINGS['atten_param']][frame_ids], 1)
                     else:
-                        self._correction *= np.maximum(self._data[SETTINGS['atten_param']], 1)
+                        self._correction *= np.maximum(self._additional_data[SETTINGS['atten_param']], 1)
         except Exception as err:
             raise RuntimeError("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
         try:
             if SETTINGS['inten_correction'] == 'on':
-                if SETTINGS['inten_param'] in self._data['scanned_values']:
+                if SETTINGS['inten_param'] in self._additional_data['scanned_values']:
                     if frame_ids is not None:
-                        self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0])) / \
-                                            np.maximum(self._data[SETTINGS['inten_param']][frame_ids], 1)
+                        self._correction *= np.max((1, self._additional_data[SETTINGS['inten_param']][0])) / \
+                                            np.maximum(self._additional_data[SETTINGS['inten_param']][frame_ids], 1)
                     else:
-                        self._correction *= np.max((1, self._data[SETTINGS['inten_param']][0])) / \
-                                            np.maximum(self._data[SETTINGS['inten_param']], 1)
+                        self._correction *= np.max((1, self._additional_data[SETTINGS['inten_param']][0])) / \
+                                            np.maximum(self._additional_data[SETTINGS['inten_param']], 1)
 
         except Exception as err:
             raise RuntimeError("{}: cannot calculate inten correction: {}".format(self.my_name, err))
@@ -218,17 +218,17 @@ class LambdaDataSet(Base2DDetectorDataSet):
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, frame_axes, section):
+    def get_2d_picture(self, frame_axes, section):
 
-        if SETTINGS['displayed_param'] not in self._data['scanned_values']:
+        if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None
 
-        return super(LambdaDataSet, self).get_2d_cut(frame_axes, section)
+        return super(LambdaDataSet, self).get_2d_picture(frame_axes, section)
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect):
 
-        if SETTINGS['displayed_param'] not in self._data['scanned_values']:
+        if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None, None
 
         return super(LambdaDataSet, self).get_roi_cut(sect)
@@ -236,93 +236,10 @@ class LambdaDataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):
 
-        if SETTINGS['displayed_param'] not in self._data['scanned_values']:
+        if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None, None
 
         return super(LambdaDataSet, self).get_roi_plot(sect)
 
 
 # ----------------------------------------------------------------------
-class LambdaScanSetup(Base2DDetectorSetup):
-    """
-    SETTINGS = {'enable_mask': False,
-                'loaded_mask': None,
-                'loaded_mask_info': {'file': ''},
-                'enable_ff': False,
-                'loaded_ff': None,
-                'loaded_ff_info': {'file': ''},
-                'enable_fill': False,
-                'fill_radius': 7,
-                'atten_correction': 'on',
-                'atten_param': 'atten',
-                'inten_correction': 'on',
-                'inten_param': 'eh_c01',
-                'displayed_param': 'point_nb',
-                'all_params': [],
-                }
-    """
-
-    # ----------------------------------------------------------------------
-    def __init__(self, main_window, data_pool):
-        """
-        """
-        super(LambdaScanSetup, self).__init__( main_window, data_pool)
-
-        self._ui.cmb_attenuator.addItems(SETTINGS['all_params'])
-        self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'] == 'on')
-        if SETTINGS['atten_param'] not in SETTINGS['all_params']:
-            self._ui.cmb_attenuator.addItem(SETTINGS['atten_param'])
-        refresh_combo_box(self._ui.cmb_attenuator, SETTINGS['atten_param'])
-        self._ui.rb_atten_on.setChecked(SETTINGS['atten_correction'] == 'on')
-        self._ui.rb_atten_off.setChecked(SETTINGS['atten_correction'] == 'off')
-
-        self._ui.cmb_intensity.addItems(SETTINGS['all_params'])
-        self._ui.cmb_intensity.setEnabled(SETTINGS['inten_correction'] == 'on')
-        if SETTINGS['inten_param'] not in SETTINGS['all_params']:
-            self._ui.cmb_intensity.addItem(SETTINGS['inten_param'])
-        refresh_combo_box(self._ui.cmb_intensity, SETTINGS['inten_param'])
-        self._ui.rb_inten_on.setChecked(SETTINGS['inten_correction'] == 'on')
-        self._ui.rb_inten_off.setChecked(SETTINGS['inten_correction'] == 'off')
-
-        self._ui.cmb_z_axis.addItems(SETTINGS['all_params'])
-        if SETTINGS['displayed_param'] not in SETTINGS['all_params']:
-            self._ui.cmb_z_axis.addItem(SETTINGS['displayed_param'])
-        refresh_combo_box(self._ui.cmb_z_axis, SETTINGS['displayed_param'])
-
-        self._ui.bg_intensity.buttonClicked.connect(
-            lambda button: self._ui.cmb_intensity.setEnabled(button == self._ui.rb_inten_on))
-        self._ui.bg_attenuator.buttonClicked.connect(
-            lambda button: self._ui.cmb_attenuator.setEnabled(button == self._ui.rb_atten_on))
-
-    # ----------------------------------------------------------------------
-    def _get_ui(self):
-
-        return Ui_LambdaSetup()
-
-    # ----------------------------------------------------------------------
-    def get_name(self):
-        return 'Lambda Scan Setup'
-
-    # ----------------------------------------------------------------------
-    def get_settings(self):
-
-        return SETTINGS
-
-    # ----------------------------------------------------------------------
-    def accept(self):
-
-        SETTINGS['atten_param'] = str(self._ui.cmb_attenuator.currentText())
-        if self._ui.rb_atten_on.isChecked():
-            SETTINGS['atten_correction'] = 'on'
-        elif self._ui.rb_atten_off.isChecked():
-            SETTINGS['atten_correction'] = 'off'
-
-        SETTINGS['inten_param'] = str(self._ui.cmb_intensity.currentText())
-        if self._ui.rb_inten_on.isChecked():
-            SETTINGS['inten_correction'] = 'on'
-        elif self._ui.rb_inten_off.isChecked():
-            SETTINGS['inten_correction'] = 'off'
-
-        SETTINGS['displayed_param'] = str(self._ui.cmb_z_axis.currentText())
-
-        super(LambdaScanSetup, self).accept()

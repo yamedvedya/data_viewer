@@ -18,21 +18,21 @@ class ReciprocalScan(BaseDataSet):
         self._original_file = file_name
         self._axes_names = ['Qx', 'Qy', 'Qz']
 
-        self._data['scanned_values'] = ['Qz']
+        self._additional_data['scanned_values'] = ['Qz']
 
         if gridder is not None:
             self._x_axis = np.copy(gridder.xaxis)
             self._y_axis = np.copy(gridder.yaxis)
             self._z_axis = np.copy(gridder.zaxis)
-            self._3d_cube = np.copy(gridder.data)
+            self._nD_data_array = np.copy(gridder.data)
         elif opened_file is not None:
             if self._data_pool.memory_mode == 'ram':
-                self._3d_cube = self._get_data()
-                self._data['cube_shape'] = self._3d_cube.shape
+                self._nD_data_array = self._get_data()
+                self._data_shape = self._nD_data_array.shape
             else:
-                self._data['cube_shape'] = self._get_cube_shape()
+                self._data_shape = self._get_data_shape()
 
-            self._data['Qz'] = np.arange(self._data['cube_shape'][0])
+            self._additional_data['Qz'] = np.arange(self._data_shape[0])
 
     # ----------------------------------------------------------------------
     def _get_data(self):
@@ -43,7 +43,7 @@ class ReciprocalScan(BaseDataSet):
         return np.array(source_file['reciprocal_scan']['3d_cube'], dtype=np.float32)
 
     # ----------------------------------------------------------------------
-    def _get_cube_shape(self):
+    def _get_data_shape(self):
         source_file = h5py.File(self._original_file, 'r')
         return len(source_file['reciprocal_scan']['x_axis']), len(source_file['reciprocal_scan']['y_axis']), \
                len(source_file['reciprocal_scan']['z_axis'])
@@ -56,9 +56,4 @@ class ReciprocalScan(BaseDataSet):
             group.create_dataset('x_axis', data=self._x_axis)
             group.create_dataset('y_axis', data=self._y_axis)
             group.create_dataset('z_axis', data=self._z_axis)
-            group.create_dataset('3d_cube', data=self._3d_cube)
-
-
-
-
-
+            group.create_dataset('3d_cube', data=self._nD_data_array)

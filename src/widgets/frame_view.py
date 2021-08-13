@@ -237,16 +237,16 @@ class FrameView(AbstractWidget):
             selector.setup_limits()
 
     # ----------------------------------------------------------------------
-    def value_for_frame(self, axis, frame):
-        return self.data_pool.value_for_frame(self._main_view.current_file, axis, frame)
+    def get_value_for_frame(self, axis, frame):
+        return self.data_pool.get_value_for_frame(self._main_view.current_file, axis, frame)
 
     # ----------------------------------------------------------------------
-    def get_max_frame(self, axis):
-        return self.data_pool.get_max_frame(self._main_view.current_file, axis)
+    def get_max_frame_along_axis(self, axis):
+        return self.data_pool.get_max_frame_along_axis(self._main_view.current_file, axis)
 
     # ----------------------------------------------------------------------
-    def frame_for_value(self, axis, value):
-        return self.data_pool.frame_for_value(self._main_view.current_file, axis, value)
+    def get_frame_for_value(self, axis, value):
+        return self.data_pool.get_frame_for_value(self._main_view.current_file, axis, value)
 
     # ----------------------------------------------------------------------
     def get_current_selection(self):
@@ -267,8 +267,8 @@ class FrameView(AbstractWidget):
             sections = self.get_current_selection()
 
             for (axis, min, max), selector in zip(sections, self._cut_selectors):
-                _, z_min = self.data_pool.value_for_frame(self._main_view.previous_file, axis, min)
-                _, z_max = self.data_pool.value_for_frame(self._main_view.previous_file, axis, min)
+                _, z_min = self.data_pool.get_value_for_frame(self._main_view.previous_file, axis, min)
+                _, z_max = self.data_pool.get_value_for_frame(self._main_view.previous_file, axis, min)
                 selector.new_file(z_min, z_max)
 
         self.update_image()

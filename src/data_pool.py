@@ -6,7 +6,6 @@ import psutil
 import time
 import sys
 import numpy as np
-import traceback
 
 from collections import OrderedDict
 
@@ -14,9 +13,9 @@ from PyQt5 import QtCore, QtWidgets
 
 from src.data_sources.lambda_scan import LambdaDataSet
 if 'asapo_consumer' in sys.modules:
-    from src.data_sources.asapo_scan import ASAPODataSet
+    from src.data_sources.asapo.asapo_data_set import ASAPODataSet
 
-from src.data_sources.reciprocal_scan import ReciprocalScan
+from src.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from src.utils.roi import ROI
 from src.widgets.batch_progress import BatchProgress
 
@@ -335,7 +334,10 @@ class DataPool(QtCore.QObject):
     def get_roi_param(self, roi_key, param):
         """
             :param roi_key
-            :param param: 'axis': 'roi_1_axis', 'roi_1_pos', 'roi_1_width', 'roi_2_axis', 'roi_2_pos', 'roi_2_width'
+            :param param: 'axis_0' - axis along which roi has to be plotted;
+            'axis_1', 'axis_1_pos', 'axis_1_width' - cut parameters
+            ...
+            'axis_N', 'axis_N_pos', 'axis_N_width' - cut parameters
 
             :returns requested value
         """
@@ -411,7 +413,7 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     #       2D frames section
     # ----------------------------------------------------------------------
-    def get_2d_cut(self, file, frame_axes, section):
+    def get_2d_picture(self, file, frame_axes, section):
         """
         returns 2D frame to be displayed in Frame viewer
         :param file: key for self._files_data
@@ -419,30 +421,30 @@ class DataPool(QtCore.QObject):
         :param section: list of tuples (section axes, from, to)
         :return: 2D np.array
         """
-        return self._files_data[file].get_2d_cut(frame_axes, section)
+        return self._files_data[file].get_2d_picture(frame_axes, section)
 
     # ----------------------------------------------------------------------
-    def get_max_frame(self, file, axis):
+    def get_max_frame_along_axis(self, file, axis):
         """
 
         :param file: key for self._files_data
         :param axis:
         :return: maximum value along requested axis
         """
-        return self._files_data[file].get_max_frame(axis)
+        return self._files_data[file].get_max_frame_along_axis(axis)
 
     # ----------------------------------------------------------------------
-    def get_entry_value(self, file, entry):
+    def get_additional_data(self, file, entry):
         """
         for some file types we can store additional information
         :param file:
         :param entry:
         :return: if file has requested entry - returns it, else None
         """
-        return self._files_data[file].get_entry(entry)
+        return self._files_data[file].get_additional_data(entry)
 
     # ----------------------------------------------------------------------
-    def frame_for_value(self, file, axis, pos):
+    def get_frame_for_value(self, file, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -454,10 +456,10 @@ class DataPool(QtCore.QObject):
         :param pos:
         :return:
         """
-        return self._files_data[file].frame_for_value(axis, pos)
+        return self._files_data[file].get_frame_for_value(axis, pos)
 
     # ----------------------------------------------------------------------
-    def value_for_frame(self, file, axis, pos):
+    def get_value_for_frame(self, file, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -468,7 +470,7 @@ class DataPool(QtCore.QObject):
         :param pos:
         :return:
         """
-        return self._files_data[file].value_for_frame(axis, pos)
+        return self._files_data[file].get_value_for_frame(axis, pos)
 
     # ----------------------------------------------------------------------
     def get_file_axes(self, file):

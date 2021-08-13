@@ -10,21 +10,16 @@ and apply current parameters (maks, flat field etc)
 if user change parameters - reloads data from stream, makes new cube and applies new parameters
 """
 
-WIDGET_NAME = 'ASAPOScanSetup'
-
 import numpy as np
 from distutils.util import strtobool
 
 import asapo_consumer
 import configparser
 
-from src.gui.asapo_image_setup_ui import Ui_ASAPOImageSetup
-from src.data_sources.base_classes.base_data_set import BaseDataSet
-from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, Base2DDetectorSetup
+from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
 
 from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
-# from AsapoWorker.data_handler import get_image
-from temp.data_handler import get_image
+from AsapoWorker.data_handler import get_image
 
 SETTINGS = {'enable_mask': False,
             'mask': None,
@@ -75,15 +70,15 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self.receiver.data_source = detector_name
 
         # only one option
-        self._data['scanned_values'] = ['frame_ID']
+        self._additional_data['scanned_values'] = ['frame_ID']
 
         if self._data_pool.memory_mode == 'ram':
-            self._3d_cube = self._get_data()
-            self._data['cube_shape'] = self._3d_cube.shape
+            self._nD_data_array = self._get_data()
+            self._data_shape = self._nD_data_array.shape
         else:
-            self._data['cube_shape'] = self._get_cube_shape()
+            self._data_shape = self._get_data_shape()
 
-        self._data['frame_ID'] = np.arange(self._data['cube_shape'][0])
+        self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -123,29 +118,16 @@ class ASAPODataSet(Base2DDetectorDataSet):
         return np.array(cube, dtype=np.float32)
 
     # ----------------------------------------------------------------------
-    def _get_cube_shape(self):
+    def _get_data_shape(self):
+        """
+        in case user select 'disk' mode (data is not kept in memory) - we calculate data shape without loading all data
+        :return: tuple with data shape
+
+        """
+
         frame = self._reload_data([0])
         return self.receiver.get_current_size(), frame.shape[1], frame.shape[2]
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
         self._need_apply_mask = True
-
-
-# ----------------------------------------------------------------------
-class ASAPOScanSetup(Base2DDetectorSetup):
-
-    # ----------------------------------------------------------------------
-    def _get_ui(self):
-
-        return Ui_ASAPOImageSetup()
-
-    # ----------------------------------------------------------------------
-    def get_name(self):
-
-        return 'ASAPO Scan Setup'
-
-    # ----------------------------------------------------------------------
-    def get_settings(self):
-
-        return SETTINGS

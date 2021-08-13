@@ -59,8 +59,8 @@ class Converter(QtWidgets.QMainWindow):
             self._ui.cmd_roi.addItem(f'ROI_{ind}')
 
         self._file_name = file_name
-        self._ui.sb_cen_x.setMaximum(self._data_pool.get_max_frame(self._file_name, 0))
-        self._ui.sb_cen_y.setMaximum(self._data_pool.get_max_frame(self._file_name, 1))
+        self._ui.sb_cen_x.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 0))
+        self._ui.sb_cen_y.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 1))
 
         super(Converter, self).show()
 
@@ -112,7 +112,7 @@ class Converter(QtWidgets.QMainWindow):
         hxrd = xu.HXRD([1, 0, 0], [0, 0, 1],
                        geometry="real",
                        qconv=qconv,
-                       en=int(self._data_pool.get_entry_value(self._file_name, 'mnchrmtr')),
+                       en=int(self._data_pool.get_additional_data(self._file_name, 'mnchrmtr')),
                        sampleor="y-")
 
         hxrd.Ang2Q.init_area('y+',
@@ -132,7 +132,7 @@ class Converter(QtWidgets.QMainWindow):
         scan_angles = dict.fromkeys(angles_set)
         for angle in angles_set:
             try:
-                scan_angles[angle] = self._data_pool.get_entry_value(self._file_name, angle) - getattr(self._ui, f'dsb_shift_{angle}').value()
+                scan_angles[angle] = self._data_pool.get_additional_data(self._file_name, angle) - getattr(self._ui, f'dsb_shift_{angle}').value()
             except KeyError:
                 scan_angles[angle] = - getattr(self._ui, f'dsb_shift_{angle}').value()
 
@@ -142,7 +142,7 @@ class Converter(QtWidgets.QMainWindow):
                                      scan_angles['phi'],
                                      scan_angles['gamma'],
                                      scan_angles['delta'],
-                                     en=self._data_pool.get_entry_value(self._file_name, 'mnchrmtr'),
+                                     en=self._data_pool.get_additional_data(self._file_name, 'mnchrmtr'),
                                      UB=hxrd._transform.matrix)
 
         bins = int(self._ui.sb_bin_x.value()), int(self._ui.sb_bin_y.value()), int(self._ui.sb_bin_z.value())
