@@ -16,6 +16,7 @@ try:
     has_asapo = True
 except:
     has_asapo = False
+from src.widgets.folder_browser import FolderBrowser
 
 from src.widgets.frame_view import FrameView
 from src.widgets.rois_view import RoisView
@@ -46,7 +47,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.log = _init_logger()
 
-        self._setup_menu()
         self.parameter_actions = []
         self.parameter_action_group = None
 
@@ -59,8 +59,7 @@ class DataViewer(QtWidgets.QMainWindow):
                             QtWidgets.QMainWindow.AllowNestedDocks |
                             QtWidgets.QMainWindow.AllowTabbedDocks)
 
-        self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
-                                                                   QtCore.Qt.LeftDockWidgetArea, self)
+        self._menu_view = QtWidgets.QMenu('Widgets', self)
 
         self.frame_view, self.frame_view_dock = self._add_dock(FrameView, "Frame View",
                                                                QtCore.Qt.LeftDockWidgetArea,
@@ -70,17 +69,33 @@ class DataViewer(QtWidgets.QMainWindow):
                                                              QtCore.Qt.LeftDockWidgetArea,
                                                              self, self.data_pool)
 
-        if has_asapo:
+        if options.sardana:
+            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
+                                                                       QtCore.Qt.LeftDockWidgetArea, self)
+            self.file_browser.file_selected.connect(self.data_pool.open_file)
+            self.has_sardana = True
+        else:
+            self.has_sardana = False
+
+        if has_asapo and options.asapo:
             self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
                                                                          QtCore.Qt.LeftDockWidgetArea, self)
+            self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
+            self.has_asapo = True
+        else:
+            self.has_asapo = False
+
+        if options.beam:
+            self.folder_browser, self.folder_browser_dock = self._add_dock(FolderBrowser, "Folder Browser",
+                                                                           QtCore.Qt.LeftDockWidgetArea, self)
+            self.folder_browser.file_selected.connect(self.data_pool.open_file)
+            self.has_beam_view = True
+        else:
+            self.has_beam_view = False
 
         # self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube iew",
         #                                                      QtCore.Qt.LeftDockWidgetArea,
         #                                                      self, self.data_pool)
-
-        self.file_browser.file_selected.connect(self.data_pool.open_file)
-        if has_asapo:
-            self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
 
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)
@@ -98,6 +113,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self._load_ui_settings()
         self.apply_settings()
 
+        self._setup_menu()
+
         self._init_status_bar()
 
         self._status_timer = QtCore.QTimer(self)
@@ -113,9 +130,9 @@ class DataViewer(QtWidgets.QMainWindow):
             settings = configparser.ConfigParser()
             settings.read('./settings.ini')
 
-        if 'FILE_BROWSER' in settings:
+        if 'FILE_BROWSER' in settings and self.has_sardana:
             self.file_browser.set_settings(settings['FILE_BROWSER'])
-        if 'ASAPO' in settings and has_asapo:
+        if 'ASAPO' in settings and self.has_asapo:
             self.asapo_browser.set_settings(settings['ASAPO'])
         if 'FRAME_VIEW' in settings:
             self.frame_view.set_settings(settings['FRAME_VIEW'])
@@ -130,7 +147,12 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):
-        return self.file_browser.current_folder()
+        if self.has_sardana:
+            return self.file_browser.current_folder()
+        elif self.has_beam_view:
+            return self.folder_browser.current_folder()
+        else:
+            return os.getcwd()
 
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
@@ -166,11 +188,22 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def _setup_menu(self):
-        self._menu_view = QtWidgets.QMenu('Widgets', self)
+        if self.has_sardana:
+            batch_menu = QtWidgets.QMenu('Batch process', self)
 
-        space_menu = QtWidgets.QMenu('Space', self)
-        action = space_menu.addAction('Convert current file')
-        action.triggered.connect(self._convert)
+            action = batch_menu.addAction("Process files...")
+            action.triggered.connect(lambda checked, x='files': self._batch_process(x))
+
+            action = batch_menu.addAction("Process folder...")
+            action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
+
+            space_menu = QtWidgets.QMenu('Space', self)
+            action = space_menu.addAction('Convert current file')
+            action.triggered.connect(self._convert)
+
+            self.menuBar().addMenu(batch_menu)
+            self.menuBar().addMenu(space_menu)
+            self.menuBar().addSeparator()
 
         image_setup = QtWidgets.QAction('Image setup', self)
         image_setup.triggered.connect(self._setup_image)
@@ -178,29 +211,16 @@ class DataViewer(QtWidgets.QMainWindow):
         menu_settings = QtWidgets.QAction('Program settings', self)
         menu_settings.triggered.connect(self._show_settings)
 
+        self.menuBar().addAction(image_setup)
+        self.menuBar().addAction(menu_settings)
+
+        self.menuBar().addSeparator()
+
         about_action = QtWidgets.QAction('About', self)
         about_action.triggered.connect(lambda: AboutDialog(self).exec_())
 
         menu_exit = QtWidgets.QAction('Exit', self)
         menu_exit.triggered.connect(self._exit)
-
-        batch_menu = QtWidgets.QMenu('Batch process', self)
-
-        action = batch_menu.addAction("Process files...")
-        action.triggered.connect(lambda checked, x='files': self._batch_process(x))
-
-        action = batch_menu.addAction("Process folder...")
-        action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
-
-        self.menuBar().addMenu(batch_menu)
-        self.menuBar().addMenu(space_menu)
-
-        self.menuBar().addSeparator()
-
-        self.menuBar().addAction(image_setup)
-        self.menuBar().addAction(menu_settings)
-
-        self.menuBar().addSeparator()
 
         self.menuBar().addMenu(self._menu_view)
         self.menuBar().addAction(about_action)
@@ -243,20 +263,22 @@ class DataViewer(QtWidgets.QMainWindow):
         self.msg.show()
 
     # ----------------------------------------------------------------------
-    def _exit(self):
-
+    def _close_me(self):
         self.log.info("Closing the app...")
-        self.file_browser.safe_close()
+        if self.has_sardana:
+            self.file_browser.safe_close()
         self._save_ui_settings()
+
+    # ----------------------------------------------------------------------
+    def _exit(self):
+        self._close_me()
         QtWidgets.QApplication.quit()
 
     # ----------------------------------------------------------------------
     def closeEvent(self, event):
         """
         """
-        self.log.info("Closing the app...")
-        self.file_browser.safe_close()
-        self._save_ui_settings()
+        self._close_me()
         event.accept()
 
     # ----------------------------------------------------------------------
@@ -265,11 +287,15 @@ class DataViewer(QtWidgets.QMainWindow):
         """
         settings = QtCore.QSettings(APP_NAME)
 
-        self.file_browser.save_ui_settings(settings)
+        if self.has_sardana:
+            self.file_browser.save_ui_settings(settings)
+
+        if self.has_asapo:
+            self.asapo_browser.save_ui_settings(settings)
+
         self.rois_view.save_ui_settings(settings)
         self.frame_view.save_ui_settings(settings)
-        if has_asapo:
-            self.asapo_browser.save_ui_settings(settings)        # self.cube_view.save_ui_settings(settings)
+
 
         settings.setValue("MainWindow/geometry", self.saveGeometry())
         settings.setValue("MainWindow/state", self.saveState())
@@ -292,11 +318,14 @@ class DataViewer(QtWidgets.QMainWindow):
         except:
             pass
 
-        self.file_browser.load_ui_settings(settings)
+        if self.has_sardana:
+            self.file_browser.load_ui_settings(settings)
+
+        if self.has_asapo:
+            self.asapo_browser.load_ui_settings(settings)
+
         self.rois_view.load_ui_settings(settings)
         self.frame_view.load_ui_settings(settings)
-        if has_asapo:
-            self.asapo_browser.load_ui_settings(settings)        # self.cube_view.load_ui_settings(settings)
 
     # ----------------------------------------------------------------------
     def _init_status_bar(self):

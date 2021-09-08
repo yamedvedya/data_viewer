@@ -15,6 +15,7 @@ from src.data_sources.sardana.sardana_data_set import SardanaDataSet
 if 'asapo_consumer' in sys.modules:
     from src.data_sources.asapo.asapo_data_set import ASAPODataSet
 
+from src.data_sources.beamview.beam_view_data_set import BeamLineView
 from src.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from src.utils.roi import ROI
 from src.widgets.batch_progress import BatchProgress
@@ -116,15 +117,8 @@ class DataPool(QtCore.QObject):
             self.log.error("File with this name already opened")
             return
 
-        # create popup message for user
-        self._open_mgs.setText(f'Opening stream {stream_name}')
-        self._open_mgs.show()
-
-        self._opener = Opener(self, 'stream', {'detector_name': detector_name, 'stream_name': stream_name,
-                                               'entry_name': entry_name})
-        self._opener.exception.connect(self.report_error)
-        self._opener.done.connect(self._open_done)
-        self._opener.start()
+        self._start_opener('stream', f'Opening stream {stream_name}',
+                           {'detector_name': detector_name, 'stream_name': stream_name, 'entry_name': entry_name})
 
     # ----------------------------------------------------------------------
     def open_file(self, file_name):
@@ -142,11 +136,31 @@ class DataPool(QtCore.QObject):
             self.log.error("File with this name already opened")
             return
 
-        # create popup message for user
-        self._open_mgs.setText(f'Opening file {file_name}')
+        if "*.nxs" in file_name:
+            self._start_opener('sardana', f'Opening file {file_name}',
+                               {'file_name': file_name, 'entry_name': entry_name})
+        elif "*.h5" in file_name:
+            self._start_opener('reciprocal', f'Opening file {file_name}',
+                               {'file_name': file_name, 'entry_name': entry_name})
+        elif '.dat' in file_name:
+            self._start_opener('beamline', f'Opening folder {os.path.dirname(file_name)}',
+                               {'file_name': file_name, 'entry_name': entry_name})
+
+    # ----------------------------------------------------------------------
+    def _start_opener(self, mode, user_msg, kwargs):
+        """
+        create popup message for user
+
+        :param mode:
+        :param user_msg: message in popup dialog
+        :param kwargs:
+        :return:
+        """
+        #
+        self._open_mgs.setText(user_msg)
         self._open_mgs.show()
 
-        self._opener = Opener(self, 'file', {'file_name': file_name, 'entry_name': entry_name})
+        self._opener = Opener(self, mode, kwargs)
         self._opener.exception.connect(self.report_error)
         self._opener.done.connect(self._open_done)
         self._opener.start()
@@ -526,56 +540,64 @@ class Opener(QtCore.QThread):
 
     # ----------------------------------------------------------------------
     def run(self):
-        if self.mode == 'file':
-            finished = False
-            while not finished:
-                try:
-                    with h5py.File(self.params['file_name'], 'r') as f:
-                        if 'scan' in f.keys():
+        try:
+            if self.mode == 'sardana':
+                finished = False
+                while not finished:
+                    try:
+                        with h5py.File(self.params['file_name'], 'r') as f:
                             new_file = SardanaDataSet(self.data_pool, self.params['file_name'], f)
-                        elif 'reciprocal_scan' in f.keys():
-                            new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
+                            new_file.apply_settings()
+                            self.data_pool.add_new_entry(self.params['entry_name'], new_file)
+                            finished = True
+
+                    except OSError as err:
+                        if 'Resource temporarily unavailable' in str(err.args):
+                            time.sleep(0.5)
+                            print('Waiting for file {}'.format(self.params['file_name']))
                         else:
-                            raise RuntimeError('Unknown file type')
+                            self.exception.emit('Cannot open file',
+                                                'Cannot open {}'.format(self.params['file_name']),
+                                                self._make_err_msg(err))
+                            finished = True
 
-                        new_file.apply_settings()
-                        self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-                        finished = True
-
-                except OSError as err:
-                    if 'Resource temporarily unavailable' in str(err.args):
-                        time.sleep(0.5)
-                        print('Waiting for file {}'.format(self.params['file_name']))
-                    else:
-                        self.exception.emit('Cannot open file',
-                                            'Cannot open {}'.format(self.params['file_name']),
-                                            str(err))
-                        finished = True
-
-                except Exception as err:
-                    self.exception.emit('Cannot open file',
-                                        'Cannot open {}'.format(self.params['file_name']),
-                                        str(err))
-                    finished = True
-
-        elif self.mode == 'stream':
-            try:
+            elif self.mode == 'stream':
                 new_file = ASAPODataSet(self.params['detector_name'], self.params['stream_name'], self.data_pool)
                 new_file.apply_settings()
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
-            except Exception as err:
-                error_msg = f'{err.__class__.__module__}.{err.__class__.__name__}: {err}'
-                error_cause = err.__cause__
-                while error_cause is not None:
-                    error_msg += f'\n\nCaused by {error_cause.__class__.__module__}.{error_cause.__class__.__name__}: {error_cause}'
-                    error_cause = error_cause.__cause__
+            elif self.mode == 'reciprocal':
+                with h5py.File(self.params['file_name'], 'r') as f:
+                    new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
+                    new_file.apply_settings()
+                    self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
-                self.exception.emit('Cannot open stream',
-                                    f'Cannot open {self.params["entry_name"]}',
-                                    error_msg)
+            elif self.mode == 'beamline':
+                new_file = BeamLineView(self.data_pool, self.params['file_name'])
+                new_file.apply_settings()
+                self.data_pool.add_new_entry(self.params['entry_name'], new_file)
+
+        except Exception as err:
+            self.exception.emit(f'Cannot open {self.mode}',
+                                f'Cannot open {self.params["entry_name"]}',
+                                self._make_err_msg(err))
 
         self.done.emit()
+
+    # ----------------------------------------------------------------------
+    def _make_err_msg(self, err):
+        """
+
+        :param err:
+        :return:
+        """
+        error_msg = f'{err.__class__.__module__}.{err.__class__.__name__}: {err}'
+        error_cause = err.__cause__
+        while error_cause is not None:
+            error_msg += f'\n\nCaused by {error_cause.__class__.__module__}.{error_cause.__class__.__name__}: {error_cause}'
+            error_cause = error_cause.__cause__
+
+        return error_msg
 
 
 # ----------------------------------------------------------------------

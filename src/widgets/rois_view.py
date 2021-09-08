@@ -53,7 +53,7 @@ class RoisView(AbstractWidget):
     def _add_roi(self):
         idx, name = self._data_pool.add_new_roi()
         self._parent.add_roi(idx)
-        self._roi_widgets[idx] = SectionView(self, self._parent.file_browser, self._data_pool, idx)
+        self._roi_widgets[idx] = SectionView(self, self._data_pool, idx)
         self._ui.tab_main.insertTab(self._ui.tab_main.count(), self._roi_widgets[idx], 'ROI_{}'.format(name))
         self._ui.tab_main.setCurrentWidget(self._roi_widgets[idx])
 
@@ -73,6 +73,10 @@ class RoisView(AbstractWidget):
 
         for idx in range(self._ui.tab_main.count()):
             self._ui.tab_main.setTabText(idx, 'ROI_{}'.format(self._ui.tab_main.widget(idx).refresh_name()))
+
+    # ----------------------------------------------------------------------
+    def current_folder(self):
+        return self._parent.get_current_folder()
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name):

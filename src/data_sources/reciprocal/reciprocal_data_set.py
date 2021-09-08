@@ -1,4 +1,4 @@
-WIDGET_NAME = 'ReciprocalScanSetup'
+# Created by matveyev
 
 import h5py
 

@@ -20,7 +20,7 @@ class SectionView(QtWidgets.QWidget):
     """
 
     # ----------------------------------------------------------------------
-    def __init__(self, parent, file_browser, data_pool, my_id):
+    def __init__(self, parent, data_pool, my_id):
         """
         """
         super(SectionView, self).__init__()
@@ -29,7 +29,6 @@ class SectionView(QtWidgets.QWidget):
         self._init_tool_bar()
 
         self._parent = parent
-        self.file_browser = file_browser
         self.data_pool = data_pool
         self.my_id = my_id
 
@@ -303,7 +302,7 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _save(self, type):
-        default_name = self.file_browser.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
+        default_name = self._parent.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
         if type == 'image':
             file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
                  'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*ppm); X11 Bitmap (*xbm);; X11 Pixmap (*xpm)')

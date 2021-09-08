@@ -1,12 +1,5 @@
 # Created by matveyev at 15.02.2021
 
-WIDGET_NAME = 'DataBrowser'
-
-file_formats = ["*.nxs", "*.h5"]
-
-FILE_REFRESH_PERIOD = 1
-
-
 import os
 
 try:
@@ -26,6 +19,12 @@ from src.widgets.abstract_widget import AbstractWidget
 from src.gui.file_browser_ui import Ui_FileBrowser
 
 from src.utils.utils import FileFilter
+
+WIDGET_NAME = 'DataBrowser'
+
+file_formats = ["*.nxs", "*.h5"]
+
+FILE_REFRESH_PERIOD = 1
 
 
 # ----------------------------------------------------------------------

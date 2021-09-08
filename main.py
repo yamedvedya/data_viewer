@@ -24,6 +24,10 @@ def main():
     parser.add_option("-f", "--file", dest="file",
                       help="open file after start")
 
+    parser.add_option("--asapo", action='store_true', dest='asapo', help="include ASAPO scan")
+    parser.add_option("--sardana", action='store_true', dest='sardana', help="include Sardana scan")
+    parser.add_option("--beam", action='store_true', dest='beam', help="include Beamline view")
+
     (options, _) = parser.parse_args()
 
     app = QtWidgets.QApplication(sys.argv)

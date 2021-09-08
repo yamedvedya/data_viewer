@@ -10,10 +10,6 @@ from src.data_sources.sardana.sardana_data_set_setup import SardanaScanSetup
 if 'asapo_consumer' in sys.modules:
     from src.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
 
-    has_asapo = True
-else:
-    has_asapo = False
-
 from src.gui.image_setup_ui import Ui_ImageSetup
 from src.main_window import APP_NAME
 
@@ -30,8 +26,10 @@ class ImageSetup(QtWidgets.QDialog):
         self._parent = parent
         self._data_pool = data_pool
 
-        self._widgets = [SardanaScanSetup(parent, data_pool)]
-        if has_asapo:
+        self._widgets = []
+        if self._parent.has_sardana:
+            self._widgets.append(SardanaScanSetup(parent, data_pool))
+        if self._parent.has_asapo:
             self._widgets.append(ASAPOScanSetup(parent, data_pool))
 
         for widget in self._widgets:
