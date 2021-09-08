@@ -24,6 +24,8 @@ pip3 install -U numpy
 pip3 install -U scipy
 pip3 install -U h5py
 
+pip3 install  git+https://gitlab.desy.de/fs-sc/asapoworker.git
+
 python3 ./build.py
 python3 ./make_alias.py
 chmod +x start_viewer.sh
