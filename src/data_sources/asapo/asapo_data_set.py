@@ -43,7 +43,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self.my_name = stream_name
         self._detector_name = detector_name
-        self._axes_names = ['frame_ID', 'detector X', 'detector Y']
 
         # read the current settings
         settings = configparser.ConfigParser()
@@ -77,6 +76,8 @@ class ASAPODataSet(Base2DDetectorDataSet):
             self._data_shape = self._nD_data_array.shape
         else:
             self._data_shape = self._get_data_shape()
+        self._axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+        self._data_pool.axes_limits = {i: [0, 0] for i in range(len(self._axes_names))}
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
 
@@ -126,7 +127,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         """
 
         frame = self._reload_data([0])
-        return self.receiver.get_current_size(), frame.shape[1], frame.shape[2]
+        return self.receiver.get_current_size(), frame.shape[1:]
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
