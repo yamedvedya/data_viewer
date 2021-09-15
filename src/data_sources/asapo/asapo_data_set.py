@@ -80,6 +80,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._data_pool.axes_limits = {i: [0, 0] for i in range(len(self._axes_names))}
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
+        self._metadata_list = []
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -93,30 +94,31 @@ class ASAPODataSet(Base2DDetectorDataSet):
         :return: np.array, 3D data cube
         """
         def _convert_image(data, meta_data):
-            if self._mode == 'file':
-                return get_image(data, meta_data)[np.newaxis, :]
-            else:
-                return get_image(data[0], meta_data[0])[np.newaxis, :]
+            if data is None:
+                return np.zeros((0, 0), dtype=np.float32)
+            try:
+                if self._mode == 'file':
+                    return get_image(data, meta_data).astype(np.float32)
+                else:
+                    return get_image(data[0], meta_data[0]).astype(np.float32)
+            except Exception as e:
+                # ToDo add log message
+                print(e)
+                return np.zeros((0, 0), dtype=np.float32)
 
-        if frame_ids is not None:
-            self.receiver.set_start_id(frame_ids[0]+1)
-            data, meta_data = self.receiver.get_next(False)
-            cube = _convert_image(data, meta_data)
-            for frame in frame_ids[1:]:
-                self.receiver.set_start_id(frame+1)
-                data, meta_data = self.receiver.get_next(False)
-                cube = np.vstack((cube, _convert_image(data, meta_data)))
-            else:
-                cube = cube[frame_ids, :, :]
-        else:
-            self.receiver.set_start_id(1)
-            data, meta_data = self.receiver.get_next(False)
-            cube = _convert_image(data, meta_data)
-            for _ in range(1, self.receiver.get_current_size()):
-                data, meta_data = self.receiver.get_next(False)
-                cube = np.vstack((cube, _convert_image(data, meta_data)))
+        meta_list = []
+        img_list = []
+        if frame_ids is None:
+            frame_ids = np.arange(self.receiver.get_current_size())
 
-        return np.array(cube, dtype=np.float32)
+        for frame in frame_ids:
+            self.receiver.set_start_id(frame+1)
+            data, meta_data = self.receiver.get_next(False)
+            meta_list.append(meta_data)
+            img_list.append(_convert_image(data, meta_data))
+
+        self._metadata_list = meta_list
+        return np.stack(img_list)
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):
