@@ -64,9 +64,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._setup_receiver(consumer, stream_name, detector_name)
 
-        # only one option
-        self._additional_data['scanned_values'] = ['frame_ID']
-
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
             self._data_shape = self._nD_data_array.shape
@@ -76,7 +73,8 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._data_pool.axes_limits = {i: [0, 0] for i in range(len(self._axes_names))}
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
-        self._metadata_list = []
+        self._additional_data['scanned_values'] = ['frame_ID']
+        self._additional_data['metadata'] = []
 
     def _setup_receiver(self, consumer, stream_name, data_source):
         """
@@ -157,7 +155,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             meta_list.append(meta_data)
             img_list.append(_convert_image(data, meta_data))
 
-        self._metadata_list = meta_list
+        self._additional_data['metadata'] = meta_list
         img_array = np.stack(img_list)
         logger.debug(f"Retrieved image array {img_array.shape}")
         return np.stack(img_list)
