@@ -12,6 +12,7 @@ if user change parameters - reloads data from stream, makes new cube and applies
 
 import numpy as np
 from distutils.util import strtobool
+import logging
 
 import asapo_consumer
 import configparser
@@ -33,6 +34,7 @@ SETTINGS = {'enable_mask': False,
             'fill_radius': 7,
             'displayed_param': 'frame_ID',
             }
+logger = logging.getLogger('3d_data_viewer')
 
 
 class ASAPODataSet(Base2DDetectorDataSet):
@@ -55,18 +57,12 @@ class ASAPODataSet(Base2DDetectorDataSet):
         token = settings['ASAPO']['token']
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
+        logger.debug(
+            "Create new consumer (host=%s, path=%s, has_filesystem=%s, "
+            "beamtime=%s, data_source=%s, token=%s, timeout=%i).",
+            host, path, has_filesystem, beamtime, detector_name, token, 1000)
 
-        # TODO autodetect mode
-        if settings['ASAPO']['mode'] == 'file':
-            self._mode = 'file'
-            self.receiver = SerialAsapoReceiver(consumer)
-        else:
-            self._mode = 'dataset'
-            self.receiver = SerialDatasetAsapoReceiver(consumer)
-
-        # save source for reload
-        self.receiver.stream = stream_name
-        self.receiver.data_source = detector_name
+        self._setup_receiver(consumer, stream_name, detector_name)
 
         # only one option
         self._additional_data['scanned_values'] = ['frame_ID']
@@ -82,6 +78,41 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
         self._metadata_list = []
 
+    def _setup_receiver(self, consumer, stream_name, data_source):
+        """
+        Create and set parameters for receiver, which will be used to retrieve data from ASAPO.
+        Currently there is no information in the ASAPO data_source about it content.
+        Several try/except blocks stays to guess, how to retrieve data from given data_source.
+
+        Parameters:
+            consumer (asapo_consumer): ASAPO consumer
+            stream_name (str): Stream name
+            data_source (str): ASAPO data_source
+        """
+        try:
+            self._mode = 'file'
+            self.receiver = SerialAsapoReceiver(consumer)
+            self.receiver.stream = stream_name
+            self.receiver.data_source = data_source
+            self.receiver.set_start_id(1)
+            self.meta_only = False
+            self.receiver.get_next(self.meta_only)
+        except Exception as e:
+            logger.debug(f"Setting mode=file fails: {e}")
+            self._mode = 'dataset'
+            self.receiver = SerialDatasetAsapoReceiver(consumer)
+            self.receiver.stream = stream_name
+            self.receiver.data_source = data_source
+            self.meta_only = False
+            try:
+                self.receiver.set_start_id(1)
+                self.receiver.get_next(self.meta_only)
+            except Exception as e:
+                logger.debug(f"Setting mode=dataset with meta_only=False fails: {e}")
+                self.meta_only = True
+
+        logger.info(f"Set mode '{self._mode}' and receiver: {self.receiver}")
+
     # ----------------------------------------------------------------------
     def _get_settings(self):
         return SETTINGS
@@ -93,18 +124,27 @@ class ASAPODataSet(Base2DDetectorDataSet):
         :param frame_ids: if not None: frames to be loaded
         :return: np.array, 3D data cube
         """
+
         def _convert_image(data, meta_data):
+            """
+            de-Serialize numpy array (image) from ASAPO data based on ASAPO metadata.
+            Default empty image of 2x2 is used to be compatible with the rest code of the package.
+            Parameters:
+                data (byte): data from ASAPO message
+                meta_data (dict): metadata from ASAPO message
+            Returns:
+                image (np.ndarray): n-Dimensional np.array
+            """
+            def_img = np.zeros((2, 2), dtype=np.float32)
             if data is None:
-                return np.zeros((0, 0), dtype=np.float32)
+                return def_img
             try:
                 if self._mode == 'file':
                     return get_image(data, meta_data).astype(np.float32)
                 else:
                     return get_image(data[0], meta_data[0]).astype(np.float32)
             except Exception as e:
-                # ToDo add log message
-                print(e)
-                return np.zeros((0, 0), dtype=np.float32)
+                return def_img
 
         meta_list = []
         img_list = []
@@ -112,12 +152,14 @@ class ASAPODataSet(Base2DDetectorDataSet):
             frame_ids = np.arange(self.receiver.get_current_size())
 
         for frame in frame_ids:
-            self.receiver.set_start_id(frame+1)
-            data, meta_data = self.receiver.get_next(False)
+            self.receiver.set_start_id(frame + 1)
+            data, meta_data = self.receiver.get_next(self.meta_only)
             meta_list.append(meta_data)
             img_list.append(_convert_image(data, meta_data))
 
         self._metadata_list = meta_list
+        img_array = np.stack(img_list)
+        logger.debug(f"Retrieved image array {img_array.shape}")
         return np.stack(img_list)
 
     # ----------------------------------------------------------------------
