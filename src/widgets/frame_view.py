@@ -4,7 +4,7 @@ WIDGET_NAME = 'FrameView'
 
 import pyqtgraph as pg
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
@@ -16,6 +16,8 @@ from src.gui.frame_view_ui import Ui_FrameView
 class FrameView(AbstractWidget):
     """
     """
+    section_updated = QtCore.pyqtSignal(list, str)
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
         """
@@ -221,6 +223,7 @@ class FrameView(AbstractWidget):
         section = []
         for selector in self._cut_selectors:
             section.append(selector.get_section())
+        self.section_updated.emit(section, self._main_view.current_file)
 
         self.hist.item.sigLevelsChanged.disconnect()
         self._main_view.update_image(self.get_current_axes(), section)

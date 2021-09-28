@@ -6,6 +6,7 @@ import psutil
 import time
 import sys
 import numpy as np
+import traceback
 
 from collections import OrderedDict
 
@@ -501,7 +502,7 @@ class DataPool(QtCore.QObject):
         recalculates the limits for all files
         :return:
         """
-        new_limits = {0: [0, 0], 1: [0, 0], 2: [0, 0]}
+        new_limits = {i: [0, 0] for i in range(len(self.axes_limits))}
 
         for data_set in self._files_data.values():
             file_limits = data_set.get_axis_limits()
@@ -580,7 +581,7 @@ class Opener(QtCore.QThread):
         except Exception as err:
             self.exception.emit(f'Cannot open {self.mode}',
                                 f'Cannot open {self.params["entry_name"]}',
-                                self._make_err_msg(err))
+                                self._make_err_msg(err)+traceback.format_exc())
 
         self.done.emit()
 

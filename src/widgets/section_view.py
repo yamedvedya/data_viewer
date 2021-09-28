@@ -180,6 +180,7 @@ class SectionView(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _block_signals(self, flag):
         self._ui.cb_section_axis.blockSignals(flag)
+        self.data_pool.blockSignals(flag)
 
     # ----------------------------------------------------------------------
     def _mouse_moved(self, pos):

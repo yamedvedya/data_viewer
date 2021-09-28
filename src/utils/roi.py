@@ -68,7 +68,8 @@ class ROI(object):
         axes = list(np.arange(new_dimensions))
 
         for axis in range(self._section_params['dimensions']):
-            axes.remove(self._section_params[f'axis_{axis}'])
+            if self._section_params[f'axis_{axis}'] in axes:
+                axes.remove(self._section_params[f'axis_{axis}'])
 
         for axis_ind, new_axis in zip(range(self._section_params['dimensions'], new_dimensions), axes):
             self._section_params[f'axis_{axis_ind}'] = new_axis
