@@ -90,3 +90,4 @@ class SectionRange(QtWidgets.QWidget):
         self.sld.blockSignals(flag)
         self._ui.sb_pos.blockSignals(flag)
         self._ui.sb_width.blockSignals(flag)
+        self._data_pool.blockSignals(flag)

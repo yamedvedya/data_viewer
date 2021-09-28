@@ -13,6 +13,7 @@ from src.gui.main_window_ui import Ui_MainWindow
 from src.widgets.file_browser import FileBrowser
 try:
     from src.widgets.asapo_browser import ASAPOBrowser
+    from src.widgets.json_viewer import JsonView
     has_asapo = True
 except:
     has_asapo = False
@@ -25,6 +26,7 @@ from src.widgets.image_setup import ImageSetup
 from src.widgets.settings import ProgramSetup
 from src.widgets.aboutdialog import AboutDialog
 from src.convertor.convert import Converter
+
 
 class DataViewer(QtWidgets.QMainWindow):
     """
@@ -81,6 +83,10 @@ class DataViewer(QtWidgets.QMainWindow):
             self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
                                                                          QtCore.Qt.LeftDockWidgetArea, self)
             self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
+            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
+                                                                               QtCore.Qt.LeftDockWidgetArea,
+                                                                               self, self.data_pool)
+            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
             self.has_asapo = True
         else:
             self.has_asapo = False
