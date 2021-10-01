@@ -5,6 +5,9 @@ General class for opened file/stream
 """
 
 import numpy as np
+import logging
+
+logger = logging.getLogger('3d_data_viewer')
 
 
 class BaseDataSet(object):
@@ -54,7 +57,6 @@ class BaseDataSet(object):
         :param entry:
         :return: if file has requested entry - returns it, else None
         """
-
         return self._additional_data[entry]
 
     # ----------------------------------------------------------------------
@@ -163,13 +165,22 @@ class BaseDataSet(object):
         :param do_sum: if True - sums the section along all axes
         :return:
         """
-        section.sort(key=lambda tup: tup[0])
+        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum")
 
-        for axis, start, stop in section[::-1]:
-            data = data.take(indices=range(start, stop + 1), axis=axis)
-            if do_sum:
+        for axis_slice in sorted(section, reverse=True):
+            axis, start, stop = axis_slice
+            i = section.index(axis_slice)
+            if axis > 0:
+                data = data.take(indices=range(start, stop + 1), axis=axis)
+            if do_sum and i > 1:
                 data = np.sum(data, axis=axis)
 
+        data = np.squeeze(data)
+        # ToDo Remove this temporary fix
+        if np.ndim(data) == 0:
+            data = np.zeros(5)[:, None]
+        if np.ndim(data) == 1:
+            data = data[:, None]
         return data
 
     # ----------------------------------------------------------------------

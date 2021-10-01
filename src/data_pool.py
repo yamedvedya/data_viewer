@@ -158,6 +158,7 @@ class DataPool(QtCore.QObject):
         :return:
         """
         #
+        self.log.debug(f"Start opener with mode: {mode}, {user_msg}, {kwargs}")
         self._open_mgs.setText(user_msg)
         self._open_mgs.show()
 
@@ -436,6 +437,7 @@ class DataPool(QtCore.QObject):
         :param section: list of tuples (section axes, from, to)
         :return: 2D np.array
         """
+        self.log.debug(f"Return 2D image: for file {frame_axes}, selection: {section}")
         return self._files_data[file].get_2d_picture(frame_axes, section)
 
     # ----------------------------------------------------------------------
@@ -497,6 +499,15 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_file_axes()
 
     # ----------------------------------------------------------------------
+    def get_file_axis_limits(self, file):
+        """
+        Return axis limits of given file
+        :param file:
+        :return: dict {axis_index: axis_limits}
+        """
+        return self._files_data[file].get_axis_limits()
+
+    # ----------------------------------------------------------------------
     def _get_all_axes_limits(self):
         """
         recalculates the limits for all files
@@ -507,8 +518,9 @@ class DataPool(QtCore.QObject):
         for data_set in self._files_data.values():
             file_limits = data_set.get_axis_limits()
             for axis, lim in new_limits.items():
-                lim[0] = min(lim[0], file_limits[axis][0])
-                lim[1] = max(lim[1], file_limits[axis][1])
+                if axis in file_limits:
+                    lim[0] = min(lim[0], file_limits[axis][0])
+                    lim[1] = max(lim[1], file_limits[axis][1])
 
         self.axes_limits = new_limits
 

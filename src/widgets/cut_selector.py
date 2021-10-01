@@ -1,10 +1,13 @@
 # Created by matveyev at 04.08.2021
 
 from PyQt5 import QtWidgets, QtCore
+import logging
 
 from src.gui.cut_selector_ui import Ui_CutSelector
 from src.utils.range_slider import RangeSlider
 
+
+logger = logging.getLogger('3d_data_viewer')
 
 # ----------------------------------------------------------------------
 class CutSelector(QtWidgets.QWidget):
@@ -66,15 +69,17 @@ class CutSelector(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def setup_limits(self):
-
         self.block_signals(True)
         need_update = False
         max_frame = self._parent.get_max_frame_along_axis(self._parent.get_cut_axis(self._my_id))
+        logger.debug(f"Setup_limits of {max_frame} for {self._my_id}")
         if max_frame > self._ui.sl_frame.value():
             need_update = True
 
         self._ui.sl_frame.setMaximum(max_frame)
         self.sld.setMaximum(max_frame)
+        self.sld.setLow(0)
+        self.sld.setHigh(max_frame)
 
         if need_update:
             if self._ui.chk_integration_mode.isChecked():
@@ -89,16 +94,17 @@ class CutSelector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def display_value(self):
 
+        # Todo Add editable values ans stride
         current_frames = (self.sld.low(), self.sld.high())
         if self._ui.chk_integration_mode.isChecked():
             z_name, z_min = self._parent.get_value_for_frame(self._parent.get_cut_axis(self._my_id), current_frames[0])
             _,      z_max = self._parent.get_value_for_frame(self._parent.get_cut_axis(self._my_id), current_frames[1])
 
-            self._ui.lb_value.setText(f'{z_name}: from {z_min:3f} to {z_max:3f}')
+            self._ui.lb_value.setText(f'{z_name}: from {z_min} to {z_max}')
         else:
             z_name, z_value = self._parent.get_value_for_frame(self._parent.get_cut_axis(self._my_id), current_frames[0])
 
-            self._ui.lb_value.setText('{}: {:3f}'.format(z_name, z_value))
+            self._ui.lb_value.setText('{}: {}'.format(z_name, z_value))
 
     # ----------------------------------------------------------------------
     def get_section(self):
@@ -106,6 +112,19 @@ class CutSelector(QtWidgets.QWidget):
             return self._parent.get_cut_axis(self._my_id), self.sld.low(), self.sld.high()
         else:
             return self._parent.get_cut_axis(self._my_id), self._ui.sl_frame.value(), self._ui.sl_frame.value()
+
+    def set_range_mode(self):
+        """
+        This mode is used to select 2D sub-array inside of 2D image array.
+        Slider returns upper and lower value. Integration mode is not available.
+        """
+        max_frame = self._parent.get_max_frame_along_axis(self._parent.get_cut_axis(self._my_id))
+        self._ui.sl_frame.setVisible(False)
+        self.sld.setVisible(True)
+        self.sld.setLow(0)
+        self.sld.setHigh(max_frame)
+        self._ui.chk_integration_mode.setChecked(True)
+        self._ui.chk_integration_mode.hide()
 
     # ----------------------------------------------------------------------
     def new_file(self, z_min, z_max):

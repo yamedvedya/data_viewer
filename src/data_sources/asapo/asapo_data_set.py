@@ -63,7 +63,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             host, path, has_filesystem, beamtime, detector_name, token, 1000)
 
         self._setup_receiver(consumer, stream_name, detector_name)
-
+        self._additional_data['metadata'] = []
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
             self._data_shape = self._nD_data_array.shape
@@ -74,7 +74,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
         self._additional_data['scanned_values'] = ['frame_ID']
-        self._additional_data['metadata'] = []
+        # ToDo Save selection settings
 
     def _corrections_required(self):
         """
@@ -103,28 +103,23 @@ class ASAPODataSet(Base2DDetectorDataSet):
             stream_name (str): Stream name
             data_source (str): ASAPO data_source
         """
-        try:
-            self._mode = 'file'
-            self.receiver = SerialAsapoReceiver(consumer)
-            self.receiver.stream = stream_name
-            self.receiver.data_source = data_source
-            self.receiver.set_start_id(1)
-            self.meta_only = False
-            self.receiver.get_next(self.meta_only)
-        except Exception as e:
-            logger.debug(f"Setting mode=file fails: {e}")
-            self._mode = 'dataset'
-            self.receiver = SerialDatasetAsapoReceiver(consumer)
-            self.receiver.stream = stream_name
-            self.receiver.data_source = data_source
-            self.meta_only = False
-            try:
-                self.receiver.set_start_id(1)
-                self.receiver.get_next(self.meta_only)
-            except Exception as e:
-                logger.debug(f"Setting mode=dataset with meta_only=False fails: {e}")
-                self.meta_only = True
+        opt = [['file', SerialAsapoReceiver, False],
+               ['file', SerialAsapoReceiver, True],
+               ['dataset', SerialDatasetAsapoReceiver, False],
+               ['dataset', SerialDatasetAsapoReceiver, True]]
 
+        for setting in opt:
+            try:
+                self._mode = setting[0]
+                self.receiver = setting[1](consumer)
+                self.receiver.stream = stream_name
+                self.receiver.data_source = data_source
+                self.receiver.set_start_id(1)
+                self.meta_only = setting[2]
+                self.receiver.get_next(self.meta_only)
+                break
+            except Exception as e:
+                logger.debug(f"Setting mode={self._mode} meta_only={self.meta_only} fails: {e}")
         logger.info(f"Set mode '{self._mode}' and receiver: {self.receiver}")
 
     # ----------------------------------------------------------------------
@@ -139,6 +134,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         :return: np.array, 3D data cube
         """
 
+        # ToDo Move outside for better readability
         def _convert_image(data, meta_data):
             """
             de-Serialize numpy array (image) from ASAPO data based on ASAPO metadata.
@@ -158,12 +154,18 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 else:
                     return get_image(data[0], meta_data[0]).astype(np.float32)
             except Exception as e:
+                logger.info(f"Fail to get image from ASAPO data: {e}")
                 return def_img
 
+        # ToDo Save list of retrieved message ID_s to keep some of the in the memory
+        # ToDO Limit number of retrieved messages
         meta_list = []
         img_list = []
+        logger.debug(f"Retrieve messages from ASAPO. IDs: {frame_ids}")
         if frame_ids is None:
             frame_ids = np.arange(self.receiver.get_current_size())
+        else:
+            frame_ids = np.arange(*frame_ids)
 
         for frame in frame_ids:
             self.receiver.set_start_id(frame + 1)
@@ -173,18 +175,17 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._additional_data['metadata'] = meta_list
         img_array = np.stack(img_list)
-        logger.debug(f"Retrieved image array {img_array.shape}")
+        logger.debug(f"Retrieved image array {img_array.shape}, metadata len {len(meta_list)}")
         return np.stack(img_list)
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):
         """
-        in case user select 'disk' mode (data is not kept in memory) - we calculate data shape without loading all data
-        :return: tuple with data shape
+        Get data shape of complete ASAPO stream.
+        Assume all messages have the same data shape
 
         """
-
-        frame = self._reload_data([0])
+        frame = self._reload_data([0, 1])
         return [self.receiver.get_current_size()] + list(frame.shape[1:])
 
     # ----------------------------------------------------------------------

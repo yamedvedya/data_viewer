@@ -12,9 +12,12 @@ provide general functionality:
 """
 
 import numpy as np
+import logging
 from scipy import ndimage
 
 from src.data_sources.base_classes.base_data_set import BaseDataSet
+
+logger = logging.getLogger('3d_data_viewer')
 
 
 # ----------------------------------------------------------------------
@@ -51,14 +54,17 @@ class Base2DDetectorDataSet(BaseDataSet):
     # ----------------------------------------------------------------------
     def _get_data(self, frame_id=None):
         """
-        return 3D data cube with applied activated parameters
-        :param frame_id: if not None: indicate cut from 3D cube along first axis
+        Get nD array of data with applied activated parameters
+        :param frame_id: if not None: select requested frames_id
         :return: np.array
         """
+
+        logger.debug(f"Request data with frame_id={frame_id}, mode={self._data_pool.memory_mode}")
         if self._data_pool.memory_mode == 'ram':
             # if since last reload program parameters were not changed - we just return already COPY of loaded data
             if not self._need_apply_mask:
-                return np.copy(self._nD_data_array)
+                frame_id = np.arange(*frame_id)
+                return np.copy(self._nD_data_array)[frame_id]
             else:
                 self._nD_data_array = None
                 _data = self._reload_data()
@@ -66,6 +72,7 @@ class Base2DDetectorDataSet(BaseDataSet):
             self._nD_data_array = None
             _data = self._reload_data(frame_id)
 
+        # ToDo Move corrections to separate function
         _settings = self._get_settings()
 
         _pixel_mask = None
@@ -114,25 +121,30 @@ class Base2DDetectorDataSet(BaseDataSet):
         if self._data_pool.memory_mode == 'ram':
             self._need_apply_mask = False
             self._nD_data_array = np.copy(_data)
+            # Data from ram contain all frames_id
+            if frame_id is not None:
+                _data = _data[frame_id]
 
         return _data
 
     # ----------------------------------------------------------------------
     def get_2d_picture(self, frame_axes, section):
         """
+        Get 2D array (image) to be visualized later. Image is taken form nD array of data
+        with applied corrections and selections.
 
-        this function is overridden due to _get_data can already do partial load and saves resources
-        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
-        :param section: list of tuples (section axes, from, to)
-        :return: 2D np.array
+        Parameters:
+            frame_axes (dict): {'X': index of X axis, 'Y': index of Y axis in frame viewer}
+            section (list of tuples): (section axes, from, to)
+
+        Returns
+            data (np.array): 2D array of corrected data selected from nD array of data
 
         """
-
-        section.sort(key=lambda tup: tup[0])
-        if self._data_pool.memory_mode != 'ram' and section[0][0] == 0:
-            data = self._cut_data(self._get_data((section[0][0], section[0][1])), section, True)
-        else:
-            data = self._cut_data(self._get_data(), section, True)
+        logger.debug(f"Request 2D picture with parameters: {frame_axes}, {section}")
+        frame_selection = (sorted(section)[0][1], sorted(section)[0][2]+1)
+        data = self._get_data(frame_selection)
+        data = self._cut_data(data, section, True)
 
         if frame_axes['x'] > frame_axes['y']:
             return np.transpose(data)
