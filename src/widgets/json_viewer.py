@@ -141,7 +141,8 @@ class JsonView(QtWidgets.QWidget):
             return
 
         metadata = self.data_pool.get_additional_data(file_key, 'metadata')
-        self.update_view(frame_sel[1], metadata[frame_sel[1]])
+        if metadata:
+            self.update_view(frame_sel[1], metadata[frame_sel[1]])
 
     def clear_view(self):
         self.tree_widget.clear()

@@ -110,6 +110,8 @@ class CutSelector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def new_file(self, z_min, z_max):
 
+        self.setup_limits()
+        
         if z_min is not None:
             frame = self._parent.get_frame_for_value(self._parent.get_cut_axis(self._my_id), z_min)
             self._ui.sl_frame.setValue(frame)
