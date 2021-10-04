@@ -41,6 +41,9 @@ class CutSelector(QtWidgets.QWidget):
 
         self.display_value()
 
+    def get_id(self):
+        return self._my_id
+
     # ------------------------------------------------------------------
     def _switch_integration_mode(self, state):
 
@@ -68,7 +71,7 @@ class CutSelector(QtWidgets.QWidget):
         self.block_signals(False)
 
     # ----------------------------------------------------------------------
-    def setup_limits(self):
+    def setup_limits(self, section=None):
         self.block_signals(True)
         need_update = False
         max_frame = self._parent.get_max_frame_along_axis(self._parent.get_cut_axis(self._my_id))
@@ -78,8 +81,13 @@ class CutSelector(QtWidgets.QWidget):
 
         self._ui.sl_frame.setMaximum(max_frame)
         self.sld.setMaximum(max_frame)
-        self.sld.setLow(0)
-        self.sld.setHigh(max_frame)
+        if section is not None:
+            self._ui.sl_frame.setValue(section[0])
+            self.sld.setLow(section[0])
+            self.sld.setHigh(section[1])
+        else:
+            self.sld.setLow(0)
+            self.sld.setHigh(max_frame)
 
         if need_update:
             if self._ui.chk_integration_mode.isChecked():
