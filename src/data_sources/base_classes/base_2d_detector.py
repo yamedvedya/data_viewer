@@ -15,9 +15,10 @@ import numpy as np
 import logging
 from scipy import ndimage
 
+from src.main_window import APP_NAME
 from src.data_sources.base_classes.base_data_set import BaseDataSet
 
-logger = logging.getLogger('3d_data_viewer')
+logger = logging.getLogger(APP_NAME)
 
 
 # ----------------------------------------------------------------------
@@ -55,7 +56,7 @@ class Base2DDetectorDataSet(BaseDataSet):
     def _get_data(self, frame_id=None):
         """
         Get nD array of data with applied activated parameters
-        :param frame_id: if not None: select requested frames_id
+        :param frame_id: tuple, select requested frames_id
         :return: np.array
         """
 
@@ -144,7 +145,7 @@ class Base2DDetectorDataSet(BaseDataSet):
         logger.debug(f"Request 2D picture with parameters: {frame_axes}, {section}")
         frame_selection = (sorted(section)[0][1], sorted(section)[0][2]+1)
         data = self._get_data(frame_selection)
-        data = self._cut_data(data, section, True)
+        data = self._cut_data(data, section, True, 2)
 
         if frame_axes['x'] > frame_axes['y']:
             return np.transpose(data)

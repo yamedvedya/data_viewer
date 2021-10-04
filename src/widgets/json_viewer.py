@@ -3,7 +3,9 @@
 import logging
 from PyQt5 import QtWidgets
 
-logger = logging.getLogger('3d_data_viewer')
+from src.main_window import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
 
 
 class TextToTreeItem:

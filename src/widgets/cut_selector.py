@@ -3,11 +3,12 @@
 from PyQt5 import QtWidgets, QtCore
 import logging
 
+from src.main_window import APP_NAME
 from src.gui.cut_selector_ui import Ui_CutSelector
 from src.utils.range_slider import RangeSlider
 
 
-logger = logging.getLogger('3d_data_viewer')
+logger = logging.getLogger(APP_NAME)
 
 # ----------------------------------------------------------------------
 class CutSelector(QtWidgets.QWidget):

@@ -7,6 +7,7 @@ import numpy as np
 import logging
 from PyQt5 import QtWidgets, QtCore
 
+from src.main_window import APP_NAME
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
 from src.widgets.axis_selector import AxisSelector
@@ -14,7 +15,7 @@ from src.widgets.cut_selector import CutSelector
 from src.gui.frame_view_ui import Ui_FrameView
 
 
-logger = logging.getLogger('3d_data_viewer')
+logger = logging.getLogger(APP_NAME)
 
 # ----------------------------------------------------------------------
 class FrameView(AbstractWidget):

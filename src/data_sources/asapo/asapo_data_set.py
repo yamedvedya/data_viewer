@@ -17,6 +17,7 @@ import logging
 import asapo_consumer
 import configparser
 
+from src.main_window import APP_NAME
 from src.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
 
 from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
@@ -34,7 +35,8 @@ SETTINGS = {'enable_mask': False,
             'fill_radius': 7,
             'displayed_param': 'frame_ID',
             }
-logger = logging.getLogger('3d_data_viewer')
+
+logger = logging.getLogger(APP_NAME)
 
 
 class ASAPODataSet(Base2DDetectorDataSet):

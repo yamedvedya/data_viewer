@@ -226,12 +226,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
         return super(SardanaDataSet, self).get_2d_picture(frame_axes, section)
 
     # ----------------------------------------------------------------------
-    def get_roi_cut(self, sect):
+    def get_roi_cut(self, sect, do_sum=False):
 
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None, None
 
-        return super(SardanaDataSet, self).get_roi_cut(sect)
+        return super(SardanaDataSet, self).get_roi_cut(sect, do_sum)
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):
