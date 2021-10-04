@@ -197,9 +197,9 @@ class FrameView(AbstractWidget):
                 selector.set_new_axis(old_axis)
 
         self._setup_limits()
-        #self._main_view.new_axes()
-        #self._second_view.new_axes()
-        #self.update_image()
+        self._main_view.new_axes()
+        self._second_view.new_axes()
+        self.update_image()
 
     # ----------------------------------------------------------------------
     def _new_lookup_table(self):
@@ -243,9 +243,7 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def update_image(self):
 
-        section = []
-        for selector in self._cut_selectors:
-            section.append(selector.get_section())
+        section = self.get_current_selection()
         logger.debug(f"Update image with sel {section}")
 
         self.hist.item.sigLevelsChanged.disconnect()
@@ -255,16 +253,20 @@ class FrameView(AbstractWidget):
         self.section_updated.emit(section, self._main_view.current_file)
 
     # ----------------------------------------------------------------------
-    def _setup_limits(self):
+    def _setup_limits(self, sections=None):
         """
         Set ranges for all selectors
         """
         if self._main_view.current_file is None:
             return
 
+        if sections is not None:
+            sections = {s[0]: [s[1], s[2]] for s in sections}
+
         for selector in self._cut_selectors:
+            section = sections[self.get_cut_axis(selector.get_id())] if sections is not None else None
             selector.blockSignals(True)
-            selector.setup_limits()
+            selector.setup_limits(section)
             selector.blockSignals(False)
 
     # ----------------------------------------------------------------------
@@ -296,9 +298,10 @@ class FrameView(AbstractWidget):
         """
         Update widget in case if main file was changed
         """
-        if self._main_view.current_file is not None and self._main_view.previous_file is not None:
-
-            self._refresh_selectors()
+        # ToDo Refactor code to create and setup selectors at ones.
+        self._refresh_selectors()
+        if self._main_view.current_file is not None:
+            sections = self.data_pool.get_sections(self._main_view.current_file)
             self.setup_selection()
-            self._setup_limits()
-        self.update_image()
+            self._setup_limits(sections)
+            self.update_image()

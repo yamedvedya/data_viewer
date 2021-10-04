@@ -28,6 +28,10 @@ class Base2DDetectorDataSet(BaseDataSet):
         super(Base2DDetectorDataSet, self).__init__(data_pool)
         
         self._need_apply_mask = True
+        self._section = None
+
+    def get_sections(self):
+        return self._section
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -142,6 +146,7 @@ class Base2DDetectorDataSet(BaseDataSet):
             data (np.array): 2D array of corrected data selected from nD array of data
 
         """
+        self._section = section
         logger.debug(f"Request 2D picture with parameters: {frame_axes}, {section}")
         frame_selection = (sorted(section)[0][1], sorted(section)[0][2]+1)
         data = self._get_data(frame_selection)

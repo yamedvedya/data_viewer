@@ -440,6 +440,12 @@ class DataPool(QtCore.QObject):
         self.log.debug(f"Return 2D image: for file {frame_axes}, selection: {section}")
         return self._files_data[file].get_2d_picture(frame_axes, section)
 
+    def get_sections(self, file):
+        """
+        Return previous sections of files
+        """
+        return self._files_data[file].get_sections()
+
     # ----------------------------------------------------------------------
     def get_max_frame_along_axis(self, file, axis):
         """
