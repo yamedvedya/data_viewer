@@ -57,6 +57,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
         beamtime = settings['ASAPO']['beamtime']
         token = settings['ASAPO']['token']
+        self.max_messages = settings['ASAPO']['max_messages']
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
         logger.debug(
@@ -66,6 +67,8 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._setup_receiver(consumer, stream_name, detector_name)
         self._additional_data['metadata'] = []
+        self._additional_data['raw_img'] = []
+        self._additional_data['message_id'] = []
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
             self._data_shape = self._nD_data_array.shape
@@ -159,25 +162,30 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 logger.info(f"Fail to get image from ASAPO data: {e}")
                 return def_img
 
-        # ToDo Save list of retrieved message ID_s to keep some of the in the memory
         # ToDO Limit number of retrieved messages
-        meta_list = []
         img_list = []
         logger.debug(f"Retrieve messages from ASAPO. IDs: {frame_ids}")
         if frame_ids is None:
             frame_ids = np.arange(self.receiver.get_current_size())
-        else:
-            frame_ids = np.arange(*frame_ids)
-
         for frame in frame_ids:
-            self.receiver.set_start_id(frame + 1)
-            data, meta_data = self.receiver.get_next(self.meta_only)
-            meta_list.append(meta_data)
-            img_list.append(_convert_image(data, meta_data))
+            if frame not in self._additional_data['message_id']:
+                if len(self._additional_data['message_id']) == self.max_messages:
+                    self._additional_data['message_id'].pop(0)
+                    self._additional_data['metadata'].pop(0)
+                self.receiver.set_start_id(frame + 1)
+                data, meta_data = self.receiver.get_next(self.meta_only)
+                img = _convert_image(data, meta_data)
+                img_list.append(img)
+                self._additional_data['metadata'].append(meta_data)
+                self._additional_data['message_id'].append(frame)
+                self._additional_data['raw_img'].append(img.copy())
+            else:
+                idx = self._additional_data['message_id'].index(frame)
+                img_list.append(self._additional_data['raw_img'][idx])
 
-        self._additional_data['metadata'] = meta_list
         img_array = np.stack(img_list)
-        logger.debug(f"Retrieved image array {img_array.shape}, metadata len {len(meta_list)}")
+        logger.debug(f"Retrieved image array {img_array.shape}, "
+                     f"metadata len {len(self._additional_data['metadata'])}")
         return np.stack(img_list)
 
     # ----------------------------------------------------------------------
