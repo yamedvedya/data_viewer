@@ -70,10 +70,10 @@ class Base2DDetectorDataSet(BaseDataSet):
         """
 
         logger.debug(f"Request data with frame_id={frame_id}, mode={self._data_pool.memory_mode}")
+        frame_id = np.arange(*frame_id) if frame_id is not None else None
         if self._data_pool.memory_mode == 'ram':
             # if since last reload program parameters were not changed - we just return already COPY of loaded data
             if not self._need_apply_mask:
-                frame_id = np.arange(*frame_id)
                 return np.copy(self._nD_data_array)[frame_id]
             else:
                 self._nD_data_array = None
@@ -82,7 +82,21 @@ class Base2DDetectorDataSet(BaseDataSet):
             self._nD_data_array = None
             _data = self._reload_data(frame_id)
 
-        # ToDo Move corrections to separate function
+        self.apply_corrections(_data, frame_id)
+
+        if self._data_pool.memory_mode == 'ram':
+            self._need_apply_mask = False
+            self._nD_data_array = np.copy(_data)
+            # Data from ram contain all frames_id
+            if frame_id is not None:
+                _data = _data[frame_id]
+
+        return _data
+
+    def apply_corrections(self, data, frame_id):
+        """
+        Apply several corrections to the data value.
+        """
         _settings = self._get_settings()
 
         _pixel_mask = None
@@ -103,39 +117,30 @@ class Base2DDetectorDataSet(BaseDataSet):
         if _settings['enable_fill']:
             _fill_weights = ndimage.uniform_filter(1.-_pixel_mask, size=_settings['fill_radius'])
 
-        self._calculate_correction(_data.shape, frame_id)
+        self._calculate_correction(data.shape, frame_id)
 
         try:
             if _pixel_mask is not None:
-                for frame in _data:
+                for frame in data:
                     frame[_pixel_mask] = 0
 
             if _settings['enable_ff'] and _settings['ff'] is not None:
-                for ind in range(_data.shape[0]):
-                    _data[ind] = _data[ind]/_settings['ff']
+                for ind in range(data.shape[0]):
+                    data[ind] = data[ind]/_settings['ff']
 
             if _settings['enable_fill']:
-                for ind in range(_data.shape[0]):
-                    frame_f = ndimage.uniform_filter(_data[ind], size=_settings['fill_radius'])
+                for ind in range(data.shape[0]):
+                    frame_f = ndimage.uniform_filter(data[ind], size=_settings['fill_radius'])
                     if _pixel_mask is not None:
-                        _data[ind][_pixel_mask] = (frame_f/_fill_weights)[_pixel_mask]
+                        data[ind][_pixel_mask] = (frame_f/_fill_weights)[_pixel_mask]
                     else:
-                        _data[ind] = (frame_f/_fill_weights)
+                        data[ind] = (frame_f/_fill_weights)
 
-            for frame, corr in zip(_data, self._correction):
+            for frame, corr in zip(data, self._correction):
                     frame *= corr
 
         except Exception as err:
             raise RuntimeError("{}: cannot apply mask: {}".format(self.my_name, err))
-
-        if self._data_pool.memory_mode == 'ram':
-            self._need_apply_mask = False
-            self._nD_data_array = np.copy(_data)
-            # Data from ram contain all frames_id
-            if frame_id is not None:
-                _data = _data[frame_id]
-
-        return _data
 
     # ----------------------------------------------------------------------
     def get_2d_picture(self, frame_axes, section):
