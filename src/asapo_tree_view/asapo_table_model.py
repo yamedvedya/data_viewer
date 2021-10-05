@@ -120,7 +120,7 @@ class ASAPOModel(QtCore.QAbstractItemModel):
         detector_node = self.get_node(detector_index)
         stream = detector_node.child(stream_ind)
         if stream is not None:
-            stream.info = stream_info
+            stream.update_info(stream_info)
 
     # ----------------------------------------------------------------------
     def start_insert_row(self, insert_index, row=0):

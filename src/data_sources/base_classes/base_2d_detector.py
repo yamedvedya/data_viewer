@@ -93,6 +93,7 @@ class Base2DDetectorDataSet(BaseDataSet):
 
         return _data
 
+    # ----------------------------------------------------------------------
     def apply_corrections(self, data, frame_id):
         """
         Apply several corrections to the data value.

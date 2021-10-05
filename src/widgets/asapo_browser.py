@@ -15,7 +15,6 @@ from src.asapo_tree_view.asapo_entries_class import StreamNode, DetectorNode
 from src.asapo_tree_view.asapo_table_headers import headers
 from AsapoWorker.asapo_receiver import AsapoMetadataReceiver
 
-
 from src.gui.asapo_browser_ui import Ui_ASAPOBrowser
 
 
@@ -91,10 +90,10 @@ class ASAPOBrowser(AbstractWidget):
         self._auto_open = state
 
     # ---------------------------------------------------------------------
-    def _new_period(self, value):
+    def _new_period(self):
         if self._refresh_timer.isActive():
             self._refresh_timer.stop()
-            self._refresh_timer.start(int(value) * 1000)
+            self._refresh_timer.start(int(self._ui.sb_sec.value()) * 1000)
 
     # ---------------------------------------------------------------------
     def _new_time_range(self):
@@ -193,6 +192,7 @@ class ASAPOBrowser(AbstractWidget):
                     if self._auto_open:
                         self.stream_selected.emit(detector_node.my_name(), stream.my_name())
 
+            self._ui.tr_asapo_browser.viewport().update()
         self._get_time_range()
 
     # ----------------------------------------------------------------------
