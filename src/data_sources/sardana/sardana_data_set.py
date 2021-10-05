@@ -80,6 +80,10 @@ class SardanaDataSet(Base2DDetectorDataSet):
             self._additional_data['scanned_values'].append('point_nb')
             self._additional_data['point_nb'] = np.arange(self._data_shape[0])
 
+        self._section = ({'axis': 2, 'mode': 'single', 'min': 0, 'max': self._data_shape[2], 'step': 1},
+                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._data_shape[1], 'step': 1},
+                         {'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0], 'step': 1})
+
     # ----------------------------------------------------------------------
     def check_file_after_load(self):
 

@@ -76,8 +76,13 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
         self._additional_data['scanned_values'] = ['frame_ID']
-        # ToDo Save selection settings
 
+        self._section = []
+        for axis in range(1, len(self._data_shape)):
+            self._section.append({'axis': axis, 'mode': 'single', 'min': 0, 'max': self._data_shape[axis] - 1, 'step': 1})
+        self._section.append({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1})
+
+    # ----------------------------------------------------------------------
     def _corrections_required(self):
         """
         Check if any correction foreseen for the data
@@ -94,6 +99,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             return True
         return False
 
+    # ----------------------------------------------------------------------
     def _setup_receiver(self, consumer, stream_name, data_source):
         """
         Create and set parameters for receiver, which will be used to retrieve data from ASAPO.

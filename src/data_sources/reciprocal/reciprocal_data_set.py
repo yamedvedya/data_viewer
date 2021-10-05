@@ -25,6 +25,7 @@ class ReciprocalScan(BaseDataSet):
             self._y_axis = np.copy(gridder.yaxis)
             self._z_axis = np.copy(gridder.zaxis)
             self._nD_data_array = np.copy(gridder.data)
+
         elif opened_file is not None:
             if self._data_pool.memory_mode == 'ram':
                 self._nD_data_array = self._get_data()
@@ -32,7 +33,14 @@ class ReciprocalScan(BaseDataSet):
             else:
                 self._data_shape = self._get_data_shape()
 
-            self._additional_data['Qz'] = np.arange(self._data_shape[0])
+        self._additional_data['Qz'] = np.arange(self._data_shape[0])
+
+        self._section = ({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._x_axis[-1],
+                          'step': self._x_axis[1] - self._x_axis[0]},
+                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._y_axis[-1],
+                          'step': self._y_axis[1] - self._y_axis[0]},
+                         {'axis': 2, 'mode': 'single', 'min': 0, 'max': self._z_axis[-1],
+                          'step': self._z_axis[1] - self._z_axis[0]})
 
     # ----------------------------------------------------------------------
     def _get_data(self):
