@@ -373,7 +373,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
 # ----------------------------------------------------------------------
 def _init_logger():
-    main_log = logging.getLogger('3d_data_viewer')
+    main_log = logging.getLogger(APP_NAME)
     main_log.setLevel(10)
 
     format = logging.Formatter("%(asctime)s %(module)s %(lineno)-6d %(levelname)-6s %(message)s")

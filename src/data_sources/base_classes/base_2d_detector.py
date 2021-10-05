@@ -12,9 +12,13 @@ provide general functionality:
 """
 
 import numpy as np
+import logging
 from scipy import ndimage
 
+from src.main_window import APP_NAME
 from src.data_sources.base_classes.base_data_set import BaseDataSet
+
+logger = logging.getLogger(APP_NAME)
 
 
 # ----------------------------------------------------------------------
@@ -24,6 +28,15 @@ class Base2DDetectorDataSet(BaseDataSet):
         super(Base2DDetectorDataSet, self).__init__(data_pool)
         
         self._need_apply_mask = True
+        self._section = None
+
+    # ----------------------------------------------------------------------
+    def save_section(self, section):
+        self._section = section
+
+    # ----------------------------------------------------------------------
+    def get_section(self):
+        return self._section
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -51,14 +64,17 @@ class Base2DDetectorDataSet(BaseDataSet):
     # ----------------------------------------------------------------------
     def _get_data(self, frame_id=None):
         """
-        return 3D data cube with applied activated parameters
-        :param frame_id: if not None: indicate cut from 3D cube along first axis
+        Get nD array of data with applied activated parameters
+        :param frame_id: tuple, select requested frames_id
         :return: np.array
         """
+
+        logger.debug(f"Request data with frame_id={frame_id}, mode={self._data_pool.memory_mode}")
+        frame_id = np.arange(*frame_id) if frame_id is not None else None
         if self._data_pool.memory_mode == 'ram':
             # if since last reload program parameters were not changed - we just return already COPY of loaded data
             if not self._need_apply_mask:
-                return np.copy(self._nD_data_array)
+                return np.copy(self._nD_data_array)[frame_id]
             else:
                 self._nD_data_array = None
                 _data = self._reload_data()
@@ -66,6 +82,22 @@ class Base2DDetectorDataSet(BaseDataSet):
             self._nD_data_array = None
             _data = self._reload_data(frame_id)
 
+        self.apply_corrections(_data, frame_id)
+
+        if self._data_pool.memory_mode == 'ram':
+            self._need_apply_mask = False
+            self._nD_data_array = np.copy(_data)
+            # Data from ram contain all frames_id
+            if frame_id is not None:
+                _data = _data[frame_id]
+
+        return _data
+
+    # ----------------------------------------------------------------------
+    def apply_corrections(self, data, frame_id):
+        """
+        Apply several corrections to the data value.
+        """
         _settings = self._get_settings()
 
         _pixel_mask = None
@@ -86,53 +118,49 @@ class Base2DDetectorDataSet(BaseDataSet):
         if _settings['enable_fill']:
             _fill_weights = ndimage.uniform_filter(1.-_pixel_mask, size=_settings['fill_radius'])
 
-        self._calculate_correction(_data.shape, frame_id)
+        self._calculate_correction(data.shape, frame_id)
 
         try:
             if _pixel_mask is not None:
-                for frame in _data:
+                for frame in data:
                     frame[_pixel_mask] = 0
 
             if _settings['enable_ff'] and _settings['ff'] is not None:
-                for ind in range(_data.shape[0]):
-                    _data[ind] = _data[ind]/_settings['ff']
+                for ind in range(data.shape[0]):
+                    data[ind] = data[ind]/_settings['ff']
 
             if _settings['enable_fill']:
-                for ind in range(_data.shape[0]):
-                    frame_f = ndimage.uniform_filter(_data[ind], size=_settings['fill_radius'])
+                for ind in range(data.shape[0]):
+                    frame_f = ndimage.uniform_filter(data[ind], size=_settings['fill_radius'])
                     if _pixel_mask is not None:
-                        _data[ind][_pixel_mask] = (frame_f/_fill_weights)[_pixel_mask]
+                        data[ind][_pixel_mask] = (frame_f/_fill_weights)[_pixel_mask]
                     else:
-                        _data[ind] = (frame_f/_fill_weights)
+                        data[ind] = (frame_f/_fill_weights)
 
-            for frame, corr in zip(_data, self._correction):
+            for frame, corr in zip(data, self._correction):
                     frame *= corr
 
         except Exception as err:
             raise RuntimeError("{}: cannot apply mask: {}".format(self.my_name, err))
 
-        if self._data_pool.memory_mode == 'ram':
-            self._need_apply_mask = False
-            self._nD_data_array = np.copy(_data)
-
-        return _data
-
     # ----------------------------------------------------------------------
     def get_2d_picture(self, frame_axes, section):
         """
+        Get 2D array (image) to be visualized later. Image is taken form nD array of data
+        with applied corrections and selections.
 
-        this function is overridden due to _get_data can already do partial load and saves resources
-        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
-        :param section: list of tuples (section axes, from, to)
-        :return: 2D np.array
+        Parameters:
+            frame_axes (dict): {'X': index of X axis, 'Y': index of Y axis in frame viewer}
+            section (list of tuples): (section axes, from, to)
+
+        Returns
+            data (np.array): 2D array of corrected data selected from nD array of data
 
         """
-
-        section.sort(key=lambda tup: tup[0])
-        if self._data_pool.memory_mode != 'ram' and section[0][0] == 0:
-            data = self._cut_data(self._get_data((section[0][0], section[0][1])), section, True)
-        else:
-            data = self._cut_data(self._get_data(), section, True)
+        logger.debug(f"Request 2D picture with parameters: {frame_axes}, {section}")
+        frame_selection = (sorted(section)[0][1], sorted(section)[0][2]+1)
+        data = self._get_data(frame_selection)
+        data = self._cut_data(data, section, True, 2)
 
         if frame_axes['x'] > frame_axes['y']:
             return np.transpose(data)

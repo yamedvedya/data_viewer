@@ -3,14 +3,20 @@
 WIDGET_NAME = 'FrameView'
 
 import pyqtgraph as pg
-
+import numpy as np
+import logging
 from PyQt5 import QtWidgets, QtCore
 
+from src.main_window import APP_NAME
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
 from src.widgets.axis_selector import AxisSelector
 from src.widgets.cut_selector import CutSelector
 from src.gui.frame_view_ui import Ui_FrameView
+
+
+logger = logging.getLogger(APP_NAME)
+
 
 # ----------------------------------------------------------------------
 class FrameView(AbstractWidget):
@@ -109,16 +115,17 @@ class FrameView(AbstractWidget):
                 widget.new_selection.connect(self._new_axes)
                 self._axis_selectors.append(widget)
 
-                if ind > 1:
-                    widget = CutSelector(self, ind)
-                    widget.new_cut.connect(self.update_image)
-                    self._cut_selectors.append(widget)
+                # First two selectors constrain image shape
+                widget = CutSelector(self, ind, ind < 2)
+                widget.new_cut.connect(self.update_image)
+                self._cut_selectors.append(widget)
 
             self._update_layout(self._ui.axis_selectors, self._axis_selectors)
             self._update_layout(self._ui.cut_selectors, self._cut_selectors)
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, move_from='second'):
+        logger.debug(f"Add file {file_name}, view: {move_from}")
         if move_from == 'second':
             self._main_view.add_file(file_name)
             self.data_pool.protect_file(file_name, False)
@@ -126,8 +133,8 @@ class FrameView(AbstractWidget):
             self._second_view.add_file(file_name)
             self.data_pool.protect_file(file_name, True)
 
-        self._refresh_selectors()
-        self._setup_limits()
+        self.new_main_file()
+        self.update_image()
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
@@ -177,6 +184,7 @@ class FrameView(AbstractWidget):
         self._setup_limits()
         self._main_view.new_axes()
         self._second_view.new_axes()
+        self.update_image()
 
     # ----------------------------------------------------------------------
     def _new_lookup_table(self):
@@ -220,19 +228,27 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def update_image(self):
 
+        selection = self.get_current_selection()
+        logger.debug(f"Saving selection {selection}")
+        self.data_pool.save_section(self._main_view.current_file, selection)
+
         section = []
-        for selector in self._cut_selectors:
-            section.append(selector.get_section())
-        self.section_updated.emit(section, self._main_view.current_file)
+        for sect in selection:
+            section.append((sect['axis'], sect['min'], sect['max']))
+
+        logger.debug(f"Update image with sel {section}")
 
         self.hist.item.sigLevelsChanged.disconnect()
         self._main_view.update_image(self.get_current_axes(), section)
         self._second_view.update_image(self.get_current_axes(), section)
         self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+        self.section_updated.emit(section, self._main_view.current_file)
 
     # ----------------------------------------------------------------------
     def _setup_limits(self):
-
+        """
+        Set ranges for all selectors
+        """
         if self._main_view.current_file is None:
             return
 
@@ -265,13 +281,22 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def new_main_file(self):
+        """
+        Update widget in case if main file was changed
+        """
+        # ToDo Refactor code to create and setup selectors at ones.
+        self._refresh_selectors()
 
-        if self._main_view.current_file is not None and self._main_view.previous_file is not None:
-            sections = self.get_current_selection()
+        if self._main_view.current_file is not None:
+            sections = self.data_pool.get_section(self._main_view.current_file)
+            logger.debug(f"Setup frame_view selectors with section: {sections}")
 
-            for (axis, min, max), selector in zip(sections, self._cut_selectors):
-                _, z_min = self.data_pool.get_value_for_frame(self._main_view.previous_file, axis, min)
-                _, z_max = self.data_pool.get_value_for_frame(self._main_view.previous_file, axis, min)
-                selector.new_file(z_min, z_max)
+            for section, axis_selector in zip(sections, self._axis_selectors):
+                axis_selector.set_new_axis(section['axis'])
 
-        self.update_image()
+            self._setup_limits()
+
+            for section, cut_selector in zip(sections, self._cut_selectors):
+                cut_selector.new_file(section)
+
+            self.update_image()

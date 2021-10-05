@@ -80,6 +80,10 @@ class SardanaDataSet(Base2DDetectorDataSet):
             self._additional_data['scanned_values'].append('point_nb')
             self._additional_data['point_nb'] = np.arange(self._data_shape[0])
 
+        self._section = ({'axis': 2, 'mode': 'single', 'min': 0, 'max': self._data_shape[2], 'step': 1},
+                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._data_shape[1], 'step': 1},
+                         {'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0], 'step': 1})
+
     # ----------------------------------------------------------------------
     def check_file_after_load(self):
 
@@ -226,12 +230,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
         return super(SardanaDataSet, self).get_2d_picture(frame_axes, section)
 
     # ----------------------------------------------------------------------
-    def get_roi_cut(self, sect):
+    def get_roi_cut(self, sect, do_sum=False):
 
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None, None
 
-        return super(SardanaDataSet, self).get_roi_cut(sect)
+        return super(SardanaDataSet, self).get_roi_cut(sect, do_sum)
 
     # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):

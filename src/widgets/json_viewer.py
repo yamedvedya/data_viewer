@@ -1,7 +1,11 @@
 # This module is based on json-viewer written by Ashwin Nanjappa.
 # origin  https://github.com/ashwin/json-viewer.git
-
+import logging
 from PyQt5 import QtWidgets
+
+from src.main_window import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
 
 
 class TextToTreeItem:
@@ -70,7 +74,7 @@ class JsonView(QtWidgets.QWidget):
         self.setLayout(layout2)
 
     def update_view(self, msg, data):
-        root_item = QtWidgets.QTreeWidgetItem([f"message_id {msg}"])
+        root_item = QtWidgets.QTreeWidgetItem([msg])
         self.recurse_jdata(data, root_item)
         self.tree_widget.addTopLevelItem(root_item)
 
@@ -134,15 +138,26 @@ class JsonView(QtWidgets.QWidget):
 
     def update_meta(self, selection, file_key):
         self.clear_view()
+        logger.debug(f"Update metadata with selection: {selection} for stream {file_key}")
+        if len(selection) == 0:
+            return
         frame_sel = sorted(selection)[0]
         if frame_sel[0] != 0:
             return
+        # Can happen if stream is closed
         if file_key is None or file_key == '':
             return
 
+        # If metadtaa not in ram, it is already selected
+        item_id = 0
+        if self.data_pool.memory_mode == 'ram':
+            item_id = frame_sel[1]
+
         metadata = self.data_pool.get_additional_data(file_key, 'metadata')
-        if metadata:
-            self.update_view(frame_sel[1], metadata[frame_sel[1]])
+        # function may be called before data is retrieved
+        if len(metadata) < item_id+1:
+            return
+        self.update_view(file_key, metadata[item_id])
 
     def clear_view(self):
         self.tree_widget.clear()

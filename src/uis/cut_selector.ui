@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>863</width>
-    <height>42</height>
+    <height>44</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,6 +20,19 @@
       <string>Value:</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <widget class="QDoubleSpinBox" name="sp_value_from"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="lb_to">
+     <property name="text">
+      <string>to:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDoubleSpinBox" name="sp_value_to"/>
    </item>
    <item>
     <widget class="QSlider" name="sl_frame">
@@ -52,6 +65,9 @@
        <normaloff>:/icon/previous.png</normaloff>:/icon/previous.png</iconset>
      </property>
     </widget>
+   </item>
+   <item>
+    <widget class="QDoubleSpinBox" name="sp_step"/>
    </item>
    <item>
     <widget class="QPushButton" name="but_next">

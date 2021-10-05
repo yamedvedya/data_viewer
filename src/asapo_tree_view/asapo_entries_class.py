@@ -90,20 +90,29 @@ class Node(object):
     def my_name(self):
         return self.data(list(headers.keys()).index('Name'), QtCore.Qt.DisplayRole)
 
+
 # ----------------------------------------------------------------------
 class StreamNode(Node):
 
     def __init__(self, parent, row=-1, info=None):
         super(StreamNode, self).__init__(parent, row, info)
+        self._reformat_time()
 
-        for key in self.info:
-            if 'timestampCreated' in key:
-                self.time_stamp = self.info[key] / 1e9
-                self.info[key] = str(datetime.fromtimestamp(self.info[key]/1e9))
+    # ----------------------------------------------------------------------
+    def update_info(self, info):
+        self.info = info
+        self._reformat_time()
 
     # ----------------------------------------------------------------------
     def my_font(self, base_font):
         return base_font
+
+    # ----------------------------------------------------------------------
+    def _reformat_time(self):
+        for key in self.info:
+            if 'timestampCreated' in key:
+                self.time_stamp = self.info[key] / 1e9
+                self.info[key] = str(datetime.fromtimestamp(self.info[key]/1e9))
 
 # ----------------------------------------------------------------------
 class DetectorNode(Node):

@@ -30,6 +30,10 @@ class BeamLineView(BaseDataSet):
         else:
             self._data_shape = self._get_data_shape()
 
+        self._section = ({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0], 'step': 1},
+                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._data_shape[1], 'step': 1},
+                         {'axis': 2, 'mode': 'single', 'min': 0, 'max': self._data_shape[2], 'step': 1})
+
     # ----------------------------------------------------------------------
     def _get_data(self):
         decorated_file_list = self._get_file_list()

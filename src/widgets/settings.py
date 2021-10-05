@@ -51,6 +51,7 @@ class ProgramSetup(QtWidgets.QDialog):
                 self._ui.le_format.setText(settings['DATA_POOL']['format'])
 
         if 'ASAPO' in settings:
+
             if 'host' in settings['ASAPO']:
                 self._ui.le_host.setText(settings['ASAPO']['host'])
 
