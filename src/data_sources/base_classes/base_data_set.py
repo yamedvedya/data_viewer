@@ -168,7 +168,7 @@ class BaseDataSet(object):
         :param do_sum: if True - sums the section along all axes
         :return:
         """
-        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum")
+        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}")
 
         for axis_slice in sorted(section, reverse=True):
             axis, start, stop = axis_slice

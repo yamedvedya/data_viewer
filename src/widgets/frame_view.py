@@ -17,6 +17,7 @@ from src.gui.frame_view_ui import Ui_FrameView
 
 logger = logging.getLogger(APP_NAME)
 
+
 # ----------------------------------------------------------------------
 class FrameView(AbstractWidget):
     """
@@ -114,28 +115,13 @@ class FrameView(AbstractWidget):
                 widget.new_selection.connect(self._new_axes)
                 self._axis_selectors.append(widget)
 
-                widget = CutSelector(self, ind)
-                widget.new_cut.connect(self.update_image)
                 # First two selectors constrain image shape
-                if ind < 2:
-                    widget.set_range_mode()
+                widget = CutSelector(self, ind, ind < 2)
+                widget.new_cut.connect(self.update_image)
                 self._cut_selectors.append(widget)
 
             self._update_layout(self._ui.axis_selectors, self._axis_selectors)
             self._update_layout(self._ui.cut_selectors, self._cut_selectors)
-
-    def setup_selection(self, mode='ASAPO'):
-        """
-        Set starting position of selection suitable for given mode.
-        ASAPO mode assumes that image from single ASAPO-message is shown.
-        If ASAPO-message contain 1D image a small range of ASAPO-messages is shown
-        """
-        logger.debug(f"Setup frame_view selectors with mode: {mode}")
-        if mode == 'ASAPO':
-            if len(self.data_pool.axes_limits) >= 3:
-                new_ind = np.roll(np.arange(len(self._axis_selectors)), -1)
-                for i, axis_selector in enumerate(self._axis_selectors):
-                    axis_selector.set_new_axis(new_ind[i])
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, move_from='second'):
@@ -146,9 +132,8 @@ class FrameView(AbstractWidget):
         else:
             self._second_view.add_file(file_name)
             self.data_pool.protect_file(file_name, True)
-        self._refresh_selectors()
-        self.setup_selection()
-        self._setup_limits()
+
+        self.new_main_file()
         self.update_image()
 
     # ----------------------------------------------------------------------
@@ -243,7 +228,14 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def update_image(self):
 
-        section = self.get_current_selection()
+        selection = self.get_current_selection()
+        logger.debug(f"Saving selection {selection}")
+        self.data_pool.save_section(self._main_view.current_file, selection)
+
+        section = []
+        for sect in selection:
+            section.append((sect['axis'], sect['min'], sect['max']))
+
         logger.debug(f"Update image with sel {section}")
 
         self.hist.item.sigLevelsChanged.disconnect()
@@ -253,21 +245,15 @@ class FrameView(AbstractWidget):
         self.section_updated.emit(section, self._main_view.current_file)
 
     # ----------------------------------------------------------------------
-    def _setup_limits(self, sections=None):
+    def _setup_limits(self):
         """
         Set ranges for all selectors
         """
         if self._main_view.current_file is None:
             return
 
-        if sections is not None:
-            sections = {s[0]: [s[1], s[2]] for s in sections}
-
         for selector in self._cut_selectors:
-            section = sections[self.get_cut_axis(selector.get_id())] if sections is not None else None
-            selector.blockSignals(True)
-            selector.setup_limits(section)
-            selector.blockSignals(False)
+            selector.setup_limits()
 
     # ----------------------------------------------------------------------
     def get_value_for_frame(self, axis, frame):
@@ -300,8 +286,17 @@ class FrameView(AbstractWidget):
         """
         # ToDo Refactor code to create and setup selectors at ones.
         self._refresh_selectors()
+
         if self._main_view.current_file is not None:
-            sections = self.data_pool.get_sections(self._main_view.current_file)
-            self.setup_selection()
-            self._setup_limits(sections)
+            sections = self.data_pool.get_section(self._main_view.current_file)
+            logger.debug(f"Setup frame_view selectors with section: {sections}")
+
+            for section, axis_selector in zip(sections, self._axis_selectors):
+                axis_selector.set_new_axis(section['axis'])
+
+            self._setup_limits()
+
+            for section, cut_selector in zip(sections, self._cut_selectors):
+                cut_selector.new_file(section)
+
             self.update_image()
