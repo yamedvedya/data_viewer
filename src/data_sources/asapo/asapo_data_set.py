@@ -57,6 +57,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
         beamtime = settings['ASAPO']['beamtime']
         token = settings['ASAPO']['token']
+        self.max_messages = 20#  settings['ASAPO']['max_messages']
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
         logger.debug(
@@ -66,9 +67,11 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._setup_receiver(consumer, stream_name, detector_name)
         self._additional_data['metadata'] = []
+        self._additional_data['raw_img'] = []
+        self._additional_data['message_id'] = []
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
-            self._data_shape = self._nD_data_array.shape
+            self._data_shape = list(self._nD_data_array.shape)
         else:
             self._data_shape = self._get_data_shape()
         self._axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
@@ -81,6 +84,12 @@ class ASAPODataSet(Base2DDetectorDataSet):
         for axis in range(1, len(self._data_shape)):
             self._section.append({'axis': axis, 'mode': 'single', 'min': 0, 'max': self._data_shape[axis] - 1, 'step': 1})
         self._section.append({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1})
+
+    def update_info(self, info):
+        """
+        Update data shape using new stream information
+        """
+        self._data_shape[0] = info['lastId']
 
     # ----------------------------------------------------------------------
     def _corrections_required(self):
@@ -165,25 +174,30 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 logger.info(f"Fail to get image from ASAPO data: {e}")
                 return def_img
 
-        # ToDo Save list of retrieved message ID_s to keep some of the in the memory
         # ToDO Limit number of retrieved messages
-        meta_list = []
         img_list = []
         logger.debug(f"Retrieve messages from ASAPO. IDs: {frame_ids}")
         if frame_ids is None:
             frame_ids = np.arange(self.receiver.get_current_size())
-        else:
-            frame_ids = np.arange(*frame_ids)
-
         for frame in frame_ids:
-            self.receiver.set_start_id(frame + 1)
-            data, meta_data = self.receiver.get_next(self.meta_only)
-            meta_list.append(meta_data)
-            img_list.append(_convert_image(data, meta_data))
+            if frame not in self._additional_data['message_id']:
+                if len(self._additional_data['message_id']) == self.max_messages:
+                    self._additional_data['message_id'].pop(0)
+                    self._additional_data['metadata'].pop(0)
+                self.receiver.set_start_id(frame + 1)
+                data, meta_data = self.receiver.get_next(self.meta_only)
+                img = _convert_image(data, meta_data)
+                img_list.append(img)
+                self._additional_data['metadata'].append(meta_data)
+                self._additional_data['message_id'].append(frame)
+                self._additional_data['raw_img'].append(img.copy())
+            else:
+                idx = self._additional_data['message_id'].index(frame)
+                img_list.append(self._additional_data['raw_img'][idx])
 
-        self._additional_data['metadata'] = meta_list
         img_array = np.stack(img_list)
-        logger.debug(f"Retrieved image array {img_array.shape}, metadata len {len(meta_list)}")
+        logger.debug(f"Retrieved image array {img_array.shape}, "
+                     f"metadata len {len(self._additional_data['metadata'])}")
         return np.stack(img_list)
 
     # ----------------------------------------------------------------------
@@ -193,7 +207,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         Assume all messages have the same data shape
 
         """
-        frame = self._reload_data([0, 1])
+        frame = self._reload_data([0])
         return [self.receiver.get_current_size()] + list(frame.shape[1:])
 
     # ----------------------------------------------------------------------

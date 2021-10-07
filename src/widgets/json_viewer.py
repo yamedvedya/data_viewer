@@ -148,15 +148,9 @@ class JsonView(QtWidgets.QWidget):
         if file_key is None or file_key == '':
             return
 
-        # If metadtaa not in ram, it is already selected
-        item_id = 0
-        if self.data_pool.memory_mode == 'ram':
-            item_id = frame_sel[1]
-
         metadata = self.data_pool.get_additional_data(file_key, 'metadata')
-        # function may be called before data is retrieved
-        if len(metadata) < item_id+1:
-            return
+        message_idx = self.data_pool.get_additional_data(file_key, 'message_id')
+        item_id = message_idx.index(frame_sel[1])
         self.update_view(file_key, metadata[item_id])
 
     def clear_view(self):

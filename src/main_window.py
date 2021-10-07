@@ -83,10 +83,12 @@ class DataViewer(QtWidgets.QMainWindow):
             self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
                                                                          QtCore.Qt.LeftDockWidgetArea, self)
             self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
+            self.asapo_browser.stream_updated.connect(self.data_pool.update_stream)
             self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
                                                                                QtCore.Qt.LeftDockWidgetArea,
                                                                                self, self.data_pool)
             self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
+            self.data_pool.file_updated.connect(self.frame_view.update_file)
             self.has_asapo = True
         else:
             self.has_asapo = False
