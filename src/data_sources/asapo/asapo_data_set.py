@@ -207,7 +207,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         Assume all messages have the same data shape
 
         """
-        frame = self._reload_data([0, 1])
+        frame = self._reload_data([0])
         return [self.receiver.get_current_size()] + list(frame.shape[1:])
 
     # ----------------------------------------------------------------------
