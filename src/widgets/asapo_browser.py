@@ -71,7 +71,8 @@ class ASAPOBrowser(AbstractWidget):
                          'beamtime': '',
                          'token': '',
                          'detectors': '',
-                         'max_depth': 100}
+                         'max_depth': 100,
+                         'max_messages': 1000}
 
         self._auto_open = False
 
@@ -114,6 +115,9 @@ class ASAPOBrowser(AbstractWidget):
     def set_settings(self, settings):
         try:
             self.settings.update(settings)
+
+            self.settings['max_depth'] = int(self.settings['max_depth'])
+            self.settings['max_messages'] = int(self.settings['max_messages'])
 
             self.reset_detectors([detector.strip() for detector in self.settings['detectors'].split(';')])
             self.refresh_view()
