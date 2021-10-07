@@ -57,7 +57,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
         beamtime = settings['ASAPO']['beamtime']
         token = settings['ASAPO']['token']
-        self.max_messages = 20#  settings['ASAPO']['max_messages']
+        self.max_messages = settings['ASAPO']['max_messages']
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
         logger.debug(
