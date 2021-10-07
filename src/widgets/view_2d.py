@@ -3,6 +3,8 @@
 import pyqtgraph as pg
 import numpy as np
 
+from distutils.util import strtobool
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from src.utils.image_marker import ImageMarker
@@ -64,6 +66,13 @@ class View2d(QtWidgets.QWidget):
         self._main_plot.scene().sigMouseHover.connect(self._mouse_hover)
 
         self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+
+    # ----------------------------------------------------------------------
+    def set_settings(self, settings):
+        self._main_plot.showAxis('left', strtobool(settings['display_axes']))
+        self._main_plot.showAxis('bottom', strtobool(settings['display_axes']))
+        self._main_plot.showLabel('left', strtobool(settings['display_axes_titles']))
+        self._main_plot.showLabel('bottom', strtobool(settings['display_axes_titles']))
 
     # ----------------------------------------------------------------------
     def block_signals(self, flag):
@@ -242,7 +251,11 @@ class View2d(QtWidgets.QWidget):
         self._rois[roi_ind][0].sigRegionChanged.connect(lambda rect, id=roi_ind: self._roi_changed(roi_ind, rect))
 
     # ----------------------------------------------------------------------
-    def new_axes(self):
+    def new_axes(self, labels):
+
+        self._main_plot.setLabel('left', labels[0])
+        self._main_plot.setLabel('bottom', labels[1])
+
         for idx in range(len(self._rois)):
             self.roi_changed(idx)
 

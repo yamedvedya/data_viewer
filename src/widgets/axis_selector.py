@@ -63,5 +63,9 @@ class AxisSelector(QtWidgets.QWidget):
         return self._ui.cmb_selector.currentIndex()
 
     # ----------------------------------------------------------------------
+    def get_current_name(self):
+        return self._ui.cmb_selector.currentText()
+
+    # ----------------------------------------------------------------------
     def block_signals(self, flag):
         self._ui.cmb_selector.blockSignals(flag)

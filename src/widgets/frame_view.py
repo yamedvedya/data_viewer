@@ -124,6 +124,15 @@ class FrameView(AbstractWidget):
             self._update_layout(self._ui.cut_selectors, self._cut_selectors)
 
     # ----------------------------------------------------------------------
+    def set_settings(self, settings):
+        try:
+            self._main_view.set_settings(settings)
+            self._second_view.set_settings(settings)
+
+        except Exception as err:
+            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
+
+    # ----------------------------------------------------------------------
     def add_file(self, file_name, move_from='second'):
         logger.debug(f"Add file {file_name}, view: {move_from}")
         if move_from == 'second':
@@ -177,14 +186,27 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _new_axes(self, id, old_axis, new_axis):
 
+        sections = self.data_pool.get_section(self._main_view.current_file)
         for ind, selector in enumerate(self._axis_selectors):
             if selector.get_current_value() == new_axis and ind != id:
                 selector.set_new_axis(old_axis)
+                sections[id], sections[ind] = sections[ind], sections[id]
 
+        self.data_pool.save_section(self._main_view.current_file, sections)
         self._setup_limits()
-        self._main_view.new_axes()
-        self._second_view.new_axes()
+
+        for section, cut_selector in zip(sections, self._cut_selectors):
+            cut_selector.new_file(section)
+
+        self._update_axes()
         self.update_image()
+
+    # ----------------------------------------------------------------------
+    def _update_axes(self):
+        axes_labels = [selector.get_current_name() for selector in self._axis_selectors[:2]]
+
+        self._main_view.new_axes(axes_labels)
+        self._second_view.new_axes(axes_labels)
 
     # ----------------------------------------------------------------------
     def _new_lookup_table(self):
@@ -299,4 +321,5 @@ class FrameView(AbstractWidget):
             for section, cut_selector in zip(sections, self._cut_selectors):
                 cut_selector.new_file(section)
 
+            self._update_axes()
             self.update_image()

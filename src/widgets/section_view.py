@@ -163,6 +163,11 @@ class SectionView(QtWidgets.QWidget):
             plot_item.update_plot(x, y, x_min, x_max)
 
     # ----------------------------------------------------------------------
+    def update_limits(self):
+        for widget in self._section_ranger:
+            widget.refresh_view()
+
+    # ----------------------------------------------------------------------
     def _normalize_plots(self, state):
         self._normalized = state
         x_min, x_max = self._get_fit_range()

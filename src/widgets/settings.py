@@ -73,6 +73,17 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'max_streams' in settings['ASAPO']:
                 self._ui.sp_max_streams.setValue(int(settings['ASAPO']['max_streams']))
 
+            if 'max_messages' in settings['ASAPO']:
+                self._ui.sp_max_messages.setValue(int(settings['ASAPO']['max_messages']))
+
+        if 'FRAME_VIEW' in settings:
+
+            if 'display_axes' in settings['FRAME_VIEW']:
+                self._ui.chk_display_axes.setChecked(strtobool(settings['FRAME_VIEW']['display_axes']))
+
+            if 'display_axes_titles' in settings['FRAME_VIEW']:
+                self._ui.chk_display_axes_titles.setChecked(strtobool(settings['FRAME_VIEW']['display_axes_titles']))
+
     # ----------------------------------------------------------------------
     def accept(self):
 
@@ -99,7 +110,11 @@ class ProgramSetup(QtWidgets.QDialog):
                                  'beamtime': str(self._ui.le_beamtime.text()),
                                  'token': str(self._ui.le_token.text()),
                                  'detectors': str(self._ui.le_detectors.text()),
-                                 'max_streams': str(self._ui.sp_max_streams.value())}
+                                 'max_streams': str(self._ui.sp_max_streams.value()),
+                                 'max_messages': str(self._ui.sp_max_messages.value())}
+
+        settings['FRAME_VIEW'] = {'display_axes': str(self._ui.chk_display_axes.isChecked()),
+                                  'display_axes_titles': str(self._ui.chk_display_axes_titles.isChecked())}
 
         self._main_window.apply_settings(settings)
 
