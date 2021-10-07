@@ -27,6 +27,7 @@ class DataPool(QtCore.QObject):
     new_file_added = QtCore.pyqtSignal(str)
     file_deleted = QtCore.pyqtSignal(str)
     close_file = QtCore.pyqtSignal(str)
+    file_updated = QtCore.pyqtSignal(str)
 
     roi_changed = QtCore.pyqtSignal(int)
     data_updated = QtCore.pyqtSignal()
@@ -103,23 +104,43 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     #       Files/streams open/save section
     # ----------------------------------------------------------------------
-    def open_stream(self, detector_name, stream_name):
+    def open_stream(self, detector_name, stream_name, info):
         """
             called by signal from ASAPO browser
-
             since we don't want the GUI to freeze during stream load - we make an QThread, which in really reads data
 
+            Parameters:
+                detector_name (str): Name of ASAPO data source
+                stream_name (str): Name of ASAPO stream
+                info (dict): Properties of stream
         """
 
         # all opened files are entry to self._files_data dict
         # first we check, that this stream in not yet opened
         entry_name = '/'.join([detector_name, stream_name])
         if entry_name in self._files_data:
+            self._files_data[entry_name].update_info(info)
             self.log.error("File with this name already opened")
             return
 
         self._start_opener('stream', f'Opening stream {stream_name}',
                            {'detector_name': detector_name, 'stream_name': stream_name, 'entry_name': entry_name})
+
+    def update_stream(self, detector_name, stream_name, info):
+        """
+            called by signal from ASAPO browser
+            since we don't want the GUI to freeze during stream load - we make an QThread, which in really reads data
+
+            Parameters:
+                detector_name (str): Name of ASAPO data source
+                stream_name (str): Name of ASAPO stream
+                info (dict): Properties of stream
+        """
+        entry_name = '/'.join([detector_name, stream_name])
+        if entry_name in self._files_data:
+            self.log.debug(f"Update stream {entry_name}")
+            self._files_data[entry_name].update_info(info)
+            self.file_updated.emit(entry_name)
 
     # ----------------------------------------------------------------------
     def open_file(self, file_name):

@@ -57,7 +57,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
         beamtime = settings['ASAPO']['beamtime']
         token = settings['ASAPO']['token']
-        self.max_messages = settings['ASAPO']['max_messages']
+        self.max_messages = 20#  settings['ASAPO']['max_messages']
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
         logger.debug(
@@ -71,7 +71,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._additional_data['message_id'] = []
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
-            self._data_shape = self._nD_data_array.shape
+            self._data_shape = list(self._nD_data_array.shape)
         else:
             self._data_shape = self._get_data_shape()
         self._axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
@@ -84,6 +84,12 @@ class ASAPODataSet(Base2DDetectorDataSet):
         for axis in range(1, len(self._data_shape)):
             self._section.append({'axis': axis, 'mode': 'single', 'min': 0, 'max': self._data_shape[axis] - 1, 'step': 1})
         self._section.append({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1})
+
+    def update_info(self, info):
+        """
+        Update data shape using new stream information
+        """
+        self._data_shape[0] = info['lastId']
 
     # ----------------------------------------------------------------------
     def _corrections_required(self):

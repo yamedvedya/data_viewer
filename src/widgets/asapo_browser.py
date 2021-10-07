@@ -23,9 +23,10 @@ class ASAPOBrowser(AbstractWidget):
     """
     """
 
-    stream_selected = QtCore.pyqtSignal(str, str) # detector, stream
-
+    stream_selected = QtCore.pyqtSignal(str, str, dict)  # detector, stream, stream info
+    stream_updated = QtCore.pyqtSignal(str, str, dict)  # detector, stream, stream info
     # ----------------------------------------------------------------------
+
     def __init__(self, parent):
         """
         """
@@ -180,17 +181,18 @@ class ASAPOBrowser(AbstractWidget):
                 self.asapo_model.remove(self.asapo_model.index(ind, 0, detector_index))
 
             # then we either update exiting one, either add it.
-            # TODO: update only those, which info was changed (e.g. current stream only)
             for stream_name in asapo_streams_names:
                 ind = asapo_streams_names.index(stream_name)
                 stream_ind = asapo_streams_indexes[ind]
                 if stream_name in model_streams_names:
-                    self.asapo_model.update_stream(detector_ind, ind, asapo_streams[stream_ind])
+                    if asapo_streams[stream_ind]['lastId'] != detector_node.child(stream_ind).info['lastId']:
+                        self.asapo_model.update_stream(detector_ind, ind, asapo_streams[stream_ind])
+                        self.stream_updated.emit(detector_node.my_name(), stream_name, asapo_streams[stream_ind])
                 else:
                     stream = self.asapo_model.add_stream(detector_ind, ind, asapo_streams[stream_ind])
             # TODO: test auto_open feature
                     if self._auto_open:
-                        self.stream_selected.emit(detector_node.my_name(), stream.my_name())
+                        self.stream_selected.emit(detector_node.my_name(), stream.my_name(), stream.info)
 
             self._ui.tr_asapo_browser.viewport().update()
         self._get_time_range()
@@ -227,5 +229,5 @@ class ASAPOBrowser(AbstractWidget):
     def display_stream(self, index):
         selected_node = self.asapo_model.get_node(self.asapo_proxy.mapToSource(index))
         if isinstance(selected_node, StreamNode):
-            self.stream_selected.emit(selected_node.parent.my_name(), selected_node.my_name())
+            self.stream_selected.emit(selected_node.parent.my_name(), selected_node.my_name(), selected_node.info)
 

@@ -279,6 +279,20 @@ class FrameView(AbstractWidget):
     def current_file(self):
         return self._main_view.current_file
 
+    def update_file(self, file_key):
+        """
+        Update widget parameters to reflect changes in the data shape of given stream.
+        """
+        if self._main_view.current_file == file_key:
+            sections = self.data_pool.get_section(self._main_view.current_file)
+
+            self._setup_limits()
+
+            for section, cut_selector in zip(sections, self._cut_selectors):
+                cut_selector.new_file(section)
+
+            self.update_image()
+
     # ----------------------------------------------------------------------
     def new_main_file(self):
         """
