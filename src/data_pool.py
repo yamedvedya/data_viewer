@@ -120,6 +120,7 @@ class DataPool(QtCore.QObject):
         entry_name = '/'.join([detector_name, stream_name])
         if entry_name in self._files_data:
             self._files_data[entry_name].update_info(info)
+            self.file_updated.emit(entry_name)
             self.log.error("File with this name already opened")
             return
 
