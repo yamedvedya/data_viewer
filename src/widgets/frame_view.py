@@ -163,7 +163,7 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def new_coordinate(self, source, x_name, x_value, y_name, y_value, pos):
 
-        self._coordinate_label.setText('{}: {:3f}, {}: {:.3f}'.format(x_name, x_value, y_name, y_value))
+        self._coordinate_label.setText(f'{x_name}: {x_value}, {y_name}: {y_value}')
 
         if source == 'main':
             self._second_view.move_marker(pos)
