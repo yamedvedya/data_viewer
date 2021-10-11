@@ -43,7 +43,9 @@ class FrameView(AbstractWidget):
         self._ui.l_general.addWidget(self._status_bar, 0)
 
         self._coordinate_label = QtWidgets.QLabel("")
+        self._shape_label = QtWidgets.QLabel("")
         self._status_bar.addPermanentWidget(self._coordinate_label)
+        self._status_bar.addPermanentWidget(self._shape_label)
 
         self.current_frames = [0, 0]
         self.level_mode = 'lin'
@@ -274,8 +276,9 @@ class FrameView(AbstractWidget):
         if self._main_view.current_file is None:
             return
 
-        for selector in self._cut_selectors:
-            selector.setup_limits()
+        limits = self.data_pool.get_file_axis_limits(self._main_view.current_file)
+        shape = [lim[1]+1 for lim in limits.values()]
+        self._shape_label.setText(f"Data shape: {shape}")
 
     # ----------------------------------------------------------------------
     def get_value_for_frame(self, axis, frame):
