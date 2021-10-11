@@ -87,9 +87,19 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
     def update_info(self, info):
         """
-        Update data shape using new stream information
+        Update data shape using new stream information.
+
+        If data sections uses the last message_id it will be update to
+        current last message_id
         """
+        old_max = self._data_shape[0]
         self._data_shape[0] = info['lastId']
+        sel = sorted(self._section, key=lambda d: d['axis'])[0]
+
+        if sel['max'] == old_max-1:
+            sel['max'] = info['lastId']-1
+            if sel['mode'] == 'single':
+                sel['min'] = info['lastId']-1
 
     # ----------------------------------------------------------------------
     def _corrections_required(self):
