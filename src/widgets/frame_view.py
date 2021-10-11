@@ -275,6 +275,8 @@ class FrameView(AbstractWidget):
         """
         if self._main_view.current_file is None:
             return
+        for selector in self._cut_selectors:
+            selector.setup_limits()
 
         limits = self.data_pool.get_file_axis_limits(self._main_view.current_file)
         shape = [lim[1]+1 for lim in limits.values()]

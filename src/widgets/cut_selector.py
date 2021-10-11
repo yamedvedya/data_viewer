@@ -34,6 +34,7 @@ class CutSelector(QtWidgets.QWidget):
         self.sld.sliderMoved.connect(self._display_new_frame)
         self.sld.setVisible(False)
 
+        self.limit_range = 0  # Limit maximum range in range slider
         self._force_integration = force_integration
         if force_integration:
             self._set_only_range_mode()
@@ -71,7 +72,10 @@ class CutSelector(QtWidgets.QWidget):
         self._ui.sp_value_from.setValue(0)
 
         self._ui.sp_value_to.setValue(max_frame)
-        self.sld.setHigh(max_frame)
+        if 0 < self.limit_range < max_frame:
+            self.sld.setHigh(self.limit_range)
+        else:
+            self.sld.setHigh(max_frame)
 
         self._ui.chk_integration_mode.setChecked(True)
         self._ui.chk_integration_mode.hide()
@@ -100,6 +104,8 @@ class CutSelector(QtWidgets.QWidget):
         max_frame = self._parent.get_max_frame_along_axis(self._parent.get_cut_axis(self._my_id))
 
         current_frames = [min(max(z_min, 0), max_frame), min(max(z_max, 0), max_frame)]
+        if current_frames[1] - current_frames[0] > self.limit_range > 0:
+            current_frames[1] = current_frames[0] + self.limit_range
         self.sld.setLow(current_frames[0])
         self.sld.setHigh(current_frames[1])
         self._ui.sl_frame.setValue(current_frames[0])
@@ -157,9 +163,15 @@ class CutSelector(QtWidgets.QWidget):
 
         self._ui.sl_frame.setMaximum(max_frame)
         self.sld.setMaximum(max_frame)
+        self._ui.sp_value_to.setMaximum(max_frame)
+        self._ui.sp_value_from.setMaximum(max_frame)
         self._max_frame = max_frame
 
         self.block_signals(False)
+
+    def get_name(self):
+        z_name, z_min = self._parent.get_value_for_frame(self._parent.get_cut_axis(self._my_id), self.sld.low())
+        return z_name
 
     # ----------------------------------------------------------------------
     def display_value(self):
@@ -203,7 +215,10 @@ class CutSelector(QtWidgets.QWidget):
 
         if self._ui.chk_integration_mode.isChecked():
             ret['min'] = self.sld.low()
-            ret['max'] = self.sld.high()
+            if self.sld.high() - self.sld.low() > self.limit_range > 0:
+                ret['max'] = self.limit_range
+            else:
+                ret['max'] = self.sld.high()
         else:
             ret['min'] = self._ui.sl_frame.value()
             ret['max'] = self._ui.sl_frame.value()
@@ -225,8 +240,14 @@ class CutSelector(QtWidgets.QWidget):
             self._ui.sp_value_to.setVisible(not new_state)
             self._ui.lb_to.setVisible(not new_state)
 
+        # ToDo Limit can be included in selection
+        if selection['max'] - selection['min'] > self.limit_range > 0:
+            current_max = selection['min'] + self.limit_range
+        else:
+            current_max = selection['max']
+
         self.sld.setLow(selection['min'])
-        self.sld.setHigh(selection['max'])
+        self.sld.setHigh(current_max)
         self._ui.sl_frame.setValue(selection['min'])
 
         self._ui.sp_value_from.setValue(selection['min'])
