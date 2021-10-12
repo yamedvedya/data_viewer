@@ -57,7 +57,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
         beamtime = settings['ASAPO']['beamtime']
         token = settings['ASAPO']['token']
-        self.max_messages = settings['ASAPO']['max_messages']
+        self.max_messages = int(settings['ASAPO']['max_messages'])
 
         consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
         logger.debug(
@@ -81,9 +81,14 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._additional_data['scanned_values'] = ['frame_ID']
 
         self._section = []
-        for axis in range(1, len(self._data_shape)):
-            self._section.append({'axis': axis, 'mode': 'single', 'min': 0, 'max': self._data_shape[axis] - 1, 'step': 1})
-        self._section.append({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1})
+        for axis in np.roll(np.arange(len(self._data_shape)), -1):
+            if axis == 0:
+                range_limit = self.max_messages
+            else:
+                range_limit = 0
+            self._section.append({'axis': axis, 'mode': 'single', 'min': 0,
+                                  'max': self._data_shape[axis] - 1, 'step': 1,
+                                  'range_limit': range_limit})
 
     def update_info(self, info):
         """

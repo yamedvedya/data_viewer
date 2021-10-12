@@ -72,8 +72,8 @@ class CutSelector(QtWidgets.QWidget):
         self._ui.sp_value_from.setValue(0)
 
         self._ui.sp_value_to.setValue(max_frame)
-        if 0 < self.limit_range < max_frame:
-            self.sld.setHigh(self.limit_range)
+        if 0 < self.limit_range - 1 < max_frame:
+            self.sld.setHigh(self.limit_range - 1)
         else:
             self.sld.setHigh(max_frame)
 
@@ -104,8 +104,8 @@ class CutSelector(QtWidgets.QWidget):
         max_frame = self._parent.get_max_frame_along_axis(self._parent.get_cut_axis(self._my_id))
 
         current_frames = [min(max(z_min, 0), max_frame), min(max(z_max, 0), max_frame)]
-        if current_frames[1] - current_frames[0] > self.limit_range > 0:
-            current_frames[1] = current_frames[0] + self.limit_range
+        if current_frames[1] - current_frames[0] > self.limit_range - 1 > 0:
+            current_frames[1] = current_frames[0] + self.limit_range - 1
         self.sld.setLow(current_frames[0])
         self.sld.setHigh(current_frames[1])
         self._ui.sl_frame.setValue(current_frames[0])
@@ -215,13 +215,11 @@ class CutSelector(QtWidgets.QWidget):
 
         if self._ui.chk_integration_mode.isChecked():
             ret['min'] = self.sld.low()
-            if self.sld.high() - self.sld.low() > self.limit_range > 0:
-                ret['max'] = self.limit_range
-            else:
-                ret['max'] = self.sld.high()
+            ret['max'] = self.sld.high()
         else:
             ret['min'] = self._ui.sl_frame.value()
             ret['max'] = self._ui.sl_frame.value()
+        ret['range_limit'] = self.limit_range
 
         return ret
 
@@ -240,14 +238,9 @@ class CutSelector(QtWidgets.QWidget):
             self._ui.sp_value_to.setVisible(not new_state)
             self._ui.lb_to.setVisible(not new_state)
 
-        # ToDo Limit can be included in selection
-        if selection['max'] - selection['min'] > self.limit_range > 0:
-            current_max = selection['min'] + self.limit_range
-        else:
-            current_max = selection['max']
-
+        self.limit_range = selection['range_limit']
         self.sld.setLow(selection['min'])
-        self.sld.setHigh(current_max)
+        self.sld.setHigh(selection['max'])
         self._ui.sl_frame.setValue(selection['min'])
 
         self._ui.sp_value_from.setValue(selection['min'])
