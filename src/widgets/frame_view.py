@@ -145,7 +145,6 @@ class FrameView(AbstractWidget):
             self.data_pool.protect_file(file_name, True)
 
         self.new_main_file()
-        self.update_image()
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
