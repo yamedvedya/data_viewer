@@ -77,6 +77,7 @@ class JsonView(QtWidgets.QWidget):
         root_item = QtWidgets.QTreeWidgetItem([msg])
         self.recurse_jdata(data, root_item)
         self.tree_widget.addTopLevelItem(root_item)
+        self.tree_widget.expandItem(root_item)
 
     def make_find_ui(self):
 
