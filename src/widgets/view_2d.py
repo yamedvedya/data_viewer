@@ -6,6 +6,7 @@ import numpy as np
 from distutils.util import strtobool
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from silx.gui.plot.PlotWindow import Plot2D
 
 from src.utils.image_marker import ImageMarker
 from src.gui.view_2d_ui import Ui_View2D
@@ -36,59 +37,51 @@ class View2d(QtWidgets.QWidget):
         self._tb_files.customContextMenuRequested.connect(self._move_tab_menu)
         self._ui.v_layout.insertWidget(0, self._tb_files, 0)
 
-        self._main_plot = pg.PlotItem()
-        self._main_plot.showAxis('left', False)
-        self._main_plot.showAxis('bottom', False)
-        self._main_plot.setMenuEnabled(False)
-        self._main_plot.getViewBox().setMouseMode(pg.ViewBox.RectMode)
+        #self._plot_window = Plot2D()
 
-        self._ui.gv_main.setStyleSheet("")
-        self._ui.gv_main.setBackground('w')
-        self._ui.gv_main.setObjectName("gvMain")
+        #self._main_plot = pg.PlotItem()
+        #self._main_plot.showAxis('left', False)
+        #self._main_plot.showAxis('bottom', False)
+        #self._main_plot.setMenuEnabled(False)
+        #self._main_plot.getViewBox().setMouseMode(pg.ViewBox.RectMode)
 
-        self._ui.gv_main.setCentralItem(self._main_plot)
-        self._ui.gv_main.setRenderHints(self._ui.gv_main.renderHints())
+        #self._ui.gv_main.setStyleSheet("")
+        #self._ui.gv_main.setBackground('w')
+        #self._ui.gv_main.setObjectName("gvMain")
 
-        self._main_plot.getViewBox().setAspectLocked()
+        #self._ui.gv_main.setCentralItem(self._main_plot)
+        #self._ui.v_layout.addWidget(self._plot_window)
+        #self._ui.gv_main.setRenderHints(self._ui.gv_main.renderHints())
 
-        self.plot_2d = pg.ImageItem()
-        self._main_plot.addItem(self.plot_2d)
+        #self._main_plot.getViewBox().setAspectLocked()
 
-        self._center_cross = ImageMarker(0, 0, self._main_plot)
+        #self.plot_2d = pg.ImageItem()
+        #self._main_plot.addItem(self.plot_2d)
+
+        #self._center_cross = ImageMarker(0, 0, self._main_plot)
 
         self._rois = {}
 
         self._tb_files.tabCloseRequested.connect(self._close_file)
         self._tb_files.currentChanged.connect(self._switch_file)
 
-        self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
-        self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
-        self._main_plot.scene().sigMouseHover.connect(self._mouse_hover)
+        #self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
+        #self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
+        #self._main_plot.scene().sigMouseHover.connect(self._mouse_hover)
 
-        self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+        #self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
-        self._main_plot.showAxis('left', strtobool(settings['display_axes']))
-        self._main_plot.showAxis('bottom', strtobool(settings['display_axes']))
-        self._main_plot.showLabel('left', strtobool(settings['display_axes_titles']))
-        self._main_plot.showLabel('bottom', strtobool(settings['display_axes_titles']))
+        pass
+        #self._main_plot.showAxis('left', strtobool(settings['display_axes']))
+        #self._main_plot.showAxis('bottom', strtobool(settings['display_axes']))
+        #self._main_plot.showLabel('left', strtobool(settings['display_axes_titles']))
+        #self._main_plot.showLabel('bottom', strtobool(settings['display_axes_titles']))
 
     # ----------------------------------------------------------------------
     def block_signals(self, flag):
         self._tb_files.blockSignals(flag)
-        if flag:
-            self._main_plot.scene().sigMouseMoved.disconnect()
-            self._main_plot.scene().sigMouseClicked.disconnect()
-            self._main_plot.scene().sigMouseHover.disconnect()
-
-            self._main_plot.getViewBox().sigRangeChanged.disconnect()
-        else:
-            self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
-            self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
-            self._main_plot.scene().sigMouseHover.connect(self._mouse_hover)
-
-            self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
 
     # ----------------------------------------------------------------------
     def _move_tab_menu(self, pos):
@@ -122,9 +115,10 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def new_view_box(self, view_box):
-        self._main_plot.getViewBox().sigRangeChanged.disconnect()
-        self._main_plot.getViewBox().setRange(view_box.viewRect())
-        self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+        pass
+        #self._main_plot.getViewBox().sigRangeChanged.disconnect()
+        #self._main_plot.getViewBox().setRange(view_box.viewRect())
+        #self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name):
@@ -143,12 +137,14 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def new_lookup_table(self):
-        if self.plot_2d.image is not None:
-            self.plot_2d.setLookupTable(self._frame_viewer.hist.item.getLookupTable(self.plot_2d.image))
+        pass
+        #if self.plot_2d.image is not None:
+        #    self.plot_2d.setLookupTable(self._frame_viewer.hist.item.getLookupTable(self.plot_2d.image))
 
     # ----------------------------------------------------------------------
     def new_levels(self):
-        self.plot_2d.setLevels(self._frame_viewer.hist.item.getLevels())
+        pass
+        #self.plot_2d.setLevels(self._frame_viewer.hist.item.getLevels())
 
     # ----------------------------------------------------------------------
     def _close_file(self, index):
@@ -181,13 +177,13 @@ class View2d(QtWidgets.QWidget):
 
         self._rois[idx][1].setFont(QtGui.QFont("Arial", 10))
         self._rois[idx][0].sigRegionChanged.connect(lambda rect, id=idx: self._roi_changed(id, rect))
-        self._main_plot.addItem(self._rois[idx][0])
-        self._main_plot.addItem(self._rois[idx][1])
+        #self._main_plot.addItem(self._rois[idx][0])
+        #self._main_plot.addItem(self._rois[idx][1])
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
-        self._main_plot.removeItem(self._rois[idx][0])
-        self._main_plot.removeItem(self._rois[idx][1])
+        #self._main_plot.removeItem(self._rois[idx][0])
+        #self._main_plot.removeItem(self._rois[idx][1])
         del self._rois[idx]
 
         for _, label, my_id in self._rois.values():
@@ -252,30 +248,15 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def new_axes(self, labels):
-
-        self._main_plot.setLabel('left', labels[0])
-        self._main_plot.setLabel('bottom', labels[1])
+        self._ui.plot_2d.getXAxis().setLabel(labels[0])
+        self._ui.plot_2d.getYAxis().setLabel(labels[1])
 
         for idx in range(len(self._rois)):
             self.roi_changed(idx)
 
     # ----------------------------------------------------------------------
     def _mouse_moved(self, pos):
-
-        if self._main_plot.sceneBoundingRect().contains(pos):
-            pos = self._main_plot.vb.mapSceneToView(pos)
-
-            self._center_cross.setPos(pos)
-
-            if self.current_file is None:
-                return
-
-            current_axes = self._frame_viewer.get_current_axes()
-
-            x_name, x_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
-            y_name, y_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
-
-            self._frame_viewer.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
+        pass
 
     # ----------------------------------------------------------------------
     def move_marker(self, pos):
@@ -287,7 +268,8 @@ class View2d(QtWidgets.QWidget):
         """
         if event.double():
             try:
-                self._main_plot.autoRange()
+                pass
+                #self._main_plot.autoRange()
             except:
                 pass
 
@@ -312,19 +294,21 @@ class View2d(QtWidgets.QWidget):
     def update_image(self, frame_sect, section):
 
         if self.current_file is None:
-            self.plot_2d.clear()
+            self._ui.plot_2d.clear()
             return
 
         data_to_display = self.data_pool.get_2d_picture(self.current_file, frame_sect, section)
 
         if data_to_display is None:
-            self.plot_2d.clear()
+            self._ui.plot_2d.clear()
             return
 
         if self._frame_viewer.level_mode == 'log':
             data_to_display = np.log(data_to_display + 1)
 
-        self.plot_2d.setImage(data_to_display, autoLevels=self._frame_viewer.auto_levels)
+        self._ui.plot_2d.addImage(data_to_display)
+
+        #self.plot_2d.setImage(data_to_display, autoLevels=self._frame_viewer.auto_levels)
 
         for ind in range(len(self._rois)):
             self.roi_changed(ind)

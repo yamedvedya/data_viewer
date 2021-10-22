@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>631</width>
-    <height>698</height>
+    <height>697</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,22 +15,16 @@
   </property>
   <layout class="QVBoxLayout" name="v_layout">
    <item>
-    <widget class="GraphicsView" name="gv_main">
-     <property name="autoFillBackground">
-      <bool>false</bool>
-     </property>
-     <property name="styleSheet">
-      <string notr="true"/>
-     </property>
-    </widget>
+    <widget class="Plot2D" name="plot_2d" native="true"/>
    </item>
   </layout>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>GraphicsView</class>
-   <extends>QGraphicsView</extends>
-   <header>pyqtgraph</header>
+   <class>Plot2D</class>
+   <extends>QWidget</extends>
+   <header>silx.gui.plot.PlotWindow</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
