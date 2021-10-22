@@ -184,6 +184,8 @@ class BaseDataSet(object):
             data = np.zeros(5)[:, None]
         if np.ndim(data) == 1 and output_dim == 2:
             data = data[:, None]
+
+        logger.debug(f"Data after cut {data.shape} ")
         return data
 
     # ----------------------------------------------------------------------

@@ -2,15 +2,12 @@
 
 WIDGET_NAME = 'FrameView'
 
-import pyqtgraph as pg
-import numpy as np
 import logging
 from PyQt5 import QtWidgets, QtCore
 
 from src.main_window import APP_NAME
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import View2d
-from src.widgets.axis_selector import AxisSelector
 from src.widgets.cut_selector import CutSelector
 from src.gui.frame_view_ui import Ui_FrameView
 
@@ -52,28 +49,12 @@ class FrameView(AbstractWidget):
         self.auto_levels = True
         self.max_frame = 0
 
-        self._axis_selectors = []
-        self._axis_grid = QtWidgets.QVBoxLayout(self._ui.axis_selectors)
-        self._axis_grid.setSpacing(0)
-        self._axis_grid.setContentsMargins(0, 0, 0, 0)
         self._cut_selectors = []
         self._cut_grid = QtWidgets.QVBoxLayout(self._ui.cut_selectors)
         self._cut_grid.setSpacing(0)
         self._cut_grid.setContentsMargins(0, 0, 0, 0)
 
-        self.hist = pg.HistogramLUTWidget(self)
-        self.hist.setBackground('w')
-        self.hist.item.setImageItem(self._main_view.plot_2d)
-        self._ui.l_pic_setup.addWidget(self.hist, 1)
-
         self.data_pool = data_pool
-
-        self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
-        self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
-        self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
-        self._ui.chk_auto_levels.clicked.connect(lambda state: self._toggle_auto_levels(state))
-
-        self._ui.bg_level.buttonClicked.connect(lambda button: self._change_level_mode(button))
 
     # ----------------------------------------------------------------------
     def _update_layout(self, container, widgets):
@@ -86,7 +67,6 @@ class FrameView(AbstractWidget):
                 if w:
                     layout.removeWidget(w)
                     w.setVisible(False)
-
         for widget in widgets:
             layout.addWidget(widget)
 
@@ -97,32 +77,21 @@ class FrameView(AbstractWidget):
         need_update = False
         if self._main_view.current_file is not None:
             axes = self.data_pool.get_file_axes(self._main_view.current_file)
-            if len(axes) != len(self._axis_selectors):
+            if len(axes) != len(self._cut_selectors):
                 need_update = True
         else:
             need_update = True
 
         if need_update:
-            self._axis_selectors = []
             self._cut_selectors = []
             for ind, axis in enumerate(axes):
-                if ind == 0:
-                    name = 'Y'
-                elif ind == 1:
-                    name = 'X'
-                else:
-                    name = f'Selector {ind-1}'
-                widget = AxisSelector(self, ind, name)
-                widget.set_new_axes(axes, ind)
-                widget.new_selection.connect(self._new_axes)
-                self._axis_selectors.append(widget)
-
-                # First two selectors constrain image shape
-                widget = CutSelector(self, ind, ind < 2)
+                widget = CutSelector(ind, axis, ['X', 'Y'])
                 widget.new_cut.connect(self.update_image)
+                widget.new_axis.connect(self._new_axes)
                 self._cut_selectors.append(widget)
 
-            self._update_layout(self._ui.axis_selectors, self._axis_selectors)
+            if len(axes) >= 2:
+                self._update_axes(axes)
             self._update_layout(self._ui.cut_selectors, self._cut_selectors)
 
     # ----------------------------------------------------------------------
@@ -173,7 +142,6 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def new_view_box(self, source, view_box):
-        # print('New view box from {}, box {}'.format(source, view_box))
         if source == 'main':
             self._second_view.new_view_box(view_box)
         else:
@@ -185,27 +153,23 @@ class FrameView(AbstractWidget):
         self._second_view.delete_roi(idx)
 
     # ----------------------------------------------------------------------
-    def _new_axes(self, id, old_axis, new_axis):
+    def _new_axes(self, new_axis, old_axis):
+        """
+        Process selection of new axis in cut_selector
+        """
+        axes_labels = {}
+        for selector in self._cut_selectors:
+            if selector.current_axis == new_axis:
+                selector.set_axis(old_axis)
+            elif selector.current_axis == old_axis:
+                selector.set_axis(new_axis)
+            axes_labels[selector.current_axis] = selector.axis_label
 
-        sections = self.data_pool.get_section(self._main_view.current_file)
-        for ind, selector in enumerate(self._axis_selectors):
-            if selector.get_current_value() == new_axis and ind != id:
-                selector.set_new_axis(old_axis)
-                sections[id], sections[ind] = sections[ind], sections[id]
-
-        self.data_pool.save_section(self._main_view.current_file, sections)
-        self._setup_limits()
-
-        for section, cut_selector in zip(sections, self._cut_selectors):
-            cut_selector.new_file(section)
-
-        self._update_axes()
+        self._update_axes(axes_labels)
         self.update_image()
 
     # ----------------------------------------------------------------------
-    def _update_axes(self):
-        axes_labels = [selector.get_current_name() for selector in self._axis_selectors[:2]]
-
+    def _update_axes(self, axes_labels):
         self._main_view.new_axes(axes_labels)
         self._second_view.new_axes(axes_labels)
 
@@ -216,14 +180,14 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def switch_off_auto_levels(self):
         self.auto_levels = False
-        self._ui.chk_auto_levels.setChecked(False)
+        #self._ui.chk_auto_levels.setChecked(False)
         self._second_view.new_levels()
 
     # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
         self.auto_levels = state
         self.update_image()
-        self._ui.chk_auto_levels.setChecked(state)
+        #self._ui.chk_auto_levels.setChecked(state)
 
     # ----------------------------------------------------------------------
     def _change_level_mode(self, button):
@@ -241,30 +205,25 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def get_current_axes(self):
-        return {'x': self._axis_selectors[0].get_current_value(),
-                'y': self._axis_selectors[1].get_current_value()}
-
-    # ----------------------------------------------------------------------
-    def get_cut_axis(self, cut_selector_id):
-        return self._axis_selectors[cut_selector_id].get_current_value()
+        selection = self.get_current_selection()
+        selection = sorted(selection, key=lambda d: d['axis'])
+        return {'x': selection[0]['id'],
+                'y': selection[1]['id']}
 
     # ----------------------------------------------------------------------
     def update_image(self):
 
         selection = self.get_current_selection()
-        logger.debug(f"Saving selection {selection}")
+        logger.debug(f"Saving selection {selection} for file {self._main_view.current_file}")
         self.data_pool.save_section(self._main_view.current_file, selection)
 
         section = []
-        for sect in selection:
-            section.append((sect['axis'], sect['min'], sect['max']))
-
+        for i, sect in enumerate(sorted(selection, key=lambda d: d['axis'])):
+            section.append((sect['id'], sect['min'], sect['max']))
         logger.debug(f"Update image with sel {section}")
 
-        self.hist.item.sigLevelsChanged.disconnect()
         self._main_view.update_image(self.get_current_axes(), section)
         self._second_view.update_image(self.get_current_axes(), section)
-        self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
         self.section_updated.emit(section, self._main_view.current_file)
 
     # ----------------------------------------------------------------------
@@ -274,11 +233,12 @@ class FrameView(AbstractWidget):
         """
         if self._main_view.current_file is None:
             return
-        for selector in self._cut_selectors:
-            selector.setup_limits()
 
         limits = self.data_pool.get_file_axis_limits(self._main_view.current_file)
-        shape = [lim[1]+1 for lim in limits.values()]
+        for selector in self._cut_selectors:
+            selector.setup_limits(limits[selector.get_id()][1])
+
+        shape = [lim[1] + 1 for lim in limits.values()]
         self._shape_label.setText(f"Data shape: {shape}")
 
     # ----------------------------------------------------------------------
@@ -307,15 +267,15 @@ class FrameView(AbstractWidget):
 
     def update_file(self, file_key):
         """
-        Update widget parameters to reflect changes in the data shape of given stream.
+        Update widget parameters to reflect changes in the data shape _refresh_selectorsof given stream.
         """
-        if self._main_view.current_file == file_key:
-            sections = self.data_pool.get_section(self._main_view.current_file)
-
+        if self._main_view.current_file == file_key and file_key is not None:
             self._setup_limits()
 
+            sections = self.data_pool.get_section(self._main_view.current_file)
+            logger.debug(f"Setup frame_view selectors with section: {sections}")
             for section, cut_selector in zip(sections, self._cut_selectors):
-                cut_selector.new_file(section)
+                cut_selector.set_section(section)
 
             self.update_image()
 
@@ -324,20 +284,5 @@ class FrameView(AbstractWidget):
         """
         Update widget in case if main file was changed
         """
-        # ToDo Refactor code to create and setup selectors at ones.
         self._refresh_selectors()
-
-        if self._main_view.current_file is not None:
-            sections = self.data_pool.get_section(self._main_view.current_file)
-            logger.debug(f"Setup frame_view selectors with section: {sections}")
-
-            for section, axis_selector in zip(sections, self._axis_selectors):
-                axis_selector.set_new_axis(section['axis'])
-
-            self._setup_limits()
-
-            for section, cut_selector in zip(sections, self._cut_selectors):
-                cut_selector.new_file(section)
-
-            self._update_axes()
-            self.update_image()
+        self.update_file(self._main_view.current_file)
