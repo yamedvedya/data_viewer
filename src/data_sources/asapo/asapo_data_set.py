@@ -87,6 +87,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             else:
                 range_limit = 0
             self._section.append({'axis': axis, 'mode': 'single', 'min': 0,
+                                  'axis_label': self._axes_names[i],
                                   'max': self._data_shape[i] - 1, 'step': 1,
                                   'range_limit': range_limit})
 

@@ -208,9 +208,9 @@ class CutSelector(QtWidgets.QWidget):
                'axis_label': self.axis_label,
                'id': self._my_id,
                'mode': self._get_mode(),
-               'step': self._ui.sp_step.value(),
-               'min': self._ui.sl_range.low(),
-               'max': self._ui.sl_range.high(),
+               'step': int(self._ui.sp_step.value()),
+               'min': int(self._ui.sl_range.low()),
+               'max': int(self._ui.sl_range.high()),
                'range_limit': self.limit_range}
         return ret
 

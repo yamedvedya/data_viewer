@@ -89,9 +89,6 @@ class FrameView(AbstractWidget):
                 widget.new_cut.connect(self.update_image)
                 widget.new_axis.connect(self._new_axes)
                 self._cut_selectors.append(widget)
-
-            if len(axes) >= 2:
-                self._update_axes(axes)
             self._update_layout(self._ui.cut_selectors, self._cut_selectors)
 
     # ----------------------------------------------------------------------
@@ -277,6 +274,8 @@ class FrameView(AbstractWidget):
             for section, cut_selector in zip(sections, self._cut_selectors):
                 cut_selector.set_section(section)
 
+            axes_labels = [s['axis_label'] for s in sorted(sections, key=lambda d: d['axis'])]
+            self._update_axes(axes_labels)
             self.update_image()
 
     # ----------------------------------------------------------------------
