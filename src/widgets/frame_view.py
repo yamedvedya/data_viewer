@@ -3,11 +3,12 @@
 WIDGET_NAME = 'FrameView'
 
 import logging
+import configparser
 from PyQt5 import QtWidgets, QtCore
 
 from src.main_window import APP_NAME
 from src.widgets.abstract_widget import AbstractWidget
-from src.widgets.view_2d import View2d
+from src.widgets.view_2d import ViewPyQt, ViewSilx
 from src.gui.frame_view_ui import Ui_FrameView
 
 
@@ -31,8 +32,20 @@ class FrameView(AbstractWidget):
         self._ui.cut_selectors.new_cut.connect(self.update_image)
         self._ui.cut_selectors.new_axis.connect(self._update_axes)
 
-        self._main_view = View2d(self, 'main', data_pool)
-        self._second_view = View2d(self, 'second', data_pool)
+        settings = configparser.ConfigParser()
+        settings.read('./settings.ini')
+
+        try:
+            backend = settings['FRAME_VIEW']['backend']
+        except:
+            backend = 'pyqt'
+        if backend == 'pyqt':
+            self._main_view = ViewPyQt(self, 'main', data_pool)
+            self._second_view = ViewPyQt(self, 'second', data_pool)
+        else:
+            self._main_view = ViewSilx(self, 'main', data_pool)
+            self._second_view = ViewSilx(self, 'second', data_pool)
+
         self._second_view.hide()
 
         self._ui.view_layout.addWidget(self._main_view, 0)
