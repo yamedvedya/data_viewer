@@ -7,6 +7,7 @@ import time
 import sys
 import numpy as np
 import traceback
+import logging
 
 from collections import OrderedDict
 
@@ -20,6 +21,9 @@ from src.data_sources.beamview.beam_view_data_set import BeamLineView
 from src.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from src.utils.roi import ROI
 from src.widgets.batch_progress import BatchProgress
+from src.main_window import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
 
 
 class DataPool(QtCore.QObject):
@@ -33,12 +37,11 @@ class DataPool(QtCore.QObject):
     data_updated = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
-    def __init__(self, parent, log):
+    def __init__(self, parent):
 
         super(DataPool, self).__init__()
 
         self.main_window = parent
-        self.log = log
 
         self._lim_mode = 'no'
         self._max_num_files = None
@@ -121,7 +124,7 @@ class DataPool(QtCore.QObject):
         if entry_name in self._files_data:
             self._files_data[entry_name].update_info(info)
             self.file_updated.emit(entry_name)
-            self.log.error("File with this name already opened")
+            logger.error("File with this name already opened")
             return
 
         self._start_opener('stream', f'Opening stream {stream_name}',
@@ -139,7 +142,7 @@ class DataPool(QtCore.QObject):
         """
         entry_name = '/'.join([detector_name, stream_name])
         if entry_name in self._files_data:
-            self.log.debug(f"Update stream {entry_name}")
+            logger.debug(f"Update stream {entry_name}")
             self._files_data[entry_name].update_info(info)
             self.file_updated.emit(entry_name)
 
@@ -156,13 +159,13 @@ class DataPool(QtCore.QObject):
         # first we check, that this stream in not yet opened
         entry_name = os.path.splitext(os.path.basename(file_name))[0]
         if entry_name in self._files_data:
-            self.log.error("File with this name already opened")
+            logger.error("File with this name already opened")
             return
 
-        if "*.nxs" in file_name:
+        if ".nxs" in file_name:
             self._start_opener('sardana', f'Opening file {file_name}',
                                {'file_name': file_name, 'entry_name': entry_name})
-        elif "*.h5" in file_name:
+        elif ".h5" in file_name:
             self._start_opener('reciprocal', f'Opening file {file_name}',
                                {'file_name': file_name, 'entry_name': entry_name})
         elif '.dat' in file_name:
@@ -180,7 +183,7 @@ class DataPool(QtCore.QObject):
         :return:
         """
         #
-        self.log.debug(f"Start opener with mode: {mode}, {user_msg}, {kwargs}")
+        logger.debug(f"Start opener with mode: {mode}, {user_msg}, {kwargs}")
         self._open_mgs.setText(user_msg)
         self._open_mgs.show()
 
@@ -343,6 +346,7 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     def set_section_axis(self, roi_key, axis):
 
+        logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, axis: {axis}")
         self._rois[roi_key].set_section_axis(axis)
         self.roi_changed.emit(roi_key)
 
@@ -357,6 +361,7 @@ class DataPool(QtCore.QObject):
             :param value - requested by user value
             :returns accepted value
         """
+        logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, section_axis: {section_axis}, param: {param}, value: {value}")
         value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, self.axes_limits)
         self.roi_changed.emit(roi_key)
         return value
@@ -451,16 +456,15 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     #       2D frames section
     # ----------------------------------------------------------------------
-    def get_2d_picture(self, file, frame_axes, section):
+    def get_2d_picture(self, file):
         """
         returns 2D frame to be displayed in Frame viewer
         :param file: key for self._files_data
-        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
         :param section: list of tuples (section axes, from, to)
         :return: 2D np.array
         """
-        self.log.debug(f"Return 2D image: for file {frame_axes}, selection: {section}")
-        return self._files_data[file].get_2d_picture(frame_axes, section)
+        logger.debug(f"Return 2D image: for file {file}")
+        return self._files_data[file].get_2d_picture()
 
     # ----------------------------------------------------------------------
     def get_section(self, file):

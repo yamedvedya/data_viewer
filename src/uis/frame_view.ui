@@ -13,35 +13,36 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="l_general">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QVBoxLayout" name="v_layout" stretch="1,0">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
-       <item>
-        <layout class="QHBoxLayout" name="view_layout"/>
-       </item>
-       <item>
-        <widget class="QWidget" name="cut_selectors" native="true">
-         <property name="minimumSize">
-          <size>
-           <width>330</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <layout class="QHBoxLayout" name="view_layout"/>
+     </item>
+     <item>
+      <widget class="CutSelector" name="cut_selectors" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>330</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CutSelector</class>
+   <extends>QWidget</extends>
+   <header>src.widgets.cut_selector</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="icons.qrc"/>
  </resources>
  <connections/>
- <buttongroups>
-  <buttongroup name="bg_level"/>
- </buttongroups>
 </ui>

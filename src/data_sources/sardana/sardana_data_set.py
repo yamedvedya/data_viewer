@@ -36,7 +36,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
         self._original_file = file_name
-        self._axes_names = ['detector X', 'detector Y', 'scan point']
+        self._axes_names = ['scan point', 'detector X', 'detector Y']
 
         self._additional_data['scanned_values'] = []
         scan_data = opened_file['scan']['data']
@@ -80,9 +80,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
             self._additional_data['scanned_values'].append('point_nb')
             self._additional_data['point_nb'] = np.arange(self._data_shape[0])
 
-        self._section = ({'axis': 2, 'mode': 'single', 'min': 0, 'max': self._data_shape[2], 'step': 1},
-                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._data_shape[1], 'step': 1},
-                         {'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0], 'step': 1})
+        self._section = ({'axis': '', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
+                          'range_limit': self._data_shape[0] - 1},
+                         {'axis': 'X', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
+                          'range_limit': self._data_shape[1] - 1},
+                         {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._data_shape[2] - 1, 'step': 1,
+                          'range_limit': self._data_shape[2] - 1})
 
     # ----------------------------------------------------------------------
     def check_file_after_load(self):
@@ -152,20 +155,6 @@ class SardanaDataSet(Base2DDetectorDataSet):
             return source_file['entry']['instrument']['detector']['data'].shape
 
     # ----------------------------------------------------------------------
-    def get_axis_limits(self):
-
-        new_limits = {}
-        new_limits[0] = [0, self._data_shape[2]-1]
-        new_limits[1] = [0, self._data_shape[1]-1]
-        if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
-            new_limits[2] = [min(self._additional_data[SETTINGS['displayed_param']]),
-                             max(self._additional_data[SETTINGS['displayed_param']])]
-        else:
-            new_limits[2] = [0, 0]
-
-        return new_limits
-
-    # ----------------------------------------------------------------------
     def get_value_for_frame(self, axis, pos):
 
         real_axis = self._cube_axes_map[axis]
@@ -222,12 +211,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
         self._need_apply_mask = True
 
     # ----------------------------------------------------------------------
-    def get_2d_picture(self, frame_axes, section):
+    def get_2d_picture(self):
 
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
             return None
 
-        return super(SardanaDataSet, self).get_2d_picture(frame_axes, section)
+        return super(SardanaDataSet, self).get_2d_picture()
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect, do_sum=False):

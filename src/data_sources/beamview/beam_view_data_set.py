@@ -30,9 +30,11 @@ class BeamLineView(BaseDataSet):
         else:
             self._data_shape = self._get_data_shape()
 
-        self._section = ({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._data_shape[0], 'step': 1},
-                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._data_shape[1], 'step': 1},
-                         {'axis': 2, 'mode': 'single', 'min': 0, 'max': self._data_shape[2], 'step': 1})
+        self._section = []
+        for axis in [0, 1, 2]:
+            self._section.append({'axis': axis, 'integration': False,
+                                  'min': 0, 'max': self._data_shape[axis] - 1, 'step': 1,
+                                  'range_limit': self._data_shape[axis] - 1})
 
     # ----------------------------------------------------------------------
     def _get_data(self):

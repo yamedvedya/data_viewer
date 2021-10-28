@@ -92,6 +92,8 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def update_axes(self):
+        self._block_signals(True)
+
         need_update = False
         current_file = self.get_current_file()
         if current_file is None:
@@ -120,6 +122,8 @@ class SectionView(QtWidgets.QWidget):
                 widget.refresh_view()
                 self._section_ranger.append(widget)
                 layout.addWidget(widget)
+
+        self._block_signals(False)
 
     # ----------------------------------------------------------------------
     def refresh_name(self):

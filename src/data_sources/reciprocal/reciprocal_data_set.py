@@ -35,11 +35,11 @@ class ReciprocalScan(BaseDataSet):
 
         self._additional_data['Qz'] = np.arange(self._data_shape[0])
 
-        self._section = ({'axis': 0, 'mode': 'single', 'min': 0, 'max': self._x_axis[-1],
+        self._section = ({'axis': 0, 'integration': False, 'min': 0, 'max': self._x_axis[-1],
                           'step': self._x_axis[1] - self._x_axis[0]},
-                         {'axis': 1, 'mode': 'single', 'min': 0, 'max': self._y_axis[-1],
+                         {'axis': 1, 'integration': False, 'min': 0, 'max': self._y_axis[-1],
                           'step': self._y_axis[1] - self._y_axis[0]},
-                         {'axis': 2, 'mode': 'single', 'min': 0, 'max': self._z_axis[-1],
+                         {'axis': 2, 'integration': False, 'min': 0, 'max': self._z_axis[-1],
                           'step': self._z_axis[1] - self._z_axis[0]})
 
     # ----------------------------------------------------------------------

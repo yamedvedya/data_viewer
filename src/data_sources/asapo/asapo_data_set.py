@@ -87,10 +87,10 @@ class ASAPODataSet(Base2DDetectorDataSet):
             else:
                 range_limit = 0
             self._section.append({'axis': axis, 'mode': 'single', 'min': 0,
-                                  'axis_label': self._axes_names[i],
                                   'max': self._data_shape[i] - 1, 'step': 1,
                                   'range_limit': range_limit})
 
+    # ----------------------------------------------------------------------
     def update_info(self, info):
         """
         Update data shape using new stream information.
@@ -104,7 +104,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         if sel['max'] == old_max-1:
             sel['max'] = info['lastId']-1
-            if sel['mode'] == 'single':
+            if not sel['integration']:
                 sel['min'] = info['lastId']-1
 
     # ----------------------------------------------------------------------
@@ -167,29 +167,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
         :return: np.array, 3D data cube
         """
 
-        # ToDo Move outside for better readability
-        def _convert_image(data, meta_data):
-            """
-            de-Serialize numpy array (image) from ASAPO data based on ASAPO metadata.
-            Default empty image of 2x2 is used to be compatible with the rest code of the package.
-            Parameters:
-                data (byte): data from ASAPO message
-                meta_data (dict): metadata from ASAPO message
-            Returns:
-                image (np.ndarray): n-Dimensional np.array
-            """
-            def_img = np.zeros((2, 2), dtype=np.float32)
-            if data is None:
-                return def_img
-            try:
-                if self._mode == 'file':
-                    return get_image(data, meta_data).astype(np.float32)
-                else:
-                    return get_image(data[0], meta_data[0]).astype(np.float32)
-            except Exception as e:
-                logger.info(f"Fail to get image from ASAPO data: {e}")
-                return def_img
-
         # ToDO Limit number of retrieved messages
         img_list = []
         logger.debug(f"Retrieve messages from ASAPO. IDs: {frame_ids}")
@@ -202,7 +179,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
                     self._additional_data['metadata'].pop(0)
                 self.receiver.set_start_id(frame + 1)
                 data, meta_data = self.receiver.get_next(self.meta_only)
-                img = _convert_image(data, meta_data)
+                img = self._convert_image(data, meta_data)
                 img_list.append(img)
                 self._additional_data['metadata'].append(meta_data)
                 self._additional_data['message_id'].append(frame)
@@ -215,6 +192,29 @@ class ASAPODataSet(Base2DDetectorDataSet):
         logger.debug(f"Retrieved image array {img_array.shape}, "
                      f"metadata len {len(self._additional_data['metadata'])}")
         return np.stack(img_list)
+
+    # ----------------------------------------------------------------------
+    def _convert_image(self, data, meta_data):
+        """
+        de-Serialize numpy array (image) from ASAPO data based on ASAPO metadata.
+        Default empty image of 2x2 is used to be compatible with the rest code of the package.
+        Parameters:
+            data (byte): data from ASAPO message
+            meta_data (dict): metadata from ASAPO message
+        Returns:
+            image (np.ndarray): n-Dimensional np.array
+        """
+        def_img = np.zeros((2, 2), dtype=np.float32)
+        if data is None:
+            return def_img
+        try:
+            if self._mode == 'file':
+                return get_image(data, meta_data).astype(np.float32)
+            else:
+                return get_image(data[0], meta_data[0]).astype(np.float32)
+        except Exception as e:
+            logger.info(f"Fail to get image from ASAPO data: {e}")
+            return def_img
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):

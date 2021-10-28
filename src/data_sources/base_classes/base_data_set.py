@@ -30,6 +30,17 @@ class BaseDataSet(object):
         # here we keep some auxiliary data: scanned motors, etc
         self._additional_data = {}
 
+        self._section = None
+
+    # ----------------------------------------------------------------------
+    def save_section(self, section):
+        for old, new in zip(self._section, section):
+            old.update(new)
+
+    # ----------------------------------------------------------------------
+    def get_section(self):
+        return self._section
+
     # ----------------------------------------------------------------------
     def _get_data(self):
         return self._nD_data_array
@@ -65,13 +76,10 @@ class BaseDataSet(object):
     def get_axis_limits(self):
         """
 
-        :return: dict {axis_index: [min, max]}, limits for each axis
+        :return: list [max, ], limits for each axis
         """
-        new_limits = {}
-        for axis_ind in range(len(self._axes_names)):
-            new_limits[axis_ind] = [0, self._data_shape[axis_ind] - 1]
 
-        return new_limits
+        return self._data_shape
 
     # ----------------------------------------------------------------------
     def get_frame_for_value(self, axis, pos):
@@ -140,27 +148,43 @@ class BaseDataSet(object):
             slices.append((sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'],
                            sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width']))
 
-        return self._cut_data(self._get_data((self._data_shape[sect['axis_0']],)), slices, do_sum, 1)
+        return self._cut_data(slices, do_sum, 1)
 
     # ----------------------------------------------------------------------
-    def get_2d_picture(self, frame_sect, section):
+    def get_2d_picture(self):
         """
 
         returns 2D frame to be displayed in Frame viewer
-        :param frame_axes: {'X': index of X axis, 'Y': index of Y axis in frame viewer}
-        :param section: list of tuples (section axes, from, to)
         :return: 2D np.array
 
         """
-        data = self._cut_data(self._get_data(), section, True, 2)
 
-        if frame_sect['x'] > frame_sect['y']:
+        logger.debug(f"Request 2D picture")
+        rest_axes = list(range(len(self._data_shape)))
+
+        x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
+        section = [(x_axis_ind, self._section[x_axis_ind]['min'], self._section[x_axis_ind]['max'])]
+        rest_axes.remove(x_axis_ind)
+
+        y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
+        section.append((y_axis_ind, self._section[y_axis_ind]['min'], self._section[y_axis_ind]['max']))
+        rest_axes.remove(y_axis_ind)
+
+        for axis in rest_axes:
+            if self._section[axis]['integration']:
+                section.append((axis, self._section[axis]['min'], self._section[axis]['max']))
+            else:
+                section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
+
+        data = self._cut_data(section, True, 2)
+
+        if x_axis_ind < y_axis_ind:
             return np.transpose(data)
         else:
             return data
 
     # ----------------------------------------------------------------------
-    def _cut_data(self, data, section, do_sum, output_dim):
+    def _cut_data(self, section, do_sum, output_dim):
         """
         return cut from data
         :param data: nD np.array
@@ -168,23 +192,19 @@ class BaseDataSet(object):
         :param do_sum: if True - sums the section along all axes
         :return:
         """
-        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}")
+
+        data = self._get_data()
+
+        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
 
         for axis_slice in sorted(section, reverse=True):
             axis, start, stop = axis_slice
             i = section.index(axis_slice)
-            if axis > 0:
-                data = data.take(indices=range(start, stop + 1), axis=axis)
+            data = data.take(indices=range(start, stop), axis=axis)
             if do_sum and i >= output_dim:
                 data = np.sum(data, axis=axis)
 
         data = np.squeeze(data)
-        # ToDo Remove this temporary fix
-        if np.ndim(data) == 0:
-            data = np.zeros(5)[:, None]
-        if np.ndim(data) == 1 and output_dim == 2:
-            data = data[:, None]
-
         logger.debug(f"Data after cut {data.shape} ")
         return data
 

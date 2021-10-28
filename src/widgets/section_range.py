@@ -33,12 +33,16 @@ class SectionRange(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def refresh_view(self):
         self._block_signals(True)
-        self._ui.lb_axis.setText(self._data_pool.get_file_axes(self._parent.get_current_file())
-                                 [self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}')])
+        if self._parent.get_current_file():
+            self._ui.lb_axis.setText(self._data_pool.get_file_axes(self._parent.get_current_file())
+                                     [self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}')])
 
-        pos_min, pos_max, width_max = self._data_pool.get_roi_limits(self._roi_id, self._my_id)
-        self.set_min_max(pos_min, pos_max, width_max)
-        self.update_value()
+            pos_min, pos_max, width_max = self._data_pool.get_roi_limits(self._roi_id, self._my_id)
+            self.set_min_max(pos_min, pos_max, width_max)
+            self.update_value()
+        else:
+            self._ui.lb_axis.setText('')
+
         self._block_signals(False)
 
     # ----------------------------------------------------------------------

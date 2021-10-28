@@ -37,27 +37,6 @@ class View2d(QtWidgets.QWidget):
         self._tb_files.customContextMenuRequested.connect(self._move_tab_menu)
         self._ui.v_layout.insertWidget(0, self._tb_files, 0)
 
-        #self._plot_window = Plot2D()
-
-        #self._main_plot = pg.PlotItem()
-        #self._main_plot.showAxis('left', False)
-        #self._main_plot.showAxis('bottom', False)
-        #self._main_plot.setMenuEnabled(False)
-        #self._main_plot.getViewBox().setMouseMode(pg.ViewBox.RectMode)
-
-        #self._ui.gv_main.setStyleSheet("")
-        #self._ui.gv_main.setBackground('w')
-        #self._ui.gv_main.setObjectName("gvMain")
-
-        #self._ui.gv_main.setCentralItem(self._main_plot)
-        #self._ui.v_layout.addWidget(self._plot_window)
-        #self._ui.gv_main.setRenderHints(self._ui.gv_main.renderHints())
-
-        #self._main_plot.getViewBox().setAspectLocked()
-
-        #self.plot_2d = pg.ImageItem()
-        #self._main_plot.addItem(self.plot_2d)
-
         #self._center_cross = ImageMarker(0, 0, self._main_plot)
 
         self._rois = {}
@@ -148,10 +127,11 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _close_file(self, index):
-        self.data_pool.remove_file(self._my_files[index])
+        file_to_remove = self._my_files[index]
         del self._my_files[index]
         self.current_file = None
         self._tb_files.removeTab(index)
+        self.data_pool.remove_file(file_to_remove)
 
         if len(self._my_files) == 0:
             self.hide()
@@ -177,8 +157,10 @@ class View2d(QtWidgets.QWidget):
 
         self._rois[idx][1].setFont(QtGui.QFont("Arial", 10))
         self._rois[idx][0].sigRegionChanged.connect(lambda rect, id=idx: self._roi_changed(id, rect))
-        #self._main_plot.addItem(self._rois[idx][0])
-        #self._main_plot.addItem(self._rois[idx][1])
+        # self._ui.plot_2d.addItem(self._rois[idx][0])
+        # self._ui.plot_2d.addItem(self._rois[idx][1])
+        #self._main_plot.addItem()
+        #self._main_plot.addItem()
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
@@ -291,13 +273,13 @@ class View2d(QtWidgets.QWidget):
             self._frame_viewer.new_main_file()
 
     # ----------------------------------------------------------------------
-    def update_image(self, frame_sect, section):
+    def update_image(self):
 
         if self.current_file is None:
             self._ui.plot_2d.clear()
             return
 
-        data_to_display = self.data_pool.get_2d_picture(self.current_file, frame_sect, section)
+        data_to_display = self.data_pool.get_2d_picture(self.current_file)
 
         if data_to_display is None:
             self._ui.plot_2d.clear()

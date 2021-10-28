@@ -28,15 +28,6 @@ class Base2DDetectorDataSet(BaseDataSet):
         super(Base2DDetectorDataSet, self).__init__(data_pool)
         
         self._need_apply_mask = True
-        self._section = None
-
-    # ----------------------------------------------------------------------
-    def save_section(self, section):
-        self._section = section
-
-    # ----------------------------------------------------------------------
-    def get_section(self):
-        return self._section
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -144,25 +135,33 @@ class Base2DDetectorDataSet(BaseDataSet):
             raise RuntimeError("{}: cannot apply mask: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
-    def get_2d_picture(self, frame_axes, section):
+    def _cut_data(self, section, do_sum, output_dim):
         """
-        Get 2D array (image) to be visualized later. Image is taken form nD array of data
-        with applied corrections and selections.
-
-        Parameters:
-            frame_axes (dict): {'X': index of X axis, 'Y': index of Y axis in frame viewer}
-            section (list of tuples): (section axes, from, to)
-
-        Returns
-            data (np.array): 2D array of corrected data selected from nD array of data
-
+        return cut from data
+        :param data: nD np.array
+        :param section: array of tuples to define section: (axis, from, to)
+        :param do_sum: if True - sums the section along all axes
+        :return:
         """
-        logger.debug(f"Request 2D picture with parameters: {frame_axes}, {section}")
-        frame_selection = (sorted(section)[0][1], sorted(section)[0][2]+1)
-        data = self._get_data(frame_selection)
-        data = self._cut_data(data, section, True, 2)
+        section_sorted = sorted(section)
+        data = self._get_data((section_sorted[0][1], section_sorted[0][2]))
 
-        if frame_axes['x'] > frame_axes['y']:
-            return np.transpose(data)
-        else:
-            return data
+        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
+
+        for axis_slice in section_sorted[::-1]:
+            axis, start, stop = axis_slice
+            i = section.index(axis_slice)
+            if axis > 0:
+                data = data.take(indices=range(start, stop), axis=axis)
+            if do_sum and i >= output_dim:
+                data = np.sum(data, axis=axis)
+
+        data = np.squeeze(data)
+        # ToDo Remove this temporary fix
+        if np.ndim(data) == 0:
+            data = np.zeros(5)[:, None]
+        if np.ndim(data) == 1 and output_dim == 2:
+            data = data[:, None]
+
+        logger.debug(f"Data after cut {data.shape} ")
+        return data

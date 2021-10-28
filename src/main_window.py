@@ -52,7 +52,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self.parameter_actions = []
         self.parameter_action_group = None
 
-        self.data_pool = DataPool(self, self.log)
+        self.data_pool = DataPool(self)
         self.converter = Converter(self.data_pool)
 
         self.setCentralWidget(None)
