@@ -15,15 +15,15 @@
   </property>
   <layout class="QVBoxLayout" name="v_layout">
    <item>
-    <widget class="Plot2D" name="plot_2d" native="true"/>
+    <widget class="Plot2DWithRoi" name="plot_2d" native="true"/>
    </item>
   </layout>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>Plot2D</class>
+   <class>Plot2DWithRoi</class>
    <extends>QWidget</extends>
-   <header>silx.gui.plot.PlotWindow</header>
+   <header>src.widgets.plot_2d</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -10,19 +10,23 @@ logger = logging.getLogger(APP_NAME)
 
 class TextToTreeItem:
 
+    # ----------------------------------------------------------------------
     def __init__(self):
         self.text_list = []
         self.titem_list = []
 
+    # ----------------------------------------------------------------------
     def append(self, text_list, titem):
         for text in text_list:
             self.text_list.append(text)
             self.titem_list.append(titem)
 
+    # ----------------------------------------------------------------------
     def clear(self):
         self.text_list = []
         self.titem_list = []
 
+    # ----------------------------------------------------------------------
     # Return model indices that match string
     def find(self, find_str):
 
@@ -34,6 +38,7 @@ class TextToTreeItem:
         return titem_list
 
 
+# ----------------------------------------------------------------------
 class JsonView(QtWidgets.QWidget):
 
     def __init__(self, parent, data_pool):
@@ -46,6 +51,7 @@ class JsonView(QtWidgets.QWidget):
         self.found_titem_list = []
         self.found_idx = 0
         self.data_pool = data_pool
+        self.main_window = parent
 
         jdata = {}
         # Find UI
@@ -55,7 +61,7 @@ class JsonView(QtWidgets.QWidget):
         self.tree_widget.setHeaderLabels(["Key", "Value"])
         self.tree_widget.header().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
 
-        root_item = QtWidgets.QTreeWidgetItem(["Root"])
+        root_item = self.tree_widget.invisibleRootItem()
         self.recurse_jdata(jdata, root_item)
         self.tree_widget.addTopLevelItem(root_item)
 
@@ -73,12 +79,14 @@ class JsonView(QtWidgets.QWidget):
 
         self.setLayout(layout2)
 
-    def update_view(self, msg, data):
-        root_item = QtWidgets.QTreeWidgetItem([msg])
+    # ----------------------------------------------------------------------
+    def update_view(self, data):
+        root_item = self.tree_widget.invisibleRootItem()
         self.recurse_jdata(data, root_item)
         self.tree_widget.addTopLevelItem(root_item)
-        self.tree_widget.expandItem(root_item)
+        self.tree_widget.expandAll()
 
+    # ----------------------------------------------------------------------
     def make_find_ui(self):
 
         # Text box
@@ -94,6 +102,7 @@ class JsonView(QtWidgets.QWidget):
         layout.addWidget(find_button)
         return layout
 
+    # ----------------------------------------------------------------------
     def find_button_clicked(self):
 
         find_str = self.find_box.text()
@@ -112,6 +121,7 @@ class JsonView(QtWidgets.QWidget):
             self.found_idx = (self.found_idx + 1) % item_num
         self.tree_widget.setCurrentItem(self.found_titem_list[self.found_idx])
 
+    # ----------------------------------------------------------------------
     def recurse_jdata(self, jdata, tree_widget):
         if isinstance(jdata, dict):
             for key, val in jdata.items():
@@ -123,6 +133,7 @@ class JsonView(QtWidgets.QWidget):
         else:
             print("This should never be reached!")
 
+    # ----------------------------------------------------------------------
     def tree_add_row(self, key, val, tree_widget):
         text_list = []
         if isinstance(val, dict) or isinstance(val, list):
@@ -137,23 +148,39 @@ class JsonView(QtWidgets.QWidget):
         tree_widget.addChild(row_item)
         self.text_to_titem.append(text_list, row_item)
 
-    def update_meta(self, selection, file_key):
-        self.clear_view()
-        logger.debug(f"Update metadata with selection: {selection} for stream {file_key}")
-        if len(selection) == 0:
-            return
-        frame_sel = sorted(selection)[0]
-        if frame_sel[0] != 0:
-            return
-        # Can happen if stream is closed
-        if file_key is None or file_key == '':
-            return
+    # ----------------------------------------------------------------------
+    def update_meta(self):
+        try:
+            self.clear_view()
+            file_key = self.main_window.get_current_file()
+            # Can happen if stream is closed
+            if file_key is None or file_key == '':
+                return
 
-        metadata = self.data_pool.get_additional_data(file_key, 'metadata')
-        message_idx = self.data_pool.get_additional_data(file_key, 'message_id')
-        item_id = message_idx.index(frame_sel[1])
-        self.update_view(file_key, metadata[item_id])
+            selection = self.data_pool.get_section(file_key)
+            logger.debug(f"Update metadata with selection: {selection} for stream {file_key}")
 
+            if len(selection) == 0:
+                return
+            else:
+                selection = selection[0]
+
+            if selection['integration']:
+                frame_sel = range(selection['min'], selection['max'])
+            else:
+                frame_sel = range(selection['min'], selection['min'] + 1)
+
+            metadata = self.data_pool.get_additional_data(file_key, 'metadata')
+            message_idx = self.data_pool.get_additional_data(file_key, 'message_id')
+            item_ids = [message_idx.index(frame) for frame in frame_sel]
+            data_to_display = {}
+            for item_id in item_ids:
+                data_to_display[str(item_id)] = metadata[item_id][0]
+            self.update_view(data_to_display)
+        except Exception as err:
+            logger.error(f'Cannot update meta: {err}')
+
+    # ----------------------------------------------------------------------
     def clear_view(self):
         self.tree_widget.clear()
         self.text_to_titem.clear()

@@ -81,12 +81,14 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._additional_data['scanned_values'] = ['frame_ID']
 
         self._section = []
-        for i, axis in enumerate(np.roll(np.arange(len(self._data_shape)), 1)):
+        axis = ['' for _ in range(len(self._data_shape))]
+        axis[-2], axis[-1] = 'X', 'Y'
+        for i, axis in enumerate(axis):
             if i == 0:
                 range_limit = self.max_messages
             else:
                 range_limit = 0
-            self._section.append({'axis': axis, 'mode': 'single', 'min': 0,
+            self._section.append({'axis': axis, 'integration': False, 'min': 0,
                                   'max': self._data_shape[i] - 1, 'step': 1,
                                   'range_limit': range_limit})
 

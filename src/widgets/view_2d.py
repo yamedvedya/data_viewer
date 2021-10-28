@@ -6,9 +6,8 @@ import numpy as np
 from distutils.util import strtobool
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from silx.gui.plot.PlotWindow import Plot2D
+from silx.gui.plot.items.roi import RectangleROI
 
-from src.utils.image_marker import ImageMarker
 from src.gui.view_2d_ui import Ui_View2D
 
 
@@ -151,16 +150,20 @@ class View2d(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def add_roi(self,idx):
         roi_id = self.data_pool.get_roi_index(idx)
-        self._rois[idx] = (pg.RectROI([0, 0], [1, 1], pen=(0, 9)),
-                           pg.TextItem(text='ROI {}'.format(roi_id), color=(255, 0, 0)),
-                           idx)
-
-        self._rois[idx][1].setFont(QtGui.QFont("Arial", 10))
-        self._rois[idx][0].sigRegionChanged.connect(lambda rect, id=idx: self._roi_changed(id, rect))
+        # self._rois[idx] = RectangleROI()
+        # self._rois[idx].setName(f'ROI {idx}')
+        # self._ui.plot_2d.addItem(self._rois[idx])
+        # self._rois[idx] = (pg.RectROI([0, 0], [1, 1], pen=(0, 9)),
+        #                    pg.TextItem(text='ROI {}'.format(roi_id), color=(255, 0, 0)),
+        #                    idx)
+        #
+        # self._rois[idx][1].setFont(QtGui.QFont("Arial", 10))
+        # self._rois[idx][0].sigRegionChanged.connect(lambda rect, id=idx: self._roi_changed(id, rect))
         # self._ui.plot_2d.addItem(self._rois[idx][0])
         # self._ui.plot_2d.addItem(self._rois[idx][1])
         #self._main_plot.addItem()
         #self._main_plot.addItem()
+        pass
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
@@ -288,7 +291,7 @@ class View2d(QtWidgets.QWidget):
         if self._frame_viewer.level_mode == 'log':
             data_to_display = np.log(data_to_display + 1)
 
-        self._ui.plot_2d.addImage(data_to_display)
+        self._ui.plot_2d.addImage(data_to_display, replace=True)
 
         #self.plot_2d.setImage(data_to_display, autoLevels=self._frame_viewer.auto_levels)
 
