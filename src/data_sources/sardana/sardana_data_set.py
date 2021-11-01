@@ -157,8 +157,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def get_value_for_frame(self, axis, pos):
 
-        real_axis = self._cube_axes_map[axis]
-        if real_axis == 0:
+        if axis == 0:
             if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
                 if 0 <= pos < len(self._additional_data[SETTINGS['displayed_param']]):
                     return SETTINGS['displayed_param'], self._additional_data[SETTINGS['displayed_param']][pos]

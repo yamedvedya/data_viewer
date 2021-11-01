@@ -6,7 +6,7 @@ import pyqtgraph as pg
 import re
 import os
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
 from src.gui.section_viewer_ui import Ui_SectionView
 
 from src.utils.section_plot import SectionPlot
@@ -345,17 +345,13 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _print_plot(self):
-        return
-        try:
-            printer_name = "hascpp22"
-            tmp_file = os.path.join("_trash", "scan_print.png")
-            pix = QtGui.QPixmap(self._ui.gv_main.size())
-            self._ui.gv_main.render(pix)
-            pix.save(tmp_file)
-            os.system("lpr -o scaling=55 -o media=A4 -P {} {}".format(printer_name, tmp_file))
-            os.remove(tmp_file)
-        except Exception as err:
-            self.parent.log.eroor('Error while printing: {}'.format(err))
+        dialog = QtPrintSupport.QPrintPreviewDialog()
+        dialog.paintRequested.connect(self.handlePaintRequest)
+        dialog.exec_()
+
+    # ----------------------------------------------------------------------
+    def handlePaintRequest(self, printer):
+        self._ui.gv_main.render(QtGui.QPainter(printer))
 
     # ----------------------------------------------------------------------
     def _init_tool_bar(self):
@@ -392,7 +388,7 @@ class SectionView(QtWidgets.QWidget):
         action_grid.setChecked(True)
         action_grid.toggled.connect(lambda flag: self._main_plot.showGrid(flag, flag, alpha=0.25))
 
-        action_cross = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/cross.png")), "Crosshair Cursor")
+        action_cross = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/crosshair.png")), "Crosshair Cursor")
         action_cross.setCheckable(True)
         action_cross.setChecked(False)
         action_cross.toggled.connect(lambda state: self._cross.setVisible(state))

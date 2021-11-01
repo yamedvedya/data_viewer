@@ -3,8 +3,6 @@
 import pyqtgraph as pg
 import numpy as np
 
-from distutils.util import strtobool
-
 from PyQt5 import QtWidgets, QtCore, QtGui
 from silx.gui.plot.PlotWindow import Plot2D
 
@@ -41,10 +39,6 @@ class View2d(QtWidgets.QWidget):
 
         self._tb_files.tabCloseRequested.connect(self._close_file)
         self._tb_files.currentChanged.connect(self._switch_file)
-
-    # ----------------------------------------------------------------------
-    def set_settings(self, settings):
-        pass
 
     # ----------------------------------------------------------------------
     def block_signals(self, flag):
@@ -169,6 +163,8 @@ class View2d(QtWidgets.QWidget):
 
         if self._frame_viewer.level_mode == 'log':
             data_to_display = np.log(data_to_display + 1)
+        elif self._frame_viewer.level_mode == 'sqrt':
+            data_to_display = np.sqrt(data_to_display + 1)
 
         return data_to_display
 
@@ -193,8 +189,6 @@ class ViewPyQt(View2d):
         self.gv_main.setCentralItem(self._main_plot)
         self.gv_main.setRenderHints(self.gv_main.renderHints())
 
-        self._main_plot.getViewBox().setAspectLocked()
-
         self.plot_2d = pg.ImageItem()
         self._main_plot.addItem(self.plot_2d)
 
@@ -206,11 +200,24 @@ class ViewPyQt(View2d):
         self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
 
     # ----------------------------------------------------------------------
-    def set_settings(self, settings):
-        self._main_plot.showAxis('left', strtobool(settings['display_axes']))
-        self._main_plot.showAxis('bottom', strtobool(settings['display_axes']))
-        self._main_plot.showLabel('left', strtobool(settings['display_axes_titles']))
-        self._main_plot.showLabel('bottom', strtobool(settings['display_axes_titles']))
+    def apply_setting(self, setting, state):
+
+        if setting == 'axes':
+            self._main_plot.showAxis('left', state)
+            self._main_plot.showAxis('bottom', state)
+
+        elif setting == 'titles':
+            self._main_plot.showLabel('left', state)
+            self._main_plot.showLabel('bottom', state)
+
+        elif setting == 'grid':
+            self._main_plot.showGrid(state, state, alpha=0.25)
+
+        elif setting == 'cross':
+            self._center_cross.setVisible(state)
+
+        elif setting == 'aspect':
+            self._main_plot.getViewBox().setAspectLocked(state)
 
     # ----------------------------------------------------------------------
     def block_signals(self, flag):
@@ -225,7 +232,6 @@ class ViewPyQt(View2d):
             self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
 
             self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
-
 
     # ----------------------------------------------------------------------
     def _range_changed(self, view_box):
@@ -260,6 +266,7 @@ class ViewPyQt(View2d):
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
+
         self._main_plot.removeItem(self._rois[idx][0])
         self._main_plot.removeItem(self._rois[idx][1])
         del self._rois[idx]
@@ -269,6 +276,7 @@ class ViewPyQt(View2d):
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
+
         self._rois[roi_ind][0].sigRegionChanged.disconnect()
 
         current_axes = self._frame_viewer.get_current_axes()

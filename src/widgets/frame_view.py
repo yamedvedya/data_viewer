@@ -4,13 +4,14 @@ WIDGET_NAME = 'FrameView'
 
 import logging
 import configparser
-from PyQt5 import QtWidgets, QtCore
+from distutils.util import strtobool
+
+from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
 
 from src.main_window import APP_NAME
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import ViewPyQt, ViewSilx
 from src.gui.frame_view_ui import Ui_FrameView
-
 
 logger = logging.getLogger(APP_NAME)
 
@@ -29,6 +30,9 @@ class FrameView(AbstractWidget):
         self._ui = Ui_FrameView()
         self._ui.setupUi(self)
 
+        self.hist = self._ui.hist
+        self.hist.setBackground('w')
+
         self._ui.cut_selectors.new_cut.connect(self.update_image)
         self._ui.cut_selectors.new_axis.connect(self._update_axes)
 
@@ -36,15 +40,31 @@ class FrameView(AbstractWidget):
         settings.read('./settings.ini')
 
         try:
-            backend = settings['FRAME_VIEW']['backend']
+            self.backend = settings['FRAME_VIEW']['backend']
         except:
-            backend = 'pyqt'
-        if backend == 'pyqt':
+            self.backend = 'pyqt'
+
+        if self.backend == 'pyqt':
             self._main_view = ViewPyQt(self, 'main', data_pool)
             self._second_view = ViewPyQt(self, 'second', data_pool)
+
+            self.hist.item.setImageItem(self._main_view.plot_2d)
+
+            self.level_mode = 'lin'
+
+            self._ui.chk_auto_levels.clicked.connect(self._toggle_auto_levels)
+            self._ui.bg_lev_mode.buttonClicked.connect(self._change_level_mode)
+            self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
+            self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+            self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
+
+            self._setup_actions()
+
         else:
             self._main_view = ViewSilx(self, 'main', data_pool)
             self._second_view = ViewSilx(self, 'second', data_pool)
+
+            self._ui.fr_hist.setVisible(False)
 
         self._second_view.hide()
 
@@ -56,6 +76,9 @@ class FrameView(AbstractWidget):
 
         self._shape_label = QtWidgets.QLabel("")
         self._status_bar.addPermanentWidget(self._shape_label)
+
+        self._coordinate_label = QtWidgets.QLabel("")
+        self._status_bar.addPermanentWidget(self._coordinate_label)
 
         self.current_frames = [0, 0]
         self.level_mode = 'lin'
@@ -71,8 +94,12 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
         try:
-            self._main_view.set_settings(settings)
-            self._second_view.set_settings(settings)
+            if self.backend == 'pyqt':
+                self.action_axes.setChecked(strtobool(settings['display_axes']))
+                self.action_axes_titles.setChecked(strtobool(settings['display_axes_titles']))
+                self.action_grid.setChecked(strtobool(settings['display_grid']))
+                self.action_cross.setChecked(strtobool(settings['display_cross']))
+                self.action_aspect.setChecked(strtobool(settings['lock_aspect']))
 
         except Exception as err:
             self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
@@ -105,7 +132,9 @@ class FrameView(AbstractWidget):
         self._second_view.file_closed_by_pool(file_name)
 
     # ----------------------------------------------------------------------
-    def new_coordinate(self, source, pos):
+    def new_coordinate(self, source,x_name, x_value, y_name, y_value, pos):
+
+        self._coordinate_label.setText(f'{x_name}: {x_value}, {y_name}: {y_value}')
 
         if source == 'main':
             self._second_view.move_marker(pos)
@@ -140,8 +169,33 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def switch_off_auto_levels(self):
         self.auto_levels = False
-        #self._ui.chk_auto_levels.setChecked(False)
+        self._ui.chk_auto_levels.blockSignals(True)
+        self._ui.chk_auto_levels.setChecked(False)
+        self._ui.chk_auto_levels.blockSignals(False)
         self._second_view.new_levels()
+
+    # ----------------------------------------------------------------------
+    def _toggle_auto_levels(self, state):
+
+        self.auto_levels = state
+        self.update_image()
+        self._ui.chk_auto_levels.setChecked(state)
+
+    # ----------------------------------------------------------------------
+    def _change_level_mode(self, button):
+        if button == self._ui.rb_lin_levels:
+            self.level_mode = 'lin'
+        elif button == self._ui.rb_sqrt_levels:
+            self._level_mode = 'sqrt'
+        else:
+            self.level_mode = 'log'
+
+        self.update_image()
+
+    # ----------------------------------------------------------------------
+    def _hist_mouse_clicked(self, event):
+        if event.double():
+            self._toggle_auto_levels(True)
 
     # ----------------------------------------------------------------------
     def get_current_axes(self):
@@ -159,8 +213,15 @@ class FrameView(AbstractWidget):
 
         logger.debug(f"Update image with sel {selection}")
 
+        if self.backend == 'pyqt':
+            self.hist.item.sigLevelsChanged.disconnect()
+
         self._main_view.update_image()
         self._second_view.update_image()
+
+        if self.backend == 'pyqt':
+            self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+
         self.section_updated.emit()
 
     # ----------------------------------------------------------------------
@@ -217,3 +278,93 @@ class FrameView(AbstractWidget):
         """
         self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))
         self.update_file(self._main_view.current_file)
+
+    # ----------------------------------------------------------------------
+    def _setup_actions(self):
+
+        toolbar = QtWidgets.QToolBar("Main toolbar", self)
+
+        label = QtWidgets.QLabel("Level and colors: ", self)
+        toolbar.addWidget(label)
+
+        action_levels = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/colormap.png")), "Grid")
+        action_levels.setCheckable(True)
+        action_levels.setChecked(True)
+        action_levels.toggled.connect(lambda flag: self._ui.fr_hist.setVisible(flag))
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("Lock aspect: ", self)
+        toolbar.addWidget(label)
+
+        self.action_aspect = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/aspect.png")), "Aspect ratio")
+        self.action_aspect.setCheckable(True)
+        self.action_aspect.toggled.connect(lambda flag, setting='aspect': self._apply_setting(setting, flag))
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("Axes and grid: ", self)
+        toolbar.addWidget(label)
+
+        self.action_axes = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/axes.png")), "Axes")
+        self.action_axes.setCheckable(True)
+        self.action_axes.toggled.connect(lambda flag, setting='axes': self._apply_setting(setting, flag))
+
+        self.action_axes_titles = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/titles.png")), "Titles")
+        self.action_axes_titles.setCheckable(True)
+        self.action_axes_titles.toggled.connect(lambda flag, setting='titles': self._apply_setting(setting, flag))
+
+        self.action_grid = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/grid.png")), "Grid")
+        self.action_grid.setCheckable(True)
+        self.action_grid.toggled.connect(lambda flag, setting='grid': self._apply_setting(setting, flag))
+
+        self.action_cross = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/crosshair.png")), "Crosshair")
+        self.action_cross.setCheckable(True)
+        self.action_cross.toggled.connect(lambda flag, setting='cross': self._apply_setting(setting, flag))
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("Export image: ", self)
+        toolbar.addWidget(label)
+
+        print_action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/print.png")), "Print")
+        print_action.triggered.connect(self._print)
+
+        action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/copy.png")), "Copy to Clipboard")
+        action.triggered.connect(self._copy_to_clipboard)
+
+        action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/save.png")), "Save")
+        action.triggered.connect(self._save)
+
+        toolbar.addSeparator()
+
+        self._ui.v_layout.insertWidget(0, toolbar, 0)
+
+    def _apply_setting(self, setting, state):
+        self._main_view.apply_setting(setting, state)
+        self._second_view.apply_setting(setting, state)
+
+    # ----------------------------------------------------------------------
+    def _save(self):
+        default_name = self._parent.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
+                                                             'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*ppm); X11 Bitmap (*xbm);; X11 Pixmap (*xpm)')
+        if file_name:
+            pix = QtGui.QPixmap(self._ui.view_layout.size())
+            self._ui.view_widget.render(pix)
+            pix.save(file_name)
+
+    # ----------------------------------------------------------------------
+    def _copy_to_clipboard(self):
+        QtWidgets.qApp.clipboard().setPixmap(self._ui.view_widget.grab())
+
+    # ----------------------------------------------------------------------
+    def _print(self):
+        dialog = QtPrintSupport.QPrintPreviewDialog()
+        dialog.paintRequested.connect(self.handlePaintRequest)
+        dialog.exec_()
+
+    # ----------------------------------------------------------------------
+    def handlePaintRequest(self, printer):
+        self._ui.view_widget.render(QtGui.QPainter(printer))
+

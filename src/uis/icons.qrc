@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="icon">
+    <file>axes.png</file>
+    <file>aspect.png</file>
+    <file>titles.png</file>
+    <file>colormap.png</file>
+    <file>crosshair.png</file>
+    <file>plot-grid.png</file>
     <file>plus_small.png</file>
     <file>plus.png</file>
     <file>copy.png</file>
