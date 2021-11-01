@@ -93,16 +93,12 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
-        try:
-            if self.backend == 'pyqt':
-                self.action_axes.setChecked(strtobool(settings['display_axes']))
-                self.action_axes_titles.setChecked(strtobool(settings['display_axes_titles']))
-                self.action_grid.setChecked(strtobool(settings['display_grid']))
-                self.action_cross.setChecked(strtobool(settings['display_cross']))
-                self.action_aspect.setChecked(strtobool(settings['lock_aspect']))
-
-        except Exception as err:
-            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
+        if self.backend == 'pyqt':
+            for action in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
+                try:
+                    getattr(self, f'action_{action}').setChecked(strtobool(settings[f'display_{action}']))
+                except Exception as err:
+                    self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, move_from='second'):
