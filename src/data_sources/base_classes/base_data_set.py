@@ -63,6 +63,15 @@ class BaseDataSet(object):
         return self._axes_names
 
     # ----------------------------------------------------------------------
+    def get_file_dimension(self):
+        """
+        return nD cube dimensions
+        :param file:
+        :return: int
+        """
+        return len(self._data_shape)
+
+    # ----------------------------------------------------------------------
     def get_additional_data(self, entry):
         """
         for some file types we can store additional information
@@ -178,7 +187,7 @@ class BaseDataSet(object):
 
         data = self._cut_data(section, True, 2)
 
-        if x_axis_ind < y_axis_ind:
+        if x_axis_ind > y_axis_ind:
             return np.transpose(data)
         else:
             return data

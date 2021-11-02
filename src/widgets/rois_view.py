@@ -75,6 +75,10 @@ class RoisView(AbstractWidget):
             self._ui.tab_main.setTabText(idx, 'ROI_{}'.format(self._ui.tab_main.widget(idx).refresh_name()))
 
     # ----------------------------------------------------------------------
+    def new_main_file(self):
+        pass
+
+    # ----------------------------------------------------------------------
     def current_folder(self):
         return self._parent.get_current_folder()
 
@@ -102,4 +106,5 @@ class RoisView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_id):
+
         self._roi_widgets[roi_id].roi_changed()

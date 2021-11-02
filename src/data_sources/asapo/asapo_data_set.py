@@ -75,7 +75,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
         else:
             self._data_shape = self._get_data_shape()
         self._axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
-        self._data_pool.axes_limits = {i: [0, 0] for i in range(len(self._axes_names))}
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
         self._additional_data['scanned_values'] = ['frame_ID']

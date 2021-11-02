@@ -48,13 +48,6 @@ class DataPool(QtCore.QObject):
         self._max_memory = None
         self.memory_mode = 'ram'
 
-        self._axes_names = ['X', 'Y', 'Z']
-
-        # maximum and minimum values along all axes for all open files
-        self.axes_limits = {0: [0, 0],
-                            1: [0, 0],
-                            2: [0, 0]}
-
         self._files_data = {}
         self._files_history = []
         self._protected_files = []
@@ -130,6 +123,7 @@ class DataPool(QtCore.QObject):
         self._start_opener('stream', f'Opening stream {stream_name}',
                            {'detector_name': detector_name, 'stream_name': stream_name, 'entry_name': entry_name})
 
+    # ----------------------------------------------------------------------
     def update_stream(self, detector_name, stream_name, info):
         """
             called by signal from ASAPO browser
@@ -225,7 +219,7 @@ class DataPool(QtCore.QObject):
         self._files_history.append(entry_name)
 
         # than we need to update all axes rages and re-update all settings for all opened files
-        self._get_all_axes_limits()
+        self.get_all_axes_limits()
         for data_set in self._files_data.values():
             data_set.check_file_after_load()
 
@@ -252,7 +246,6 @@ class DataPool(QtCore.QObject):
 
         del self._files_data[name]
         self._files_history.remove(name)
-        self._get_all_axes_limits()
         self.file_deleted.emit(name)
 
     # ----------------------------------------------------------------------
@@ -362,9 +355,14 @@ class DataPool(QtCore.QObject):
             :returns accepted value
         """
         logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, section_axis: {section_axis}, param: {param}, value: {value}")
-        value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, self.axes_limits)
-        self.roi_changed.emit(roi_key)
-        return value
+
+        axis_lim = self.get_all_axes_limits()
+        if axis_lim is not None:
+            value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, axis_lim)
+            self.roi_changed.emit(roi_key)
+            return value
+        else:
+            return None
 
     # ----------------------------------------------------------------------
     def get_roi_axis_name(self, roi_key, file):
@@ -389,7 +387,7 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     def get_roi_limits(self, roi_key, section_axis):
         """
-            :returns max and min values for particular axis and ROI
+            :returns max and min values for particular axis and ROI if all files have the same dims, else None, None
         """
         section_params = self._rois[roi_key].get_section_params()
 
@@ -398,11 +396,16 @@ class DataPool(QtCore.QObject):
         else:
             real_axis = section_params['axis_{}'.format(section_axis)]
 
-        axis_min = self.axes_limits[real_axis][0]
-        axis_max = self.axes_limits[real_axis][1]
+        axis_lim = self.get_all_axes_limits()
+        if axis_lim is not None:
+            axis_min = axis_lim[real_axis][0]
+            axis_max = axis_lim[real_axis][1]
 
-        return axis_min, axis_max - section_params['axis_{}_width'.format(section_axis)], \
-               axis_max - axis_min - section_params['axis_{}_pos'.format(section_axis)]
+            return axis_min, axis_max - section_params['axis_{}_width'.format(section_axis)], \
+                   axis_max - axis_min - section_params['axis_{}_pos'.format(section_axis)]
+
+        else:
+            return None, None, None
 
     # ----------------------------------------------------------------------
     #       ROIs batch processing section
@@ -549,21 +552,32 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_axis_limits()
 
     # ----------------------------------------------------------------------
-    def _get_all_axes_limits(self):
+    def get_all_axes_limits(self):
         """
         recalculates the limits for all files
         :return:
         """
-        new_limits = {i: [0, 0] for i in range(len(self.axes_limits))}
+
+        main_file = self.main_window.get_current_file()
+        if main_file is None:
+            return None
+
+        main_file_dim = self._files_data[main_file].get_file_dimension()
+
+        new_limits = [[0, 0] for _ in range(main_file_dim)]
 
         for data_set in self._files_data.values():
-            file_limits = data_set.get_axis_limits()
-            for axis, lim in new_limits.items():
-                if axis in file_limits:
-                    lim[0] = min(lim[0], file_limits[axis][0])
-                    lim[1] = max(lim[1], file_limits[axis][1])
+            if data_set.get_file_dimension() != main_file_dim:
+                continue
 
-        self.axes_limits = new_limits
+            for axis, max_frame in enumerate(data_set.get_axis_limits()):
+                _, min_v = data_set.get_value_for_frame(axis, 0)
+                new_limits[axis][0] = min(new_limits[axis][0], min_v)
+
+                _, max_v = data_set.get_value_for_frame(axis, max_frame - 1)
+                new_limits[axis][1] = max(new_limits[axis][1], max_v)
+
+        return new_limits
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

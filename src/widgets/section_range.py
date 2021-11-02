@@ -31,6 +31,12 @@ class SectionRange(QtWidgets.QWidget):
         self._ui.sb_width.valueChanged.connect(lambda value: self._roi_value_changed('width', int(value)))
 
     # ----------------------------------------------------------------------
+    def _disable_me(self, flag):
+        self._ui.sb_pos.setEnabled(not flag)
+        self._ui.sb_width.setEnabled(not flag)
+        self.sld.setEnabled(not flag)
+
+    # ----------------------------------------------------------------------
     def refresh_view(self):
         self._block_signals(True)
         if self._parent.get_current_file():
@@ -38,8 +44,12 @@ class SectionRange(QtWidgets.QWidget):
                                      [self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}')])
 
             pos_min, pos_max, width_max = self._data_pool.get_roi_limits(self._roi_id, self._my_id)
-            self.set_min_max(pos_min, pos_max, width_max)
-            self.update_value()
+            if pos_min is not None:
+                self._disable_me(False)
+                self.set_min_max(pos_min, pos_max, width_max)
+                self.update_value()
+            else:
+                self._disable_me(True)
         else:
             self._ui.lb_axis.setText('')
 
@@ -94,4 +104,4 @@ class SectionRange(QtWidgets.QWidget):
         self.sld.blockSignals(flag)
         self._ui.sb_pos.blockSignals(flag)
         self._ui.sb_width.blockSignals(flag)
-        self._data_pool.blockSignals(flag)
+        # self._data_pool.blockSignals(flag)

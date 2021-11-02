@@ -105,6 +105,8 @@ class DataViewer(QtWidgets.QMainWindow):
         #                                                      QtCore.Qt.LeftDockWidgetArea,
         #                                                      self, self.data_pool)
 
+        self.frame_view.new_file_selected.connect(self.rois_view.new_main_file)
+
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)
 

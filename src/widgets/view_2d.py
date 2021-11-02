@@ -284,9 +284,10 @@ class ViewPyQt(View2d):
         x_pos, y_pos = 0, 0
         x_width, y_width = 1, 1
 
+        axes_limits = self.data_pool.get_all_axes_limits()
         if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis_0'):
-            x_pos = self.data_pool.axes_limits[current_axes['x']][0]
-            x_width = self.data_pool.axes_limits[current_axes['x']][1] - self.data_pool.axes_limits[current_axes['x']][0]
+            x_pos = axes_limits[current_axes['x']][0]
+            x_width = axes_limits[current_axes['x']][1] - axes_limits[current_axes['x']][0]
         else:
             axis = 1
             while axis < 100:
@@ -297,8 +298,8 @@ class ViewPyQt(View2d):
                 axis += 1
 
         if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis_0'):
-            y_pos = self.data_pool.axes_limits[current_axes['y']][0]
-            y_width = self.data_pool.axes_limits[current_axes['y']][1] - self.data_pool.axes_limits[current_axes['y']][0]
+            y_pos = axes_limits[current_axes['y']][0]
+            y_width = axes_limits[current_axes['y']][1] - axes_limits[current_axes['y']][0]
         else:
             axis = 1
             while axis < 100:
@@ -335,8 +336,8 @@ class ViewPyQt(View2d):
     # ----------------------------------------------------------------------
     def new_axes(self, labels):
 
-        self._main_plot.setLabel('left', labels[0])
-        self._main_plot.setLabel('bottom', labels[1])
+        self._main_plot.setLabel('bottom', labels[0])
+        self._main_plot.setLabel('left', labels[1])
 
         for idx in range(len(self._rois)):
             self.roi_changed(idx)
@@ -403,5 +404,5 @@ class ViewSilx(View2d):
     def update_image(self):
         data_to_display = super(ViewSilx, self).update_image()
         if data_to_display is not None:
-            self.plot_2d.addImage(data_to_display, replace=True)
+            self.plot_2d.addImage(np.transpose(data_to_display), replace=True)
 

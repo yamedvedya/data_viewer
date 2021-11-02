@@ -21,6 +21,7 @@ class FrameView(AbstractWidget):
     """
     """
     section_updated = QtCore.pyqtSignal()
+    new_file_selected = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
@@ -93,6 +94,7 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
+
         if self.backend == 'pyqt':
             for action in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
                 try:
@@ -102,6 +104,7 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, move_from='second'):
+
         logger.debug(f"Add file {file_name}, view: {move_from}")
         if move_from == 'second':
             self._main_view.add_file(file_name)
@@ -114,16 +117,20 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
+
+        print(f'Frame viewer: got signal roi {roi_ind} changed signal')
         self._main_view.roi_changed(roi_ind)
         self._second_view.roi_changed(roi_ind)
 
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
+
         self._main_view.add_roi(idx)
         self._second_view.add_roi(idx)
 
     # ----------------------------------------------------------------------
     def file_closed_by_pool(self, file_name):
+
         self._main_view.file_closed_by_pool(file_name)
         self._second_view.file_closed_by_pool(file_name)
 
@@ -164,6 +171,7 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def switch_off_auto_levels(self):
+
         self.auto_levels = False
         self._ui.chk_auto_levels.blockSignals(True)
         self._ui.chk_auto_levels.setChecked(False)
@@ -179,6 +187,7 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _change_level_mode(self, button):
+
         if button == self._ui.rb_lin_levels:
             self.level_mode = 'lin'
         elif button == self._ui.rb_sqrt_levels:
@@ -190,11 +199,13 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _hist_mouse_clicked(self, event):
+
         if event.double():
             self._toggle_auto_levels(True)
 
     # ----------------------------------------------------------------------
     def get_current_axes(self):
+
         selection = self._ui.cut_selectors.get_current_selection()
 
         return {'x': [ind for ind, sect in enumerate(selection) if sect['axis'] == 'X'][0],
@@ -274,6 +285,7 @@ class FrameView(AbstractWidget):
         """
         self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))
         self.update_file(self._main_view.current_file)
+        self.new_file_selected.emit()
 
     # ----------------------------------------------------------------------
     def _setup_actions(self):
@@ -336,6 +348,7 @@ class FrameView(AbstractWidget):
 
         self._ui.v_layout.insertWidget(0, toolbar, 0)
 
+    # ----------------------------------------------------------------------
     def _apply_setting(self, setting, state):
         self._main_view.apply_setting(setting, state)
         self._second_view.apply_setting(setting, state)
