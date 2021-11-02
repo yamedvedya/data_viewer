@@ -359,7 +359,6 @@ class DataPool(QtCore.QObject):
         axis_lim = self.get_all_axes_limits()
         if axis_lim is not None:
             value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, axis_lim)
-            self.roi_changed.emit(roi_key)
             return value
         else:
             return None
@@ -390,11 +389,7 @@ class DataPool(QtCore.QObject):
             :returns max and min values for particular axis and ROI if all files have the same dims, else None, None
         """
         section_params = self._rois[roi_key].get_section_params()
-
-        if section_axis == 0:
-            real_axis = section_params['axis_0']
-        else:
-            real_axis = section_params['axis_{}'.format(section_axis)]
+        real_axis = section_params['axis_{}'.format(section_axis)]
 
         axis_lim = self.get_all_axes_limits()
         if axis_lim is not None:

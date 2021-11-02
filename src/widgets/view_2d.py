@@ -171,6 +171,9 @@ class View2d(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------
 class ViewPyQt(View2d):
+
+    update_roi = QtCore.pyqtSignal(int)
+
     def __init__(self, frame_viewer, type, data_pool):
         super(ViewPyQt, self).__init__(frame_viewer, type, data_pool)
 
@@ -260,7 +263,7 @@ class ViewPyQt(View2d):
                            idx)
 
         self._rois[idx][1].setFont(QtGui.QFont("Arial", 10))
-        self._rois[idx][0].sigRegionChanged.connect(lambda rect, id=idx: self._roi_changed(id, rect))
+        self._rois[idx][0].sigRegionChangeFinished.connect(lambda rect, id=idx: self._roi_changed(id, rect))
         self._main_plot.addItem(self._rois[idx][0])
         self._main_plot.addItem(self._rois[idx][1])
 
@@ -277,7 +280,7 @@ class ViewPyQt(View2d):
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
 
-        self._rois[roi_ind][0].sigRegionChanged.disconnect()
+        self._rois[roi_ind][0].sigRegionChangeFinished.disconnect()
 
         current_axes = self._frame_viewer.get_current_axes()
 
@@ -312,7 +315,7 @@ class ViewPyQt(View2d):
         self._rois[roi_ind][0].setPos([x_pos, y_pos])
         self._rois[roi_ind][0].setSize([x_width, y_width])
         self._rois[roi_ind][1].setPos(x_pos + x_width, y_pos + y_width)
-        self._rois[roi_ind][0].sigRegionChanged.connect(lambda rect, idx=roi_ind: self._roi_changed(idx, rect))
+        self._rois[roi_ind][0].sigRegionChangeFinished.connect(lambda rect, idx=roi_ind: self._roi_changed(idx, rect))
 
     # ----------------------------------------------------------------------
     def _roi_changed(self, roi_ind, rect):
@@ -326,12 +329,14 @@ class ViewPyQt(View2d):
         accepted_y_pos = self.data_pool.roi_parameter_changed(roi_ind, current_axes['y'], 'pos', int(pos.y()))
         accepted_y_width = self.data_pool.roi_parameter_changed(roi_ind, current_axes['y'], 'width', int(size.y()))
 
-        self._rois[roi_ind][0].sigRegionChanged.disconnect()
+        self.update_roi.emit(roi_ind)
+
+        self._rois[roi_ind][0].sigRegionChangeFinished.disconnect()
         self._rois[roi_ind][0].setPos([accepted_x_pos, accepted_y_pos])
         self._rois[roi_ind][0].setSize([accepted_x_width, accepted_y_width])
 
         self._rois[roi_ind][1].setPos(accepted_x_pos + accepted_x_width, accepted_y_pos + accepted_y_width)
-        self._rois[roi_ind][0].sigRegionChanged.connect(lambda rect, id=roi_ind: self._roi_changed(roi_ind, rect))
+        self._rois[roi_ind][0].sigRegionChangeFinished.connect(lambda rect, id=roi_ind: self._roi_changed(roi_ind, rect))
 
     # ----------------------------------------------------------------------
     def new_axes(self, labels):

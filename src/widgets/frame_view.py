@@ -23,6 +23,8 @@ class FrameView(AbstractWidget):
     section_updated = QtCore.pyqtSignal()
     new_file_selected = QtCore.pyqtSignal()
 
+    update_roi = QtCore.pyqtSignal(int)
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
         """
@@ -58,6 +60,12 @@ class FrameView(AbstractWidget):
             self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
             self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
             self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
+
+            self._main_view.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
+            self._main_view.update_roi.connect(lambda roi_id: self._second_view.roi_changed(roi_id))
+
+            self._second_view.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
+            self._second_view.update_roi.connect(lambda roi_id: self.second_view.roi_changed(roi_id))
 
             self._setup_actions()
 
@@ -118,7 +126,7 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
 
-        print(f'Frame viewer: got signal roi {roi_ind} changed signal')
+
         self._main_view.roi_changed(roi_ind)
         self._second_view.roi_changed(roi_ind)
 

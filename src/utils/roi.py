@@ -31,7 +31,7 @@ class ROI(object):
     def roi_parameter_changed(self, section_axis, param, value, axes_limits):
 
         value = int(value)
-        if section_axis == 0:
+        if section_axis == self._section_params['axis_0']:
             if param == 'pos':
                 return axes_limits[self._section_params['axis_0']][0]
             else:

@@ -14,10 +14,13 @@ from src.widgets.section_range import SectionRange
 from src.utils.cursors import CrosshairCursor, Ruler
 from src.utils.legend_item import addLegend
 
+
 # ----------------------------------------------------------------------
 class SectionView(QtWidgets.QWidget):
     """
     """
+
+    update_roi = QtCore.pyqtSignal(int)
 
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool, my_id):
@@ -120,6 +123,7 @@ class SectionView(QtWidgets.QWidget):
             for ind in range(1, len(axes)):
                 widget = SectionRange(self, self.data_pool, self.my_id, ind)
                 widget.refresh_view()
+                widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
                 self._section_ranger.append(widget)
                 layout.addWidget(widget)
 

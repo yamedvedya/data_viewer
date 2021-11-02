@@ -106,6 +106,9 @@ class DataViewer(QtWidgets.QMainWindow):
         #                                                      self, self.data_pool)
 
         self.frame_view.new_file_selected.connect(self.rois_view.new_main_file)
+        self.frame_view.update_roi.connect(self.rois_view.roi_changed)
+
+        self.rois_view.update_roi.connect(self.frame_view.roi_changed)
 
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)

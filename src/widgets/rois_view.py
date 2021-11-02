@@ -15,6 +15,8 @@ class RoisView(AbstractWidget):
     """
     PEN_COUNTER = 0
 
+    update_roi = QtCore.pyqtSignal(int)
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
         """
@@ -53,7 +55,9 @@ class RoisView(AbstractWidget):
     def _add_roi(self):
         idx, name = self._data_pool.add_new_roi()
         self._parent.add_roi(idx)
-        self._roi_widgets[idx] = SectionView(self, self._data_pool, idx)
+        widget = SectionView(self, self._data_pool, idx)
+        widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
+        self._roi_widgets[idx] = widget
         self._ui.tab_main.insertTab(self._ui.tab_main.count(), self._roi_widgets[idx], 'ROI_{}'.format(name))
         self._ui.tab_main.setCurrentWidget(self._roi_widgets[idx])
 

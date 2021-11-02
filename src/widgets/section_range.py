@@ -11,6 +11,8 @@ class SectionRange(QtWidgets.QWidget):
     """
     """
 
+    update_roi = QtCore.pyqtSignal(int)
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool, roi_id, my_id):
         super(SectionRange, self).__init__()
@@ -82,21 +84,31 @@ class SectionRange(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _roi_value_changed(self, param, value):
+
         self._block_signals(True)
+
         accepted_value = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, param, value)
         getattr(self._ui, f'sb_{param}').setValue(accepted_value)
+
         self._block_signals(False)
+
+        self.update_roi.emit(self._roi_id)
         self._parent.update_plots()
 
     # ----------------------------------------------------------------------
     def _new_slider_range(self, vmin, vmax):
+
         self._block_signals(True)
+
         accepted_pos = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, 'pos', vmin)
         self._ui.sb_pos.setValue(accepted_pos)
+
         accepted_width = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, 'width', vmax - vmin)
         self._ui.sb_width.setValue(accepted_width)
+
         self._block_signals(False)
 
+        self.update_roi.emit(self._roi_id)
         self._parent.update_plots()
 
     # ----------------------------------------------------------------------
