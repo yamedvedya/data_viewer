@@ -18,6 +18,7 @@ try:
 except:
     has_asapo = False
 from src.widgets.folder_browser import FolderBrowser
+from src.widgets.cube_view import CubeView
 
 from src.widgets.frame_view import FrameView
 from src.widgets.rois_view import RoisView
@@ -67,6 +68,10 @@ class DataViewer(QtWidgets.QMainWindow):
                                                                QtCore.Qt.LeftDockWidgetArea,
                                                                self, self.data_pool)
 
+        self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube view",
+                                                             QtCore.Qt.LeftDockWidgetArea,
+                                                             self, self.data_pool)
+
         self.rois_view, self.rois_view_dock = self._add_dock(RoisView, "ROIs View",
                                                              QtCore.Qt.LeftDockWidgetArea,
                                                              self, self.data_pool)
@@ -101,11 +106,11 @@ class DataViewer(QtWidgets.QMainWindow):
         else:
             self.has_beam_view = False
 
-        # self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube iew",
-        #                                                      QtCore.Qt.LeftDockWidgetArea,
-        #                                                      self, self.data_pool)
-
         self.frame_view.new_file_selected.connect(self.rois_view.new_main_file)
+        self.frame_view.new_file_selected.connect(self.cube_view.display_file)
+
+        self.frame_view.levels_updated.connect(self.cube_view.display_file)
+
         self.frame_view.update_roi.connect(self.rois_view.roi_changed)
 
         self.rois_view.update_roi.connect(self.frame_view.roi_changed)
@@ -134,8 +139,11 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
 
-        if options.file is not None:
-            self.data_pool.open_file(options.file)
+        if options.def_file is not None:
+            self.data_pool.open_file(options.def_file)
+
+        if options.def_stream is not None:
+            self.data_pool.open_file(options.def_stream)
 
     # ----------------------------------------------------------------------
     def apply_settings(self, settings=None):
@@ -151,6 +159,8 @@ class DataViewer(QtWidgets.QMainWindow):
             self.frame_view.set_settings(settings['FRAME_VIEW'])
         if 'ROIS_VIEW' in settings:
             self.rois_view.set_settings(settings['ROIS_VIEW'])
+        if 'CUBE_VIEW' in settings:
+            self.cube_view.set_settings(settings['CUBE_VIEW'])
         if 'DATA_POOL' in settings:
             self.data_pool.set_settings(settings['DATA_POOL'])
 
@@ -168,12 +178,18 @@ class DataViewer(QtWidgets.QMainWindow):
             return os.getcwd()
 
     # ----------------------------------------------------------------------
+    def get_current_levels(self):
+        return self.frame_view.get_current_levels()
+
+    # ----------------------------------------------------------------------
     def add_roi(self, idx):
         self.frame_view.add_roi(idx)
+        self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
         self.frame_view.delete_roi(idx)
+        self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------
     def _batch_process(self, mode):

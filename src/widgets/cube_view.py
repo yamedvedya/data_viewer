@@ -1,10 +1,18 @@
 # Created by matveyev at 19.02.2021
 
-WIDGET_NAME = 'DataBrowser'
-import pyqtgraph.opengl as gl
+WIDGET_NAME = 'CubeView'
 
+import pyqtgraph.opengl as gl
+import numpy as np
+
+from distutils.util import strtobool
+
+from PyQt5 import QtWidgets, QtCore
+
+from src.utils.utils import refresh_combo_box
 from src.widgets.abstract_widget import AbstractWidget
 from src.gui.cube_view_ui import Ui_CubeView
+
 
 # ----------------------------------------------------------------------
 class CubeView(AbstractWidget):
@@ -21,8 +29,221 @@ class CubeView(AbstractWidget):
 
         self._data_pool = data_pool
 
+        self._make_actions()
+
         self.view_widget = gl.GLViewWidget()
-        self.view_widget.orbit(256, 256)
-        self.view_widget.setCameraPosition(0, 0, 0)
-        self.view_widget.opts['distance'] = 200
-        self._ui.horizontalLayout.addWidget(self.view_widget)
+        # self.view_widget.orbit(256, 256)
+        # self.view_widget.setCameraPosition(0, 0, 0)
+        # self.view_widget.opts['distance'] = 200
+
+        ax = gl.GLAxisItem()
+        self.view_widget.addItem(ax)
+
+        self.volume_item = None        
+
+        self._ui.layout.addWidget(self.view_widget, 1)
+
+        self._status_timer = QtCore.QTimer(self)
+        self._status_timer.timeout.connect(self._refresh_camera_position)
+        self._status_timer.start(100)
+
+    # ----------------------------------------------------------------------
+    def _refresh_camera_position(self):
+        for param in ['distance', 'elevation', 'azimuth']:
+            if not getattr(self, f'sp_cam_{param}').hasFocus():
+                getattr(self, f'sp_cam_{param}').blockSignals(True)
+                getattr(self, f'sp_cam_{param}').setValue(int(self.view_widget.opts[param]))
+                getattr(self, f'sp_cam_{param}').blockSignals(False)
+
+    # ----------------------------------------------------------------------
+    def set_settings(self, settings):
+
+        self._block_signals(True)
+
+        if 'slices' in settings:
+            self.sp_slices.setValue(int(settings['slices']))
+
+        if 'smooth' in settings:
+            self.chk_smooth.setChecked(strtobool(settings['smooth']))
+
+        if 'borders' in settings:
+            self.sp_borders.setValue(int(settings['borders']))
+
+        self.display_file()
+
+        self._block_signals(False)
+
+    # ----------------------------------------------------------------------
+    def fill_roi(self):
+        current_selection = self.cmb_area.currentText()
+        self.cmb_area.blockSignals(True)
+        self.cmb_area.clear()
+        self.cmb_area.addItem('Whole data')
+        for ind in range(self._data_pool.roi_counts()):
+            self.cmb_area.addItem(f'ROI_{ind}')
+
+        if not refresh_combo_box(self.cmb_area, current_selection):
+            self.display_file()
+
+        self.cmb_area.blockSignals(False)
+
+    # ----------------------------------------------------------------------
+    def display_file(self):
+
+        data = self._get_data_to_display()
+        if data is None:
+            return
+
+        if self.volume_item is not None:
+            self.view_widget.removeItem(self.volume_item)
+        self.volume_item = gl.GLVolumeItem(data,  sliceDensity=int(self.sp_slices.value()),
+                                           smooth=self.chk_smooth.isChecked(), glOptions='translucent')
+
+        self.view_widget.addItem(self.volume_item)
+        self.volume_item.translate(-data.shape[0] / 2, -data.shape[1] / 2, -data.shape[2] / 2)
+
+        self.view_widget.setCameraPosition(distance=max(data.shape)*5)
+
+    # ----------------------------------------------------------------------
+    def _get_data_to_display(self):
+
+        if self._parent.get_current_file() is None:
+            return
+
+        data_to_display = self._data_pool.get_3d_cube(self._parent.get_current_file(),
+                                                      self.cmb_area.currentIndex() - 1,
+                                                      0 if self.chk_white_bck.isChecked() else 255)
+
+        levels, mode = self._parent.get_current_levels()
+
+        if mode == 'log':
+            data_to_display[..., 3] = np.log(data_to_display[..., 3] + 1)
+        elif mode == 'sqrt':
+            data_to_display[..., 3] = np.sqrt(data_to_display[..., 3] + 1)
+
+        data_to_display[..., 3] = np.maximum(np.minimum((data_to_display[..., 3] - levels[0])/float(levels[1] - levels[0]) * 255, 255), 0)
+
+        borders = int(self.sp_borders.value())
+        if borders > 0:
+            data_to_display[:, :borders, :borders] = [255, 0, 0, 255]
+            data_to_display[:borders, :, :borders] = [255, 0, 0, 255]
+            data_to_display[:borders, :borders, :] = [255, 0, 0, 255]
+
+            data_to_display[:, :borders, -borders:] = [255, 0, 0, 255]
+            data_to_display[:borders, :, -borders:] = [255, 0, 0, 255]
+            data_to_display[:borders, -borders:, :] = [255, 0, 0, 255]
+
+            data_to_display[:, -borders:, :borders] = [255, 0, 0, 255]
+            data_to_display[-borders:, :, :borders] = [255, 0, 0, 255]
+            data_to_display[-borders:, :borders, :] = [255, 0, 0, 255]
+
+            data_to_display[:, -borders:, -borders:] = [255, 0, 0, 255]
+            data_to_display[-borders:, :, -borders:] = [255, 0, 0, 255]
+            data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
+
+        return data_to_display
+
+    # ----------------------------------------------------------------------
+    def _set_background(self, status):
+
+        self.view_widget.setBackgroundColor('w' if status else 'b')
+        self.display_file()
+
+    # ----------------------------------------------------------------------
+    def _reset_view(self):
+        self.chk_white_bck.blockSignals(True)
+        self.chk_white_bck.setChecked(False)
+        self.view_widget.reset()
+        self.chk_white_bck.blockSignals(False)
+        self.display_file()
+
+    # ----------------------------------------------------------------------
+    def _move_camera(self):
+
+        self.view_widget.setCameraPosition(distance=self.sp_cam_distance.value(),
+                                           elevation=self.sp_cam_elevation.value(),
+                                           azimuth=self.sp_cam_azimuth.value())
+
+    # ----------------------------------------------------------------------
+    def _make_actions(self):
+
+        toolbar = QtWidgets.QToolBar("Main toolbar", self)
+
+        label = QtWidgets.QLabel("Area to render: ", self)
+        toolbar.addWidget(label)
+
+        self.cmb_area = QtWidgets.QComboBox(self)
+        self.cmb_area.addItem('Whole data')
+        self.cmb_area.currentTextChanged.connect(self.display_file)
+        toolbar.addWidget(self.cmb_area)
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("View options: ", self)
+        toolbar.addWidget(label)
+
+        label = QtWidgets.QLabel("Slices: ", self)
+        toolbar.addWidget(label)
+
+        self.sp_slices = QtWidgets.QSpinBox(self)
+        self.sp_slices.valueChanged.connect(self.display_file)
+        toolbar.addWidget(self.sp_slices)
+
+        self.chk_smooth = QtWidgets.QCheckBox('Smooth', self)
+        self.chk_smooth.clicked.connect(self.display_file)
+        toolbar.addWidget(self.chk_smooth)
+
+        label = QtWidgets.QLabel("Borders: ", self)
+        toolbar.addWidget(label)
+
+        self.sp_borders = QtWidgets.QSpinBox(self)
+        self.sp_borders.valueChanged.connect(self.display_file)
+        toolbar.addWidget(self.sp_borders)
+
+        self.chk_white_bck = QtWidgets.QCheckBox('White background', self)
+        self.chk_white_bck.clicked.connect(self._set_background)
+        toolbar.addWidget(self.chk_white_bck)
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("Camera position: ", self)
+        toolbar.addWidget(label)
+
+        label = QtWidgets.QLabel("Distance: ", self)
+        toolbar.addWidget(label)
+
+        self.sp_cam_distance = QtWidgets.QSpinBox(self)
+        self.sp_cam_distance.setMaximum(100000)
+        self.sp_cam_distance.setMinimum(0)
+        self.sp_cam_distance.valueChanged.connect(self._move_camera)
+        toolbar.addWidget(self.sp_cam_distance)
+
+        label = QtWidgets.QLabel("Elevation: ", self)
+        toolbar.addWidget(label)
+
+        self.sp_cam_elevation = QtWidgets.QSpinBox(self)
+        self.sp_cam_elevation.setMaximum(180)
+        self.sp_cam_elevation.setMinimum(-180)
+        self.sp_cam_elevation.valueChanged.connect(self._move_camera)
+        toolbar.addWidget(self.sp_cam_elevation)
+
+        label = QtWidgets.QLabel("Azimuth: ", self)
+        toolbar.addWidget(label)
+
+        self.sp_cam_azimuth = QtWidgets.QSpinBox(self)
+        self.sp_cam_azimuth.setMaximum(360)
+        self.sp_cam_azimuth.setMinimum(-360)
+        self.sp_cam_azimuth.valueChanged.connect(self._move_camera)
+        toolbar.addWidget(self.sp_cam_azimuth)
+
+        cmd_reset = QtWidgets.QPushButton('Reset view')
+        cmd_reset.clicked.connect(self._reset_view)
+        toolbar.addWidget(cmd_reset)
+
+        self._ui.layout.addWidget(toolbar, 0)
+
+    # ----------------------------------------------------------------------
+    def _block_signals(self, flag):
+
+        self.sp_slices.blockSignals(flag)
+        self.chk_smooth.blockSignals(flag)

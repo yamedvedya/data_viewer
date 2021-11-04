@@ -89,6 +89,10 @@ class SectionView(QtWidgets.QWidget):
         self._ui.bg_cut_range.buttonClicked.connect(lambda selection: self._cut_range(selection))
         self._main_plot.sigXRangeChanged.connect(self._new_range)
 
+    # -------------------------------------------------------------------
+    def new_main_file(self):
+        current_file = self.get_current_file()
+
     # ----------------------------------------------------------------------
     def get_current_file(self):
         return self._parent.get_current_file()

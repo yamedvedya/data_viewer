@@ -26,6 +26,7 @@ class FileFilter(QtCore.QSortFilterProxyModel):
 
             return match
 
+
 # ----------------------------------------------------------------------
 def refresh_combo_box(combo, text):
     idx = combo.findText(text)
@@ -35,6 +36,7 @@ def refresh_combo_box(combo, text):
     else:
         combo.setCurrentIndex(0)
         return False
+
 
 # ----------------------------------------------------------------------
 def get_text_coordinates(plot_item, size, position='tl'):

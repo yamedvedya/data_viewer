@@ -80,7 +80,8 @@ class RoisView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def new_main_file(self):
-        pass
+        for widget in self._roi_widgets.values():
+            widget.new_main_file()
 
     # ----------------------------------------------------------------------
     def current_folder(self):

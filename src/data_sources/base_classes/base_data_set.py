@@ -225,3 +225,18 @@ class BaseDataSet(object):
         :return: np.array of X coordinate for ROI plot
         """
         return np.arange(0, self._data_shape[plot_axis])
+
+    # ----------------------------------------------------------------------
+    def get_3d_cube(self, section, pixel_color):
+        if section is None:
+            data = self._get_data()
+        else:
+            data = self.get_roi_cut(section, False)
+
+        data_to_display = np.zeros(data.shape + (4,), dtype=np.ubyte)
+        data_to_display[..., 0] = pixel_color
+        data_to_display[..., 1] = pixel_color
+        data_to_display[..., 2] = pixel_color
+        data_to_display[..., 3] = data
+
+        return data_to_display

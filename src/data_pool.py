@@ -575,6 +575,24 @@ class DataPool(QtCore.QObject):
         return new_limits
 
     # ----------------------------------------------------------------------
+    #       3D data section
+    # ----------------------------------------------------------------------
+    def get_3d_cube(self, file, roi_ind, pixel_color):
+        """
+        Return full 3D data cube
+        :param file:
+        :param roi_ind: index of ROI to be displayed
+        :return: 3D np array
+        """
+
+        if roi_ind == -1:
+            section = None
+        else:
+            section = self._rois[roi_ind].get_section_params()
+
+        return self._files_data[file].get_3d_cube(section, pixel_color)
+
+    # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def apply_settings(self):

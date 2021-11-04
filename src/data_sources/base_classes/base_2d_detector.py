@@ -65,7 +65,10 @@ class Base2DDetectorDataSet(BaseDataSet):
         if self._data_pool.memory_mode == 'ram':
             # if since last reload program parameters were not changed - we just return already COPY of loaded data
             if not self._need_apply_mask:
-                return np.copy(self._nD_data_array)[frame_id]
+                _data = np.copy(self._nD_data_array)
+                if frame_id is not None:
+                    _data = _data[frame_id]
+                return _data
             else:
                 self._nD_data_array = None
                 _data = self._reload_data()

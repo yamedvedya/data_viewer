@@ -25,6 +25,8 @@ class FrameView(AbstractWidget):
 
     update_roi = QtCore.pyqtSignal(int)
 
+    levels_updated = QtCore.pyqtSignal()
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
         """
@@ -58,7 +60,7 @@ class FrameView(AbstractWidget):
             self._ui.chk_auto_levels.clicked.connect(self._toggle_auto_levels)
             self._ui.bg_lev_mode.buttonClicked.connect(self._change_level_mode)
             self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
-            self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+            self.hist.item.sigLevelChangeFinished.connect(self.switch_off_auto_levels)
             self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
 
             self._main_view.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
@@ -101,6 +103,10 @@ class FrameView(AbstractWidget):
         self.data_pool = data_pool
 
     # ----------------------------------------------------------------------
+    def get_current_levels(self):
+        return self.hist.item.getLevels(), self.level_mode
+
+    # ----------------------------------------------------------------------
     def set_settings(self, settings):
 
         if self.backend == 'pyqt':
@@ -125,7 +131,6 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
-
 
         self._main_view.roi_changed(roi_ind)
         self._second_view.roi_changed(roi_ind)
@@ -186,6 +191,8 @@ class FrameView(AbstractWidget):
         self._ui.chk_auto_levels.blockSignals(False)
         self._second_view.new_levels()
 
+        self.levels_updated.emit()
+
     # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
 
@@ -202,6 +209,8 @@ class FrameView(AbstractWidget):
             self._level_mode = 'sqrt'
         else:
             self.level_mode = 'log'
+
+        self.levels_updated.emit()
 
         self.update_image()
 
@@ -229,13 +238,13 @@ class FrameView(AbstractWidget):
         logger.debug(f"Update image with sel {selection}")
 
         if self.backend == 'pyqt':
-            self.hist.item.sigLevelsChanged.disconnect()
+            self.hist.item.sigLevelChangeFinished.disconnect()
 
         self._main_view.update_image()
         self._second_view.update_image()
 
         if self.backend == 'pyqt':
-            self.hist.item.sigLevelsChanged.connect(self.switch_off_auto_levels)
+            self.hist.item.sigLevelChangeFinished.connect(self.switch_off_auto_levels)
 
         self.section_updated.emit()
 
