@@ -9,6 +9,7 @@ from distutils.util import strtobool
 
 from PyQt5 import QtWidgets, QtCore
 
+from src.utils.axes_3d import Custom3DAxis
 from src.utils.utils import refresh_combo_box
 from src.widgets.abstract_widget import AbstractWidget
 from src.gui.cube_view_ui import Ui_CubeView
@@ -36,8 +37,8 @@ class CubeView(AbstractWidget):
         # self.view_widget.setCameraPosition(0, 0, 0)
         # self.view_widget.opts['distance'] = 200
 
-        ax = gl.GLAxisItem()
-        self.view_widget.addItem(ax)
+        self.axes = Custom3DAxis(self.view_widget, color=(0.2,0.2,0.2,.6))
+        self.view_widget.addItem(self.axes)
 
         self.volume_item = None        
 
@@ -90,9 +91,43 @@ class CubeView(AbstractWidget):
     # ----------------------------------------------------------------------
     def display_file(self):
 
-        data = self._get_data_to_display()
+        file_name = self._parent.get_current_file()
+        if file_name is None:
+            return
+
+        data = self._data_pool.get_3d_cube(file_name, self.cmb_area.currentIndex() - 1,
+                                           0 if self.chk_white_bck.isChecked() else 255)
+
         if data is None:
             return
+
+        levels, mode = self._parent.get_current_levels()
+
+        if mode == 'log':
+            data[..., 3] = np.log(data[..., 3] + 1)
+        elif mode == 'sqrt':
+            data[..., 3] = np.sqrt(data[..., 3] + 1)
+
+        data[..., 3] = np.maximum(
+            np.minimum((data[..., 3] - levels[0]) / float(levels[1] - levels[0]) * 255, 255), 0)
+
+        borders = int(self.sp_borders.value())
+        if borders > 0:
+            data[:, :borders, :borders] = [255, 0, 0, 255]
+            data[:borders, :, :borders] = [255, 0, 0, 255]
+            data[:borders, :borders, :] = [255, 0, 0, 255]
+
+            data[:, :borders, -borders:] = [255, 0, 0, 255]
+            data[:borders, :, -borders:] = [255, 0, 0, 255]
+            data[:borders, -borders:, :] = [255, 0, 0, 255]
+
+            data[:, -borders:, :borders] = [255, 0, 0, 255]
+            data[-borders:, :, :borders] = [255, 0, 0, 255]
+            data[-borders:, :borders, :] = [255, 0, 0, 255]
+
+            data[:, -borders:, -borders:] = [255, 0, 0, 255]
+            data[-borders:, :, -borders:] = [255, 0, 0, 255]
+            data[-borders:, -borders:, :] = [255, 0, 0, 255]
 
         if self.volume_item is not None:
             self.view_widget.removeItem(self.volume_item)
@@ -104,44 +139,10 @@ class CubeView(AbstractWidget):
 
         self.view_widget.setCameraPosition(distance=max(data.shape)*5)
 
-    # ----------------------------------------------------------------------
-    def _get_data_to_display(self):
+        self.axes.setSize(data.shape[0], data.shape[1], data.shape[2])
+        axes = self._data_pool.get_file_axes(file_name)
 
-        if self._parent.get_current_file() is None:
-            return
-
-        data_to_display = self._data_pool.get_3d_cube(self._parent.get_current_file(),
-                                                      self.cmb_area.currentIndex() - 1,
-                                                      0 if self.chk_white_bck.isChecked() else 255)
-
-        levels, mode = self._parent.get_current_levels()
-
-        if mode == 'log':
-            data_to_display[..., 3] = np.log(data_to_display[..., 3] + 1)
-        elif mode == 'sqrt':
-            data_to_display[..., 3] = np.sqrt(data_to_display[..., 3] + 1)
-
-        data_to_display[..., 3] = np.maximum(np.minimum((data_to_display[..., 3] - levels[0])/float(levels[1] - levels[0]) * 255, 255), 0)
-
-        borders = int(self.sp_borders.value())
-        if borders > 0:
-            data_to_display[:, :borders, :borders] = [255, 0, 0, 255]
-            data_to_display[:borders, :, :borders] = [255, 0, 0, 255]
-            data_to_display[:borders, :borders, :] = [255, 0, 0, 255]
-
-            data_to_display[:, :borders, -borders:] = [255, 0, 0, 255]
-            data_to_display[:borders, :, -borders:] = [255, 0, 0, 255]
-            data_to_display[:borders, -borders:, :] = [255, 0, 0, 255]
-
-            data_to_display[:, -borders:, :borders] = [255, 0, 0, 255]
-            data_to_display[-borders:, :, :borders] = [255, 0, 0, 255]
-            data_to_display[-borders:, :borders, :] = [255, 0, 0, 255]
-
-            data_to_display[:, -borders:, -borders:] = [255, 0, 0, 255]
-            data_to_display[-borders:, :, -borders:] = [255, 0, 0, 255]
-            data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
-
-        return data_to_display
+        self.axes.add_labels(axes[0], axes[1], axes[2])
 
     # ----------------------------------------------------------------------
     def _set_background(self, status):

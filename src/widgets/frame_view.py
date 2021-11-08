@@ -96,9 +96,8 @@ class FrameView(AbstractWidget):
         self.auto_levels = True
         self.max_frame = 0
 
-        self._cut_grid = QtWidgets.QVBoxLayout(self._ui.cut_selectors)
-        self._cut_grid.setSpacing(0)
-        self._cut_grid.setContentsMargins(0, 0, 0, 0)
+        self._ui.cut_selectors.layout().setSpacing(0)
+        self._ui.cut_selectors.layout().setContentsMargins(0, 0, 0, 0)
 
         self.data_pool = data_pool
 

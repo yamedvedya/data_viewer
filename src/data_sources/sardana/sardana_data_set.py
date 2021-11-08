@@ -30,7 +30,7 @@ SETTINGS = {'enable_mask': False,
 class SardanaDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
-    def __init__(self, data_pool, file_name, opened_file):
+    def __init__(self, data_pool, file_name):
         super(SardanaDataSet, self).__init__(data_pool)
 
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
@@ -39,7 +39,6 @@ class SardanaDataSet(Base2DDetectorDataSet):
         self._axes_names = ['scan point', 'detector X', 'detector Y']
 
         self._additional_data['scanned_values'] = []
-        scan_data = opened_file['scan']['data']
 
         # first we load scan data from .fio
         if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
@@ -50,8 +49,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
                 except:
                     self._additional_data[key] = value
 
-        # if user did ct after scan, Lambda saves ten as scan frames, we ignore them
         self._scan_length = None
+
+        opened_file = h5py.File(self._original_file, 'r')
+        scan_data = opened_file['scan']['data']
+
+        # if user did ct after scan, Lambda could save them as scan frames, we ignore them
         for key in scan_data.keys():
 
             # if this is 1D array - we add it to possible scan axes

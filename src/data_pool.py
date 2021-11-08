@@ -65,6 +65,9 @@ class DataPool(QtCore.QObject):
         self._progress = BatchProgress()
         self._progress.stop_batch.connect(self._interrupt_batch)
 
+        # needed for tests
+        self.open_file_in_progress = False
+
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
         """
@@ -181,6 +184,7 @@ class DataPool(QtCore.QObject):
         self._open_mgs.setText(user_msg)
         self._open_mgs.show()
 
+        self.open_file_in_progress = True
         self._opener = Opener(self, mode, kwargs)
         self._opener.exception.connect(self.report_error)
         self._opener.done.connect(self._open_done)
@@ -191,6 +195,7 @@ class DataPool(QtCore.QObject):
         """
             called by Opener, closes popup message
         """
+
         self._open_mgs.hide()
 
     # ----------------------------------------------------------------------
@@ -225,6 +230,9 @@ class DataPool(QtCore.QObject):
 
         # now we read to notify the GUI about new added file
         self.new_file_added.emit(entry_name)
+
+        # workaround to enable test debug
+        self.open_file_in_progress = False
 
     # ----------------------------------------------------------------------
     def _get_first_to_close(self):
@@ -626,11 +634,10 @@ class Opener(QtCore.QThread):
                 finished = False
                 while not finished:
                     try:
-                        with h5py.File(self.params['file_name'], 'r') as f:
-                            new_file = SardanaDataSet(self.data_pool, self.params['file_name'], f)
-                            new_file.apply_settings()
-                            self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-                            finished = True
+                        new_file = SardanaDataSet(self.data_pool, self.params['file_name'])
+                        new_file.apply_settings()
+                        self.data_pool.add_new_entry(self.params['entry_name'], new_file)
+                        finished = True
 
                     except OSError as err:
                         if 'Resource temporarily unavailable' in str(err.args):
