@@ -1,51 +1,45 @@
-import json
 import os
+
 import pytest
-from time import sleep
+from time import sleep, time
 import numpy as np
-from qtpy import QtWidgets
+from PyQt5 import QtWidgets
 from mock import MagicMock
 
 import AsapoWorker
-from AsapoWorker.asapo_receiver import AsapoMetadataReceiver
 from AsapoWorker.data_handler import serialize_ndarray
 from unittest.mock import create_autospec
 
 from src.main_window import DataViewer
-from src.widgets.asapo_browser import ASAPOBrowser
 from src.data_sources.asapo.asapo_data_set import ASAPODataSet
-from optparse import OptionParser
+from src.utils.option_parser import get_options
+
+TIMEOUT_FOR_FILE_OPEN = 5
 
 
+# ----------------------------------------------------------------------
+@pytest.fixture(scope="function")
+def change_test_dir(request):
+    os.chdir(os.path.dirname(os.path.dirname(request.fspath.dirname)))
+    yield
+    os.chdir(request.config.invocation_dir)
+
+
+# ----------------------------------------------------------------------
 @pytest.fixture
 def message_data():
     return create_message_data((10, 5))
 
 
+# ----------------------------------------------------------------------
 @pytest.fixture
 def viewer(message_data):
-    parser = OptionParser()
 
-    parser.add_option("-d", "--dir", dest="dir",
-                      help="start folder")
-
-    parser.add_option("-f", "--file", dest="file",
-                      help="open file after start")
-
-    parser.add_option("--asapo", action='store_true', dest='asapo', help="include ASAPO scan")
-    parser.add_option("--sardana", action='store_true', dest='sardana', help="include Sardana scan")
-    parser.add_option("--beam", action='store_true', dest='beam', help="include Beamline view")
-    parser.add_option("--def_file", dest="def_file", help="open file after start")
-    parser.add_option("--def_stream", dest="def_stream", help="open file after start")
-    (options, _) = parser.parse_args(['--asapo'])
-
-    AsapoWorker.asapo_receiver.AsapoMetadataReceiver = MagicMock(return_value=True)
-    ASAPOBrowser.set_settings = MagicMock(return_value=True)
-    app = QtWidgets.QApplication.instance()
+    app = QtWidgets.QApplication([os.getcwd() + 'main.py', '--asapo'])
     if app is None:
-        app = QtWidgets.QApplication(['/home/karnem/workspace/data_viewer/main.py', '--asapo'])
+        app = QtWidgets.QApplication([os.getcwd() + 'main.py', '--asapo'])
 
-    main = DataViewer(options)
+    main = DataViewer(get_options(['--asapo']))
 
     ASAPODataSet._setup_receiver = MagicMock(return_value=True)
     ASAPODataSet.receiver = create_autospec(AsapoWorker.asapo_receiver.SerialAsapoReceiver)
@@ -58,6 +52,7 @@ def viewer(message_data):
     yield main
 
 
+# ----------------------------------------------------------------------
 def create_message_data(shape):
     data = serialize_ndarray(np.ones(shape)).getvalue()
     mdata = {'_id': 1,
@@ -72,10 +67,21 @@ def create_message_data(shape):
     return data, mdata
 
 
-def test_load_stream(viewer, message_data):
+# ----------------------------------------------------------------------
+def _load_stream(viewer):
 
     viewer.data_pool.open_stream("test007", "1", {})
-    sleep(3)  # sleep for sometime to open stream
+    start_time = time()
+    while viewer.data_pool.open_file_in_progress and time() - start_time < TIMEOUT_FOR_FILE_OPEN:
+        sleep(0.1)  # sleep for sometime to open stream
+
+    assert not viewer.data_pool.open_file_in_progress
+
+
+# ----------------------------------------------------------------------
+def test_load_stream(change_test_dir, viewer, message_data):
+
+    _load_stream(viewer)
 
     assert len(viewer.data_pool._files_data) == 1
     assert 'test007/1' in viewer.data_pool._files_data
@@ -89,10 +95,11 @@ def test_load_stream(viewer, message_data):
     assert selection[1]['range_limit'] == 0
 
 
-def test_add_file(viewer, message_data):
+# ----------------------------------------------------------------------
+def test_add_file(change_test_dir, viewer, message_data):
 
-    viewer.data_pool.open_stream("test007", "1", {})
-    sleep(3)  # sleep for sometime to open stream
+    _load_stream(viewer)
+
     viewer.frame_view.add_file("test007/1", "second")
     assert viewer.frame_view.current_file() == "test007/1"
     assert viewer.data_pool.get_all_axes_limits() == [[0, 9], [0, 9], [0, 4]]
