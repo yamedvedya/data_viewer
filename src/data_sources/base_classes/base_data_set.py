@@ -227,7 +227,7 @@ class BaseDataSet(object):
         return np.arange(0, self._data_shape[plot_axis])
 
     # ----------------------------------------------------------------------
-   def get_3d_cube(self, section):
+    def get_3d_cube(self, section):
         if section is None:
             return self._get_data()
         else:
