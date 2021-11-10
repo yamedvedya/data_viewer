@@ -186,10 +186,6 @@ class DataViewer(QtWidgets.QMainWindow):
             return os.getcwd()
 
     # ----------------------------------------------------------------------
-    def get_current_levels(self):
-        return self.frame_view.get_current_levels()
-
-    # ----------------------------------------------------------------------
     def add_roi(self, idx):
         self.frame_view.add_roi(idx)
         self.cube_view.fill_roi()

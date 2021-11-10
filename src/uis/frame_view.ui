@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1073</width>
-    <height>748</height>
+    <width>748</width>
+    <height>421</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,13 +100,13 @@
             <property name="text">
              <string>Auto</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
-           <widget class="HistogramLUTWidget" name="hist" native="true">
-            <zorder>horizontalLayoutWidget</zorder>
-            <zorder>chk_auto_levels</zorder>
-           </widget>
+           <widget class="HistogramLUTWidget" name="hist" native="true"/>
           </item>
          </layout>
         </widget>

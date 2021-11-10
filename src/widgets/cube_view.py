@@ -31,6 +31,7 @@ class CubeView(AbstractWidget):
         self._data_pool = data_pool
 
         self._make_actions()
+        self._ui.v_layout.setStretch(1, 1)
 
         self.view_widget = gl.GLViewWidget()
         # self.view_widget.orbit(256, 256)
@@ -42,11 +43,21 @@ class CubeView(AbstractWidget):
 
         self.volume_item = None        
 
-        self._ui.layout.addWidget(self.view_widget, 1)
+        self._ui.h_layout.insertWidget(0, self.view_widget, 1)
+
+        self._ui.hist.item.sigLevelChangeFinished.connect(self.display_file)
+        self._ui.chk_auto_levels.clicked.connect(self._auto_levels)
+
+        self._ui.bg_lev_mode.buttonClicked.connect(self.display_file)
 
         self._status_timer = QtCore.QTimer(self)
         self._status_timer.timeout.connect(self._refresh_camera_position)
         self._status_timer.start(100)
+
+    # ----------------------------------------------------------------------
+    def _auto_levels(self, state):
+        if state:
+            pass
 
     # ----------------------------------------------------------------------
     def _refresh_camera_position(self):
@@ -95,51 +106,61 @@ class CubeView(AbstractWidget):
         if file_name is None:
             return
 
-        data = self._data_pool.get_3d_cube(file_name, self.cmb_area.currentIndex() - 1,
-                                           0 if self.chk_white_bck.isChecked() else 255)
+        data = self._data_pool.get_3d_cube(file_name, self.cmb_area.currentIndex() - 1)
 
         if data is None:
             return
 
-        levels, mode = self._parent.get_current_levels()
+        levels = self._ui.hist.item.getLevels()
 
-        if mode == 'log':
-            data[..., 3] = np.log(data[..., 3] + 1)
-        elif mode == 'sqrt':
-            data[..., 3] = np.sqrt(data[..., 3] + 1)
+        if self._ui.rb_log_levels.isChecked() == 'log':
+            data = np.log(data + 1)
+        elif self._ui.rb_sqrt_levels.isChecked() == 'sqrt':
+            data = np.sqrt(data + 1)
 
-        data[..., 3] = np.maximum(
-            np.minimum((data[..., 3] - levels[0]) / float(levels[1] - levels[0]) * 255, 255), 0)
+        #TODO TEMP:
+
+        levels = np.min(data), np.max(data)
+
+        data = np.maximum(np.minimum((data - levels[0]) / float(levels[1] - levels[0]) * 255, 255), 0)
+
+        data_to_display = np.zeros(data.shape + (4,), dtype=np.ubyte)
+        data_to_display[..., 0] = 0 if self.chk_white_bck.isChecked() else 255
+        data_to_display[..., 1] = 0 if self.chk_white_bck.isChecked() else 255
+        data_to_display[..., 2] = 0 if self.chk_white_bck.isChecked() else 255
+        data_to_display[..., 3] = data
 
         borders = int(self.sp_borders.value())
         if borders > 0:
-            data[:, :borders, :borders] = [255, 0, 0, 255]
-            data[:borders, :, :borders] = [255, 0, 0, 255]
-            data[:borders, :borders, :] = [255, 0, 0, 255]
+            data_to_display[:, :borders, :borders] = [255, 0, 0, 255]
+            data_to_display[:borders, :, :borders] = [255, 0, 0, 255]
+            data_to_display[:borders, :borders, :] = [255, 0, 0, 255]
 
-            data[:, :borders, -borders:] = [255, 0, 0, 255]
-            data[:borders, :, -borders:] = [255, 0, 0, 255]
-            data[:borders, -borders:, :] = [255, 0, 0, 255]
+            data_to_display[:, :borders, -borders:] = [255, 0, 0, 255]
+            data_to_display[:borders, :, -borders:] = [255, 0, 0, 255]
+            data_to_display[:borders, -borders:, :] = [255, 0, 0, 255]
 
-            data[:, -borders:, :borders] = [255, 0, 0, 255]
-            data[-borders:, :, :borders] = [255, 0, 0, 255]
-            data[-borders:, :borders, :] = [255, 0, 0, 255]
+            data_to_display[:, -borders:, :borders] = [255, 0, 0, 255]
+            data_to_display[-borders:, :, :borders] = [255, 0, 0, 255]
+            data_to_display[-borders:, :borders, :] = [255, 0, 0, 255]
 
-            data[:, -borders:, -borders:] = [255, 0, 0, 255]
-            data[-borders:, :, -borders:] = [255, 0, 0, 255]
-            data[-borders:, -borders:, :] = [255, 0, 0, 255]
+            data_to_display[:, -borders:, -borders:] = [255, 0, 0, 255]
+            data_to_display[-borders:, :, -borders:] = [255, 0, 0, 255]
+            data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
 
         if self.volume_item is not None:
             self.view_widget.removeItem(self.volume_item)
-        self.volume_item = gl.GLVolumeItem(data,  sliceDensity=int(self.sp_slices.value()),
+        self.volume_item = gl.GLVolumeItem(data_to_display,  sliceDensity=int(self.sp_slices.value()),
                                            smooth=self.chk_smooth.isChecked(), glOptions='translucent')
 
         self.view_widget.addItem(self.volume_item)
-        self.volume_item.translate(-data.shape[0] / 2, -data.shape[1] / 2, -data.shape[2] / 2)
+        self.volume_item.translate(-data_to_display.shape[0] / 2,
+                                   -data_to_display.shape[1] / 2,
+                                   -data_to_display.shape[2] / 2)
 
-        self.view_widget.setCameraPosition(distance=max(data.shape)*5)
+        self.view_widget.setCameraPosition(distance=max(data_to_display.shape)*5)
 
-        self.axes.setSize(data.shape[0], data.shape[1], data.shape[2])
+        self.axes.setSize(data_to_display.shape[0], data_to_display.shape[1], data_to_display.shape[2])
         axes = self._data_pool.get_file_axes(file_name)
 
         self.axes.add_labels(axes[0], axes[1], axes[2])
@@ -241,7 +262,7 @@ class CubeView(AbstractWidget):
         cmd_reset.clicked.connect(self._reset_view)
         toolbar.addWidget(cmd_reset)
 
-        self._ui.layout.addWidget(toolbar, 0)
+        self._ui.v_layout.insertWidget(0, toolbar, 0)
 
     # ----------------------------------------------------------------------
     def _block_signals(self, flag):

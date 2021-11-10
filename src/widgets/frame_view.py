@@ -102,10 +102,6 @@ class FrameView(AbstractWidget):
         self.data_pool = data_pool
 
     # ----------------------------------------------------------------------
-    def get_current_levels(self):
-        return self.hist.item.getLevels(), self.level_mode
-
-    # ----------------------------------------------------------------------
     def set_settings(self, settings):
 
         if self.backend == 'pyqt':

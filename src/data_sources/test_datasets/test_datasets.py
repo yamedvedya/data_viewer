@@ -27,8 +27,8 @@ class __Fake3DSardana(SardanaDataSet):
         self._axes_names = ['scan point', 'detector X', 'detector Y']
 
         self._additional_data['scanned_values'] = ['omega', 'point_nb']
-        self._additional_data['omega'] = np.linspace(1, 2, 11)
-        self._additional_data['point_nb'] = np.arange(11)
+        self._additional_data['omega'] = np.linspace(1, 2, self.z_dim)
+        self._additional_data['point_nb'] = np.arange(self.z_dim)
 
         self.__original_data = self._generate_fake_data()
 

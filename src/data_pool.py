@@ -630,7 +630,7 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     #       3D data section
     # ----------------------------------------------------------------------
-    def get_3d_cube(self, file, roi_ind, pixel_color):
+    def get_3d_cube(self, file, roi_ind):
         """
         Return full 3D data cube
         :param file:
@@ -643,7 +643,7 @@ class DataPool(QtCore.QObject):
         else:
             section = self._rois[roi_ind].get_section_params()
 
-        return self._files_data[file].get_3d_cube(section, pixel_color)
+        return self._files_data[file].get_3d_cube(section)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
