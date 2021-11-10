@@ -1,9 +1,6 @@
 # Created by matveyev at 14.04.2021
-import numpy as np
-
-WIDGET_NAME = 'ASAPO Browser'
-
 import asapo_consumer
+import numpy as np
 
 from PyQt5 import QtCore
 from distutils.util import strtobool
@@ -17,6 +14,7 @@ from AsapoWorker.asapo_receiver import AsapoMetadataReceiver
 
 from src.gui.asapo_browser_ui import Ui_ASAPOBrowser
 
+WIDGET_NAME = 'ASAPOBrowser'
 
 # ----------------------------------------------------------------------
 class ASAPOBrowser(AbstractWidget):

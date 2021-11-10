@@ -19,6 +19,7 @@ except:
     has_asapo = False
 from src.widgets.folder_browser import FolderBrowser
 from src.widgets.cube_view import CubeView
+from src.widgets.tests_browser import TestsBrowser
 
 from src.widgets.frame_view import FrameView
 from src.widgets.rois_view import RoisView
@@ -106,7 +107,14 @@ class DataViewer(QtWidgets.QMainWindow):
         else:
             self.has_beam_view = False
 
-        self.frame_view.new_file_selected.connect(self.rois_view.new_main_file)
+        if options.tests:
+            self.tests_browser, self.tests_browser_dock = self._add_dock(TestsBrowser, "Test Browser",
+                                                                       QtCore.Qt.LeftDockWidgetArea, self)
+            self.tests_browser.test_selected.connect(self.data_pool.open_test)
+            self.has_tests = True
+        else:
+            self.has_tests = False
+
         self.frame_view.new_file_selected.connect(self.cube_view.display_file)
 
         self.frame_view.levels_updated.connect(self.cube_view.display_file)

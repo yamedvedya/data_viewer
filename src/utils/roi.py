@@ -5,13 +5,14 @@ import numpy as np
 class ROI(object):
 
     # ------------------------------------------------------------------
-    def __init__(self, data_pool, my_id):
+    def __init__(self, data_pool, my_id, dims, axis):
 
         self.my_id = my_id
         self._data_pool = data_pool
 
-        self._section_params = {'axis_0': 0,
-                                'dimensions': 1}
+        self._section_params = {'dimensions': dims}
+
+        self._fill_section(axis)
 
         self._saved_sections = {}
 
@@ -22,10 +23,7 @@ class ROI(object):
         if axis in self._saved_sections:
             self._section_params = dict(self._saved_sections[axis])
         else:
-            self._section_params = {'axis_0': axis,
-                                    'dimensions': 1}
-
-            self._fill_axes(axis + 1)
+            self._fill_section(axis)
 
     # ------------------------------------------------------------------
     def roi_parameter_changed(self, section_axis, param, value, axes_limits):
@@ -59,21 +57,17 @@ class ROI(object):
         if param in self._section_params:
             return self._section_params[param]
         else:
-            self._fill_axes(int(param.split('_')[1]) + 1)
-
-            return self._section_params[param]
+            return None
 
     # ------------------------------------------------------------------
-    def _fill_axes(self, new_dimensions):
-        axes = list(np.arange(new_dimensions))
+    def _fill_section(self, section_axis):
 
-        for axis in range(self._section_params['dimensions']):
-            if self._section_params[f'axis_{axis}'] in axes:
-                axes.remove(self._section_params[f'axis_{axis}'])
+        axes = list(np.arange(self._section_params['dimensions']))
+        axes.remove(section_axis)
 
-        for axis_ind, new_axis in zip(range(self._section_params['dimensions'], new_dimensions), axes):
-            self._section_params[f'axis_{axis_ind}'] = new_axis
-            self._section_params[f'axis_{axis_ind}_pos'] = 0
-            self._section_params[f'axis_{axis_ind}_width'] = 1
+        self._section_params[f'axis_0'] = section_axis
 
-        self._section_params['dimensions'] = new_dimensions
+        for ind, axis in enumerate(axes):
+            self._section_params[f'axis_{ind+1}'] = axis
+            self._section_params[f'axis_{ind+1}_pos'] = 0
+            self._section_params[f'axis_{ind+1}_width'] = 1

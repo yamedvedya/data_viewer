@@ -1,24 +1,19 @@
 # Created by matveyev at 15.02.2021
 
-import h5py
 import os
 import psutil
-import time
-import sys
 import numpy as np
-import traceback
 import logging
 
 from collections import OrderedDict
 
 from PyQt5 import QtCore, QtWidgets
 
-from src.data_sources.sardana.sardana_data_set import SardanaDataSet
-if 'asapo_consumer' in sys.modules:
-    from src.data_sources.asapo.asapo_data_set import ASAPODataSet
+from src.utils.batcher import Batcher
+from src.utils.opener import Opener
 
-from src.data_sources.beamview.beam_view_data_set import BeamLineView
 from src.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
+
 from src.utils.roi import ROI
 from src.widgets.batch_progress import BatchProgress
 from src.main_window import APP_NAME
@@ -26,6 +21,7 @@ from src.main_window import APP_NAME
 logger = logging.getLogger(APP_NAME)
 
 
+# ----------------------------------------------------------------------
 class DataPool(QtCore.QObject):
 
     new_file_added = QtCore.pyqtSignal(str)
@@ -170,6 +166,26 @@ class DataPool(QtCore.QObject):
                                {'file_name': file_name, 'entry_name': entry_name})
 
     # ----------------------------------------------------------------------
+    def open_test(self, test_name):
+        """
+            called by signal from tests browser
+
+            since we don't want the GUI to freeze during stream load - we make an QThread, which in really reads data
+
+        """
+
+        # all opened files are entry to self._files_data dict
+        # first we check, that this stream in not yet opened
+        entry_name = test_name
+        counter = 0
+        while entry_name in self._files_data:
+            counter += 1
+            entry_name = f'{test_name}_{counter}'
+
+        self._start_opener('test', f'Opening test {entry_name}',
+                           {'test_name': test_name, 'entry_name': entry_name})
+
+    # ----------------------------------------------------------------------
     def _start_opener(self, mode, user_msg, kwargs):
         """
         create popup message for user
@@ -311,10 +327,29 @@ class DataPool(QtCore.QObject):
         """
             all ROI are kept in OrderedDict with unique key
         """
-        self._last_roi_key += 1
-        self._rois[self._last_roi_key] = ROI(self, self._last_roi_key)
 
-        return self._last_roi_key, self.get_roi_index(self._last_roi_key)
+        main_file = self.main_window.get_current_file()
+        if main_file is None:
+            return None, None, None
+
+        file_dim = self._files_data[main_file].get_file_dimension()
+
+        axis = None
+        section = self.get_section(main_file)
+        for ind, sect in enumerate(section):
+            if sect['axis'] == '':
+                axis = ind
+                break
+        if axis is None:
+            for ind, sect in enumerate(section):
+                if sect['axis'] == 'X':
+                    axis = ind
+                    break
+
+        self._last_roi_key += 1
+        self._rois[self._last_roi_key] = ROI(self, self._last_roi_key, file_dim, axis)
+
+        return self._last_roi_key, self.get_roi_index(self._last_roi_key), file_dim
 
     # ----------------------------------------------------------------------
     def get_roi_index(self, roi_key):
@@ -364,7 +399,7 @@ class DataPool(QtCore.QObject):
         """
         logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, section_axis: {section_axis}, param: {param}, value: {value}")
 
-        axis_lim = self.get_all_axes_limits()
+        axis_lim = self.get_all_axes_limits(self.get_roi_param(roi_key, 'dimensions'))
         if axis_lim is not None:
             value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, axis_lim)
             return value
@@ -394,7 +429,7 @@ class DataPool(QtCore.QObject):
     # ----------------------------------------------------------------------
     def get_roi_limits(self, roi_key, section_axis):
         """
-            :returns max and min values for particular axis and ROI if all files have the same dims, else None, None
+            :returns max and min values for particular axis and ROI for all files have the same dims
         """
         section_params = self._rois[roi_key].get_section_params()
         real_axis = section_params['axis_{}'.format(section_axis)]
@@ -409,6 +444,15 @@ class DataPool(QtCore.QObject):
 
         else:
             return None, None, None
+
+    # ----------------------------------------------------------------------
+    def get_file_dimension(self, file_name):
+        """
+            :param: file_name
+            :return: dimension of the file
+        """
+
+        return self._files_data[file_name].get_file_dimension()
 
     # ----------------------------------------------------------------------
     #       ROIs batch processing section
@@ -466,7 +510,6 @@ class DataPool(QtCore.QObject):
         """
         returns 2D frame to be displayed in Frame viewer
         :param file: key for self._files_data
-        :param section: list of tuples (section axes, from, to)
         :return: 2D np.array
         """
         logger.debug(f"Return 2D image: for file {file}")
@@ -555,22 +598,24 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_axis_limits()
 
     # ----------------------------------------------------------------------
-    def get_all_axes_limits(self):
+    def get_all_axes_limits(self, file_dim=None):
         """
         recalculates the limits for all files
+        :file_dim: dim of files to be included in calculations
         :return:
         """
 
-        main_file = self.main_window.get_current_file()
-        if main_file is None:
-            return None
+        if file_dim is None:
+            main_file = self.main_window.get_current_file()
+            if main_file is None:
+                return None
 
-        main_file_dim = self._files_data[main_file].get_file_dimension()
+            file_dim = self._files_data[main_file].get_file_dimension()
 
-        new_limits = [[0, 0] for _ in range(main_file_dim)]
+        new_limits = [[0, 0] for _ in range(file_dim)]
 
         for data_set in self._files_data.values():
-            if data_set.get_file_dimension() != main_file_dim:
+            if data_set.get_file_dimension() != file_dim:
                 continue
 
             for axis, max_frame in enumerate(data_set.get_axis_limits()):
@@ -608,147 +653,6 @@ class DataPool(QtCore.QObject):
             data.apply_settings()
 
         self.data_updated.emit()
-
-
-# ----------------------------------------------------------------------
-class Opener(QtCore.QThread):
-    """
-    separate QThread, that reads new file
-    """
-
-    exception = QtCore.pyqtSignal(str, str, str)
-    done = QtCore.pyqtSignal()
-
-    # ----------------------------------------------------------------------
-    def __init__(self, data_pool, mode, params):
-        super(Opener, self).__init__()
-
-        self.data_pool = data_pool
-        self.mode = mode
-        self.params = params
-
-    # ----------------------------------------------------------------------
-    def run(self):
-        try:
-            if self.mode == 'sardana':
-                finished = False
-                while not finished:
-                    try:
-                        new_file = SardanaDataSet(self.data_pool, self.params['file_name'])
-                        new_file.apply_settings()
-                        self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-                        finished = True
-
-                    except OSError as err:
-                        if 'Resource temporarily unavailable' in str(err.args):
-                            time.sleep(0.5)
-                            print('Waiting for file {}'.format(self.params['file_name']))
-                        else:
-                            self.exception.emit('Cannot open file',
-                                                'Cannot open {}'.format(self.params['file_name']),
-                                                self._make_err_msg(err))
-                            finished = True
-
-            elif self.mode == 'stream':
-                new_file = ASAPODataSet(self.params['detector_name'], self.params['stream_name'], self.data_pool)
-                new_file.apply_settings()
-                self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-
-            elif self.mode == 'reciprocal':
-                with h5py.File(self.params['file_name'], 'r') as f:
-                    new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
-                    new_file.apply_settings()
-                    self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-
-            elif self.mode == 'beamline':
-                new_file = BeamLineView(self.data_pool, self.params['file_name'])
-                new_file.apply_settings()
-                self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-
-        except Exception as err:
-            self.exception.emit(f'Cannot open {self.mode}',
-                                f'Cannot open {self.params["entry_name"]}',
-                                self._make_err_msg(err)+traceback.format_exc())
-
-        self.done.emit()
-
-    # ----------------------------------------------------------------------
-    def _make_err_msg(self, err):
-        """
-
-        :param err:
-        :return:
-        """
-        error_msg = f'{err.__class__.__module__}.{err.__class__.__name__}: {err}'
-        error_cause = err.__cause__
-        while error_cause is not None:
-            error_msg += f'\n\nCaused by {error_cause.__class__.__module__}.{error_cause.__class__.__name__}: {error_cause}'
-            error_cause = error_cause.__cause__
-
-        return error_msg
-
-
-# ----------------------------------------------------------------------
-class Batcher(QtCore.QThread):
-
-    """
-    separate QThread, that calculates ROIs for list of files
-    """
-
-    exception = QtCore.pyqtSignal(str, str, str)
-    new_file = QtCore.pyqtSignal(str, float)
-    done = QtCore.pyqtSignal()
-
-    #----------------------------------------------------------------------
-    def __init__(self, data_pool, file_list, dir_name, file_type):
-        super(Batcher, self).__init__()
-        self.file_list = file_list
-        self.dir_name = dir_name
-        self.file_type = file_type
-
-        self.data_pool = data_pool
-
-        self._stop_batch = False
-
-    # ----------------------------------------------------------------------
-    def interrupt_batch(self):
-        self._stop_batch = True
-
-    # ----------------------------------------------------------------------
-    def run(self):
-        total_files = len(self.file_list )
-        for ind, file_name in enumerate(self.file_list):
-            if not self._stop_batch:
-                try:
-                    with h5py.File(file_name, 'r') as f:
-                        if 'scan' in f.keys():
-                            self.new_file.emit(file_name, ind/total_files)
-                            new_file = SardanaDataSet(self.data_pool, file_name, f)
-                            new_file.apply_settings()
-                            for ind, roi in self.data_pool._rois.items():
-                                x_axis, y_axis = new_file.get_roi_plot(roi.get_section_params())
-                                header = [new_file.file_axes_caption()[roi.get_param('axis_0')], 'ROI_value']
-                                save_name = ''.join(os.path.splitext(os.path.basename(file_name))[:-1]) + \
-                                            "_ROI_{}".format(ind) + self.file_type
-                                self.data_pool.save_roi_to_file(self.file_type,
-                                                                os.path.join(self.dir_name, save_name),
-                                                                header,
-                                                                np.transpose(np.vstack((x_axis, y_axis))))
-
-                except Exception as err:
-                    error_msg = f'{err.__class__.__module__}.{err.__class__.__name__}: {err}'
-                    error_cause = err.__cause__
-                    while error_cause is not None:
-                        error_msg += f'\n\nCaused by {error_cause.__class__.__module__}.{error_cause.__class__.__name__}: {error_cause}'
-                        error_cause = error_cause.__cause__
-
-                    self.exception.emit('Cannot calculate ROI',
-                                        'Cannot calculate ROI for {}'.format(file_name),
-                                        error_msg)
-            else:
-                break
-
-        self.done.emit()
 
 
 # ----------------------------------------------------------------------

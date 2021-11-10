@@ -23,7 +23,7 @@ class SectionView(QtWidgets.QWidget):
     update_roi = QtCore.pyqtSignal(int)
 
     # ----------------------------------------------------------------------
-    def __init__(self, parent, data_pool, my_id):
+    def __init__(self, parent, data_pool, my_id, my_dims):
         """
         """
         super(SectionView, self).__init__()
@@ -34,6 +34,7 @@ class SectionView(QtWidgets.QWidget):
         self._parent = parent
         self.data_pool = data_pool
         self.my_id = my_id
+        self.my_dims = my_dims
 
         self._enabled_fits = []
 
@@ -77,7 +78,15 @@ class SectionView(QtWidgets.QWidget):
         self._selector_layout.setSpacing(0)
         self._selector_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.update_axes()
+        self._section_ranger = []
+
+        for ind in range(1, self.my_dims):
+            widget = SectionRange(self, self.data_pool, self.my_id, ind)
+            widget.refresh_view()
+            widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
+            self._section_ranger.append(widget)
+            self._selector_layout.layout().addWidget(widget)
+
         self._ui.cb_section_axis.currentIndexChanged.connect(self._set_new_section_axis)
 
         self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
@@ -89,49 +98,9 @@ class SectionView(QtWidgets.QWidget):
         self._ui.bg_cut_range.buttonClicked.connect(lambda selection: self._cut_range(selection))
         self._main_plot.sigXRangeChanged.connect(self._new_range)
 
-    # -------------------------------------------------------------------
-    def new_main_file(self):
-        current_file = self.get_current_file()
-
     # ----------------------------------------------------------------------
     def get_current_file(self):
         return self._parent.get_current_file()
-
-    # ----------------------------------------------------------------------
-    def update_axes(self):
-        self._block_signals(True)
-
-        need_update = False
-        current_file = self.get_current_file()
-        if current_file is None:
-            axes = []
-        else:
-            axes = self.data_pool.get_file_axes(current_file)
-        if self._current_axes_num != len(axes):
-            need_update = True
-        self._ui.cb_section_axis.clear()
-        self._ui.cb_section_axis.addItems(axes)
-        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
-
-        if need_update:
-            self._section_ranger = []
-            layout = self._selector_layout.layout()
-            for i in reversed(range(layout.count())):
-                item = layout.itemAt(i)
-                if item:
-                    w = layout.itemAt(i).widget()
-                    if w:
-                        layout.removeWidget(w)
-                        w.setVisible(False)
-
-            for ind in range(1, len(axes)):
-                widget = SectionRange(self, self.data_pool, self.my_id, ind)
-                widget.refresh_view()
-                widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
-                self._section_ranger.append(widget)
-                layout.addWidget(widget)
-
-        self._block_signals(False)
 
     # ----------------------------------------------------------------------
     def refresh_name(self):
@@ -152,7 +121,9 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, color):
-        self.update_axes()
+        if self.data_pool.get_file_dimension(file_name) != self.my_dims:
+            return
+
         self._section_plots[file_name] = SectionPlot(self._main_plot, file_name, self._normalized, color)
         x, y = self.data_pool.get_roi_plot(file_name, self.my_id)
         x_min, x_max = self._get_fit_range()
@@ -162,9 +133,10 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def delete_file(self, file_name):
-        self._section_plots[file_name].release()
-        del self._section_plots[file_name]
-        self.update_limits()
+        if file_name in self._section_plots:
+            self._section_plots[file_name].release()
+            del self._section_plots[file_name]
+            self.update_limits()
 
     # ----------------------------------------------------------------------
     def update_plots(self):
