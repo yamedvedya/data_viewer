@@ -307,8 +307,9 @@ class FrameView(AbstractWidget):
         Update widget in case if main file was changed
         """
         self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))
-        self._fake_image_item.setNewFile(self._main_view.current_file)
-        self._change_chk_auto_levels_state(True)
+        if self.backend == 'pyqt':
+            self._fake_image_item.setNewFile(self._main_view.current_file)
+            self._change_chk_auto_levels_state(True)
         self.update_file(self._main_view.current_file)
         self.new_file_selected.emit()
 
