@@ -175,10 +175,10 @@ class JsonView(QtWidgets.QWidget):
             item_ids = [message_idx.index(frame) for frame in frame_sel]
             data_to_display = {}
             for item_id in item_ids:
-                data_to_display[str(item_id)] = metadata[item_id][0]
+                data_to_display[str(item_id)] = metadata[item_id]
             self.update_view(data_to_display)
         except Exception as err:
-            logger.error(f'Cannot update meta: {err}')
+            logger.error(f'Cannot update meta: {err}', exc_info=True)
 
     # ----------------------------------------------------------------------
     def clear_view(self):
