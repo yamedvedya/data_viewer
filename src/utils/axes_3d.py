@@ -45,7 +45,11 @@ class Custom3DAxis(gl.GLAxisItem):
 
     def add_labels(self, x_title='X', y_title='Y', z_title='Z'):
         """Adds axes labels."""
+        if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
+            return
+
         x,y,z = self.size()
+
         #X label
         self.xLabel = CustomTextItem(X=0.75*x, Y=-y/20, Z=-z/20, text=x_title)
         self.xLabel.setGLViewWidget(self.parent)
@@ -61,6 +65,9 @@ class Custom3DAxis(gl.GLAxisItem):
 
     def add_tick_values(self, xticks=[], yticks=[], zticks=[]):
         """Adds ticks values."""
+        if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
+            return
+
         x,y,z = self.size()
         xtpos = np.linspace(0, x, len(xticks))
         ytpos = np.linspace(0, y, len(yticks))
