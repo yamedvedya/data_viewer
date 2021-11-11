@@ -9,6 +9,7 @@ from distutils.util import strtobool
 from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
 
 from src.main_window import APP_NAME
+from src.utils.fake_image_item import FakeImageItem
 from src.widgets.abstract_widget import AbstractWidget
 from src.widgets.view_2d import ViewPyQt, ViewSilx
 from src.gui.frame_view_ui import Ui_FrameView
@@ -24,8 +25,6 @@ class FrameView(AbstractWidget):
     new_file_selected = QtCore.pyqtSignal()
 
     update_roi = QtCore.pyqtSignal(int)
-
-    levels_updated = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
@@ -53,7 +52,9 @@ class FrameView(AbstractWidget):
             self._main_view = ViewPyQt(self, 'main', data_pool)
             self._second_view = ViewPyQt(self, 'second', data_pool)
 
-            self.hist.item.setImageItem(self._main_view.plot_2d)
+            self._fake_image_item = FakeImageItem(data_pool, self._main_view.plot_2d)
+
+            self.hist.item.setImageItem(self._fake_image_item)
 
             self.level_mode = 'lin'
 
@@ -93,7 +94,6 @@ class FrameView(AbstractWidget):
 
         self.current_frames = [0, 0]
         self.level_mode = 'lin'
-        self.auto_levels = True
         self.max_frame = 0
 
         self._ui.cut_selectors.layout().setSpacing(0)
@@ -178,22 +178,30 @@ class FrameView(AbstractWidget):
         self._second_view.new_lookup_table()
 
     # ----------------------------------------------------------------------
+    def get_levels(self):
+        return self._fake_image_item.levels
+
+    # ----------------------------------------------------------------------
+    def _change_chk_auto_levels_state(self, state):
+        self._ui.chk_auto_levels.blockSignals(True)
+        self._ui.chk_auto_levels.setChecked(state)
+        self._ui.chk_auto_levels.blockSignals(False)
+
+    # ----------------------------------------------------------------------
     def switch_off_auto_levels(self):
 
-        self.auto_levels = False
-        self._ui.chk_auto_levels.blockSignals(True)
-        self._ui.chk_auto_levels.setChecked(False)
-        self._ui.chk_auto_levels.blockSignals(False)
+        self._change_chk_auto_levels_state(False)
         self._second_view.new_levels()
-
-        self.levels_updated.emit()
 
     # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
 
-        self.auto_levels = state
+        if state:
+            self._fake_image_item.setAutoLevels()
+            l_min, l_max = self._fake_image_item.levels
+            self.hist.item.setLevels(l_min, l_max)
+
         self.update_image()
-        self._ui.chk_auto_levels.setChecked(state)
 
     # ----------------------------------------------------------------------
     def _change_level_mode(self, button):
@@ -205,15 +213,18 @@ class FrameView(AbstractWidget):
         else:
             self.level_mode = 'log'
 
-        self.levels_updated.emit()
+        self._fake_image_item.setMode(self.level_mode)
 
-        self.update_image()
+        self._toggle_auto_levels(True)
+        self._change_chk_auto_levels_state(True)
 
     # ----------------------------------------------------------------------
     def _hist_mouse_clicked(self, event):
 
         if event.double():
-            self._toggle_auto_levels(True)
+            if self._main_view.current_file is not None:
+                self._toggle_auto_levels(True)
+                self._change_chk_auto_levels_state(True)
 
     # ----------------------------------------------------------------------
     def get_current_axes(self):
@@ -296,6 +307,8 @@ class FrameView(AbstractWidget):
         Update widget in case if main file was changed
         """
         self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))
+        self._fake_image_item.setNewFile(self._main_view.current_file)
+        self._change_chk_auto_levels_state(True)
         self.update_file(self._main_view.current_file)
         self.new_file_selected.emit()
 

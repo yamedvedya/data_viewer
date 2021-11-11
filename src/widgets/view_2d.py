@@ -358,10 +358,17 @@ class ViewPyQt(View2d):
             if self.current_file is None:
                 return
 
-            current_axes = self._frame_viewer.get_current_axes()
+            try:
+                current_axes = self._frame_viewer.get_current_axes()
 
-            x_name, x_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
-            y_name, y_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
+                x_name, x_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
+                y_name, y_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
+
+            except:
+                x_name = ''
+                x_value = ''
+                y_name = ''
+                y_value = ''
 
             self._frame_viewer.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
 
@@ -384,7 +391,7 @@ class ViewPyQt(View2d):
 
         data_to_display = super(ViewPyQt, self).update_image()
         if data_to_display is not None:
-            self.plot_2d.setImage(data_to_display, autoLevels=self._frame_viewer.auto_levels)
+            self.plot_2d.setImage(data_to_display, levels=self._frame_viewer.get_levels())
             for ind in range(len(self._rois)):
                 self.roi_changed(ind)
 

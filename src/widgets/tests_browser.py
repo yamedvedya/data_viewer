@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, QtCore
 
 from src.widgets.abstract_widget import AbstractWidget
 
-from src.data_sources.test_datasets.test_datasets import Sardana3DSin, Sardana3DCos
+from src.data_sources.test_datasets.test_datasets import Sardana3DSin, Sardana3DPeak
 
 from src.gui.tests_browser_ui import Ui_TestsBrowser
 
@@ -28,7 +28,7 @@ class TestsBrowser(AbstractWidget):
         self._ui.tb_sets.setColumnWidth(1, 50)
 
 
-        self.test_classes = [Sardana3DSin, Sardana3DCos]
+        self.test_classes = [Sardana3DSin, Sardana3DPeak]
         self._ui.tb_sets.setRowCount(len(self.test_classes))
 
         for ind, test_class in enumerate(self.test_classes):

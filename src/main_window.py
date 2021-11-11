@@ -115,9 +115,7 @@ class DataViewer(QtWidgets.QMainWindow):
         else:
             self.has_tests = False
 
-        self.frame_view.new_file_selected.connect(self.cube_view.display_file)
-
-        self.frame_view.levels_updated.connect(self.cube_view.display_file)
+        self.frame_view.new_file_selected.connect(self.cube_view.new_file)
 
         self.frame_view.update_roi.connect(self.rois_view.roi_changed)
 
