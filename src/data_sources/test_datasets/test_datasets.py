@@ -4,7 +4,7 @@ import numpy as np
 
 from src.data_sources.sardana.sardana_data_set import SardanaDataSet
 
-__all__ = ['Sardana3DSin', 'Sardana3DCos']
+__all__ = ['Sardana3DSin', 'Sardana3DPeak']
 
 # # --------------------------------------------------------------------
 # class __TestDataSet(object):
@@ -75,7 +75,6 @@ class Sardana3DSin(__Fake3DSardana):
 
     my_name = 'Sardana3DSin'
 
-
     # ----------------------------------------------------------------------
     def _generate_fake_data(self):
 
@@ -89,29 +88,32 @@ class Sardana3DSin(__Fake3DSardana):
         for ind, scale in enumerate(np.sin(np.linspace(0, np.pi, self.z_dim))):
             data_cube[ind] = frame * scale
 
+        data_cube -= np.min(data_cube)
+
         return data_cube
 
 
 # ----------------------------------------------------------------------
-class Sardana3DCos(__Fake3DSardana):
+class Sardana3DPeak(__Fake3DSardana):
 
-    x_dim = 150
-    y_dim = 75
+    x_dim = 151
+    y_dim = 101
     z_dim = 21
 
-    my_name = 'Sardana3DCos'
+    my_name = 'Sardana3DPeak'
 
     # ----------------------------------------------------------------------
     def _generate_fake_data(self):
 
-        frame = np.zeros((self.y_dim, self.x_dim))
-        for ind in range(self.y_dim):
-            frame[ind] = np.cos(np.linspace(0, np.pi, self.x_dim))
-        for ind in range(self.x_dim):
-            frame[:, ind] *= np.cos(np.linspace(0, np.pi, self.y_dim))
+        y, x = np.meshgrid(np.linspace(-75, 75, 151), np.linspace(-50, 50, 101))
+
+        mean, sigma = 2, 6
+        frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2)))*100
 
         data_cube = np.zeros((self.z_dim, self.y_dim, self.x_dim))
-        for ind, scale in enumerate(np.cos(np.linspace(0, np.pi, self.z_dim))):
+        for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.z_dim)), 4)):
             data_cube[ind] = frame * scale
+
+        data_cube -= np.min(data_cube)
 
         return data_cube

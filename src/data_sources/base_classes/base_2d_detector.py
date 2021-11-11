@@ -155,6 +155,8 @@ class Base2DDetectorDataSet(BaseDataSet):
             axis, start, stop = axis_slice
             i = section.index(axis_slice)
             if axis > 0:
+                start = max(start, 0)
+                stop = min(stop, data.shape[axis])
                 data = data.take(indices=range(start, stop), axis=axis)
             if do_sum and i >= output_dim:
                 data = np.sum(data, axis=axis)

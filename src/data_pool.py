@@ -310,6 +310,16 @@ class DataPool(QtCore.QObject):
         self.open_file(file_name)
 
     # ----------------------------------------------------------------------
+    #       General section
+    # ----------------------------------------------------------------------
+    def get_histogram(self, file, mode):
+        return self._files_data[file].get_histogram(mode)
+
+    # ----------------------------------------------------------------------
+    def get_levels(self, file, mode):
+        return self._files_data[file].get_levels(mode)
+
+    # ----------------------------------------------------------------------
     #       ROIs plots section
     # ----------------------------------------------------------------------
     def roi_counts(self):
@@ -622,7 +632,7 @@ class DataPool(QtCore.QObject):
                 _, min_v = data_set.get_value_for_frame(axis, 0)
                 new_limits[axis][0] = min(new_limits[axis][0], min_v)
 
-                _, max_v = data_set.get_value_for_frame(axis, max_frame - 1)
+                _, max_v = data_set.get_value_for_frame(axis, max_frame)
                 new_limits[axis][1] = max(new_limits[axis][1], max_v)
 
         return new_limits

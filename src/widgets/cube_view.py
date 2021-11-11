@@ -10,6 +10,7 @@ from distutils.util import strtobool
 from PyQt5 import QtWidgets, QtCore
 
 from src.utils.axes_3d import Custom3DAxis
+from src.utils.fake_image_item import FakeImageItem
 from src.utils.utils import refresh_combo_box
 from src.widgets.abstract_widget import AbstractWidget
 from src.gui.cube_view_ui import Ui_CubeView
@@ -33,6 +34,10 @@ class CubeView(AbstractWidget):
         self._make_actions()
         self._ui.v_layout.setStretch(1, 1)
 
+        self._fake_image_item = FakeImageItem(data_pool)
+        self._ui.hist.item.setImageItem(self._fake_image_item)
+        self._ui.hist.setBackground('w')
+
         self.view_widget = gl.GLViewWidget()
         # self.view_widget.orbit(256, 256)
         # self.view_widget.setCameraPosition(0, 0, 0)
@@ -46,9 +51,13 @@ class CubeView(AbstractWidget):
         self._ui.h_layout.insertWidget(0, self.view_widget, 1)
 
         self._ui.hist.item.sigLevelChangeFinished.connect(self.display_file)
+        self._ui.hist.item.sigLookupTableChanged.connect(self.display_file)
+
+        self._ui.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
+
         self._ui.chk_auto_levels.clicked.connect(self._auto_levels)
 
-        self._ui.bg_lev_mode.buttonClicked.connect(self.display_file)
+        self._ui.bg_lev_mode.buttonClicked.connect(self._change_level_mode)
 
         self._status_timer = QtCore.QTimer(self)
         self._status_timer.timeout.connect(self._refresh_camera_position)
@@ -57,7 +66,37 @@ class CubeView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _auto_levels(self, state):
         if state:
-            pass
+            self._fake_image_item.setAutoLevels()
+            l_min, l_max = self._fake_image_item.levels
+            self._ui.hist.item.setLevels(l_min, l_max)
+
+            self.display_file()
+
+        # ----------------------------------------------------------------------
+    def _hist_mouse_clicked(self, event):
+
+        if event.double():
+            self._auto_levels(True)
+            self._change_chk_auto_levels_state(True)
+
+    # ----------------------------------------------------------------------
+    def _change_level_mode(self, button):
+
+        if button == self._ui.rb_lin_levels:
+            self._fake_image_item.setMode('lin')
+        elif button == self._ui.rb_sqrt_levels:
+            self._fake_image_item.setMode('sqrt')
+        else:
+            self._fake_image_item.setMode('log')
+
+        self._auto_levels(True)
+        self._change_chk_auto_levels_state(True)
+
+    # ----------------------------------------------------------------------
+    def _change_chk_auto_levels_state(self, state):
+        self._ui.chk_auto_levels.blockSignals(True)
+        self._ui.chk_auto_levels.setChecked(state)
+        self._ui.chk_auto_levels.blockSignals(False)
 
     # ----------------------------------------------------------------------
     def _refresh_camera_position(self):
@@ -81,6 +120,9 @@ class CubeView(AbstractWidget):
         if 'borders' in settings:
             self.sp_borders.setValue(int(settings['borders']))
 
+        if 'background' in settings:
+            self.chk_white_bck.setChecked(str(settings['background']).lower() in ['w', 'white'])
+
         self.display_file()
 
         self._block_signals(False)
@@ -100,6 +142,16 @@ class CubeView(AbstractWidget):
         self.cmb_area.blockSignals(False)
 
     # ----------------------------------------------------------------------
+    def new_file(self):
+
+        self._ui.hist.item.sigLevelChangeFinished.disconnect()
+        self._ui.hist.item.sigLookupTableChanged.disconnect()
+        self._fake_image_item.setNewFile(self._parent.get_current_file())
+        self._ui.hist.item.sigLevelChangeFinished.connect(self.display_file)
+        self._ui.hist.item.sigLookupTableChanged.connect(self.display_file)
+        self.display_file()
+
+    # ----------------------------------------------------------------------
     def display_file(self):
 
         file_name = self._parent.get_current_file()
@@ -113,14 +165,10 @@ class CubeView(AbstractWidget):
 
         levels = self._ui.hist.item.getLevels()
 
-        if self._ui.rb_log_levels.isChecked() == 'log':
+        if self._ui.rb_log_levels.isChecked():
             data = np.log(data + 1)
-        elif self._ui.rb_sqrt_levels.isChecked() == 'sqrt':
+        elif self._ui.rb_sqrt_levels.isChecked():
             data = np.sqrt(data + 1)
-
-        #TODO TEMP:
-
-        levels = np.min(data), np.max(data)
 
         data = np.maximum(np.minimum((data - levels[0]) / float(levels[1] - levels[0]) * 255, 255), 0)
 
@@ -223,7 +271,7 @@ class CubeView(AbstractWidget):
         toolbar.addWidget(self.sp_borders)
 
         self.chk_white_bck = QtWidgets.QCheckBox('White background', self)
-        self.chk_white_bck.clicked.connect(self._set_background)
+        self.chk_white_bck.stateChanged.connect(self._set_background)
         toolbar.addWidget(self.chk_white_bck)
 
         toolbar.addSeparator()

@@ -32,6 +32,12 @@ class BaseDataSet(object):
 
         self._section = None
 
+        self._hist_lin = None
+        self._hist_log = None
+        self._hist_sqrt = None
+
+        self._levels = None
+
     # ----------------------------------------------------------------------
     def save_section(self, section):
         for old, new in zip(self._section, section):
@@ -88,7 +94,7 @@ class BaseDataSet(object):
         :return: list [max, ], limits for each axis
         """
 
-        return self._data_shape
+        return [lim-1 for lim in self._data_shape]
 
     # ----------------------------------------------------------------------
     def get_frame_for_value(self, axis, pos):
@@ -232,3 +238,67 @@ class BaseDataSet(object):
             return self._get_data()
         else:
             return self.get_roi_cut(section, False)
+
+    # ----------------------------------------------------------------------
+    def get_histogram(self, mode):
+        if self._hist_lin is None:
+            self._hist_lin, self._hist_log, self._hist_sqrt, self._levels = self._calculate_hist()
+
+        if mode == 'lin':
+            return self._hist_lin
+        elif mode == 'log':
+            return self._hist_log
+        elif mode == 'sqrt':
+            return self._hist_sqrt
+        else:
+            raise RuntimeError('Unknown hist mode')
+
+    # ----------------------------------------------------------------------
+    def get_levels(self, mode):
+        if self._levels is None:
+            self._hist_lin, self._hist_log, self._hist_sqrt, self._levels = self._calculate_hist()
+
+        if mode == 'lin':
+            return self._levels
+        elif mode == 'log':
+            return np.log(self._levels + 1)
+        elif mode == 'sqrt':
+            return np.sqrt(self._levels + 1)
+        else:
+            raise RuntimeError('Unknown hist mode')
+
+    # ----------------------------------------------------------------------
+    def _calculate_hist(self):
+
+        original_data = self._get_data()
+
+        hists = []
+
+        for data in [original_data, np.log(original_data+1), np.sqrt(original_data+1)]:
+            mn = np.nanmin(data).item()
+            mx = np.nanmax(data).item()
+            if mx == mn:
+                # degenerate image, arange will fail
+                mx += 1
+            if np.isnan(mn) or np.isnan(mx):
+                # the data are all-nan
+                return None, None
+            if data.dtype.kind in "ui":
+                # For integer data, we select the bins carefully to avoid aliasing
+                step = int(np.ceil((mx - mn) / 500.))
+                bins = []
+                if step > 0.0:
+                    bins = np.arange(mn, mx + 1.01 * step, step, dtype=int)
+            else:
+                # for float data, let numpy select the bins.
+                bins = np.linspace(mn, mx, 500)
+
+            if len(bins) == 0:
+                bins = np.asarray((mn, mx))
+
+            data = data[np.isfinite(data)]
+            hist = np.histogram(data, bins)
+
+            hists.append((hist[1][:-1], hist[0]))
+
+        return hists[0], hists[1], hists[2], np.array([np.min(original_data), np.max(original_data)])

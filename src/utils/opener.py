@@ -14,7 +14,7 @@ if 'asapo_consumer' in sys.modules:
 from src.data_sources.beamview.beam_view_data_set import BeamLineView
 from src.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from src.data_sources.sardana.sardana_data_set import SardanaDataSet
-from src.data_sources.test_datasets.test_datasets import Sardana3DCos, Sardana3DSin
+from src.data_sources.test_datasets.test_datasets import Sardana3DPeak, Sardana3DSin
 
 
 # ----------------------------------------------------------------------
@@ -73,8 +73,8 @@ class Opener(QtCore.QThread):
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'test':
-                if self.params['test_name'] == 'Sardana3DCos':
-                    new_file = Sardana3DCos(self.data_pool)
+                if self.params['test_name'] == 'Sardana3DPeak':
+                    new_file = Sardana3DPeak(self.data_pool)
                 elif self.params['test_name'] == 'Sardana3DSin':
                     new_file = Sardana3DSin(self.data_pool)
                 else:
