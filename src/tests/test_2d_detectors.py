@@ -1,7 +1,7 @@
 import numpy as np
 
+from src.tests.test_sardana import _load_file, z_dim, y_dim, x_dim, generate_fake_data, viewer, change_test_dir
 from src.data_sources.sardana.sardana_data_set import SETTINGS
-from src.tests.test_sardana import _load_file, z_dim, y_dim, x_dim, generate_fake_data
 
 
 def test_2d_functionality(change_test_dir, viewer):
