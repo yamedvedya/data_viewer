@@ -27,9 +27,23 @@ class ProgramSetup(QtWidgets.QDialog):
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
 
-        if 'FILE_BROWSER' in settings:
-            if 'door_address' in settings['FILE_BROWSER']:
-                self._ui.le_door_address.setText(settings['FILE_BROWSER']['door_address'])
+        if 'SARDANA_SCANS' in settings:
+            if 'door_address' in settings['SARDANA_SCANS']:
+                self._ui.le_door_address.setText(settings['SARDANA_SCANS']['door_address'])
+
+            if 'default_mask' in settings['SARDANA_SCANS']:
+                self._ui.gb_sardana_default_mask.setChecked(True)
+                self._ui.le_sardana_mask_file.setText(settings['SARDANA_SCANS']['default_mask'])
+
+            if 'default_ff' in settings['SARDANA_SCANS']:
+                self._ui.gb_sardana_default_mask.setChecked(True)
+                self._ui.le_sardana_ff_file.setText(settings['SARDANA_SCANS']['default_ff'])
+
+                if 'min_ff' in settings['SARDANA_SCANS']:
+                    self._ui.dsp_sardana_ff_min.setValue(float(settings['SARDANA_SCANS']['min_ff']))
+
+                if 'max_ff' in settings['SARDANA_SCANS']:
+                    self._ui.dsp_sardana_ff_max.setValue(float(settings['SARDANA_SCANS']['max_ff']))
 
         if 'DATA_POOL' in settings:
             if 'memory_mode' in settings['DATA_POOL']:
@@ -44,11 +58,11 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'max_memory_usage' in settings['DATA_POOL']:
                 self._ui.sb_lim_mem.setValue(int(settings['DATA_POOL']['max_memory_usage']))
 
-            if 'delimiter' in settings['DATA_POOL']:
-                self._ui.le_separator.setText(settings['DATA_POOL']['delimiter'])
+            if 'export_file_delimiter' in settings['DATA_POOL']:
+                self._ui.le_separator.setText(settings['DATA_POOL']['export_file_delimiter'])
 
-            if 'format' in settings['DATA_POOL']:
-                self._ui.le_format.setText(settings['DATA_POOL']['format'])
+            if 'export_file_format' in settings['DATA_POOL']:
+                self._ui.le_format.setText(settings['DATA_POOL']['export_file_format'])
 
         if 'ASAPO' in settings:
 
@@ -76,45 +90,108 @@ class ProgramSetup(QtWidgets.QDialog):
             if 'max_messages' in settings['ASAPO']:
                 self._ui.sp_max_messages.setValue(int(settings['ASAPO']['max_messages']))
 
+            if 'default_mask' in settings['ASAPO']:
+                self._ui.gb_asapo_default_mask.setChecked(True)
+                self._ui.le_asapo_mask_file.setText(settings['ASAPO']['default_mask'])
+
+            if 'default_ff' in settings['ASAPO']:
+                self._ui.gb_asapo_default_mask.setChecked(True)
+                self._ui.le_asapo_ff_file.setText(settings['ASAPO']['default_ff'])
+
+                if 'min_ff' in settings['ASAPO']:
+                    self._ui.dsp_asapo_ff_min.setValue(float(settings['ASAPO']['min_ff']))
+
+                if 'max_ff' in settings['ASAPO']:
+                    self._ui.dsp_asapo_ff_max.setValue(float(settings['ASAPO']['max_ff']))
+
         if 'FRAME_VIEW' in settings:
 
-            if 'display_axes' in settings['FRAME_VIEW']:
-                self._ui.chk_display_axes.setChecked(strtobool(settings['FRAME_VIEW']['display_axes']))
+            for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
+                if f'display_{setting}' in settings['FRAME_VIEW']:
+                    getattr(self._ui, f'chk_{setting}').setChecked(strtobool(settings['FRAME_VIEW'][f'display_{setting}']))
 
-            if 'display_axes_titles' in settings['FRAME_VIEW']:
-                self._ui.chk_display_axes_titles.setChecked(strtobool(settings['FRAME_VIEW']['display_axes_titles']))
+            if 'backend' in settings['FRAME_VIEW']:
+                refresh_combo_box(self._ui.cmb_backend, str(settings['FRAME_VIEW']['backend']))
+
+        if 'CUBE_VIEW' in settings:
+
+            for setting in ['slices', 'borders']:
+                if setting in settings['CUBE_VIEW']:
+                    getattr(self._ui, f'sp_{setting}').setValue(int(settings['CUBE_VIEW'][setting]))
+
+            for setting in ['smooth', 'white_background']:
+                if setting in settings['CUBE_VIEW']:
+                    getattr(self._ui, f'chk_{setting}').setChecked(strtobool(settings['CUBE_VIEW'][setting]))
+
+    @staticmethod
+    # ----------------------------------------------------------------------
+    def _set_or_make_filed(settings, root_filed, fields, values):
+        if root_filed in settings:
+            settings[root_filed].update({field: value for field, value in zip(fields, values)})
+        else:
+            settings[root_filed] = {field: value for field, value in zip(fields, values)}
+
+        return settings
 
     # ----------------------------------------------------------------------
     def accept(self):
 
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
+
         if str(self._ui.le_door_address.text()) != '':
-            settings['FILE_BROWSER'] = {'door_address': str(self._ui.le_door_address.text())}
+            settings = self._set_or_make_filed(settings, 'SARDANA_SCANS',
+                                               'door_address', str(self._ui.le_door_address.text()))
 
-        if self._ui.cmb_memory_mode.currentText() == 'RAM':
-            settings['DATA_POOL'] = {'memory_mode': 'ram'}
-        else:
-            settings['DATA_POOL'] = {'memory_mode': 'drive'}
+        if self._ui.gb_sardana_default_mask.isChecked():
+            settings = self._set_or_make_filed(settings, 'SARDANA_SCANS',
+                                               'default_mask', str(self._ui.le_sardana_mask_file.text()))
 
-        settings['DATA_POOL'].update({'max_open_files': str(self._ui.sp_lim_num.value()),
-                                      'max_memory_usage': str(self._ui.sb_lim_mem.value()),
-                                      'delimiter': str(self._ui.le_separator.text()),
-                                      'format': str(self._ui.le_format.text())})
+        if self._ui.gb_sardana_default_ff.isChecked():
+            settings = self._set_or_make_filed(settings, 'SARDANA_SCANS',
+                                               ['door_address', 'min_ff', 'max_ff'],
+                                               [str(self._ui.le_door_address.text()),
+                                                str(self._ui.dsp_sardana_ff_min.value()),
+                                                str(self._ui.dsp_sardana_ff_max.value())])
+
+        settings['DATA_POOL'] = {'max_open_files': str(self._ui.sp_lim_num.value()),
+                                 'max_memory_usage': str(self._ui.sb_lim_mem.value()),
+                                 'export_file_delimiter': str(self._ui.le_separator.text()),
+                                 'export_file_format': str(self._ui.le_format.text()),
+                                 'memory_mode':'ram' if self._ui.cmb_memory_mode.currentText() == 'RAM' else 'drive'}
+
+        settings['ASAPO'] = {'max_streams': str(self._ui.sp_max_streams.value()),
+                             'max_messages': str(self._ui.sp_max_messages.value())}
 
         if str(self._ui.le_host.text()) != '' and str(self._ui.le_beamtime.text()) != '' \
                 and str(self._ui.le_token.text()) != '' and str(self._ui.le_detectors.text()) != '':
-            settings['ASAPO'] = {'host': str(self._ui.le_host.text()),
-                                 'path': str(self._ui.le_path.text()),
-                                 'has_filesystem': str(self._ui.chk_filesystem.isChecked()),
-                                 'beamtime': str(self._ui.le_beamtime.text()),
-                                 'token': str(self._ui.le_token.text()),
-                                 'detectors': str(self._ui.le_detectors.text()),
-                                 'max_streams': str(self._ui.sp_max_streams.value()),
-                                 'max_messages': str(self._ui.sp_max_messages.value())}
 
-        settings['FRAME_VIEW'] = {'display_axes': str(self._ui.chk_display_axes.isChecked()),
-                                  'display_axes_titles': str(self._ui.chk_display_axes_titles.isChecked())}
+            settings['ASAPO'].update({'host': str(self._ui.le_host.text()),
+                                      'path': str(self._ui.le_path.text()),
+                                      'has_filesystem': str(self._ui.chk_filesystem.isChecked()),
+                                      'beamtime': str(self._ui.le_beamtime.text()),
+                                      'token': str(self._ui.le_token.text()),
+                                      'detectors': str(self._ui.le_detectors.text())})
+
+        if self._ui.gb_sardana_default_mask.isChecked():
+            settings['ASAPO']['default_mask'] = str(self._ui.le_asapo_mask_file.text())
+
+        if self._ui.gb_sardana_default_ff.isChecked():
+            settings['ASAPO']['default_ff'] = str(self._ui.le_asapo_ff_file.text())
+            settings['ASAPO']['min_ff'] = str(self._ui.dsp_asapo_ff_min.value())
+            settings['ASAPO']['max_ff'] = str(self._ui.dsp_asapo_ff_max.value())
+
+        for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
+            settings['FRAME_VIEW'][f'display_{setting}'] = getattr(self._ui, f'chk_{setting}').isChecked()
+
+        if 'backend' in settings['FRAME_VIEW']:
+            settings['FRAME_VIEW']['backend'] = self._ui.cmb_backend.currentText()
+
+        for setting in ['slices', 'borders']:
+            settings['CUBE_VIEW'][setting] = str(getattr(self._ui, f'sp_{setting}').value())
+
+        for setting in ['smooth', 'white_background']:
+            settings['CUBE_VIEW'][setting] = getattr(self._ui, f'chk_{setting}').isChecked()
 
         self._main_window.apply_settings(settings)
 

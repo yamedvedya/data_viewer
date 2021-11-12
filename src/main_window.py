@@ -157,8 +157,8 @@ class DataViewer(QtWidgets.QMainWindow):
             settings = configparser.ConfigParser()
             settings.read('./settings.ini')
 
-        if 'FILE_BROWSER' in settings and self.has_sardana:
-            self.file_browser.set_settings(settings['FILE_BROWSER'])
+        if 'SARDANA_SCANS' in settings and self.has_sardana:
+            self.file_browser.set_settings(settings['SARDANA_SCANS'])
         if 'ASAPO' in settings and self.has_asapo:
             self.asapo_browser.set_settings(settings['ASAPO'])
         if 'FRAME_VIEW' in settings:

@@ -12,6 +12,9 @@ from src.asapo_tree_view.asapo_entries_class import StreamNode, DetectorNode
 from src.asapo_tree_view.asapo_table_headers import headers
 from AsapoWorker.asapo_receiver import AsapoMetadataReceiver
 
+from src.utils.utils import read_mask_file, read_ff_file
+from src.data_sources.asapo.asapo_data_set import SETTINGS
+
 from src.gui.asapo_browser_ui import Ui_ASAPOBrowser
 
 WIDGET_NAME = 'ASAPOBrowser'
@@ -119,6 +122,20 @@ class ASAPOBrowser(AbstractWidget):
 
             self.reset_detectors([detector.strip() for detector in self.settings['detectors'].split(';')])
             self.refresh_view()
+
+            if 'default_mask' in settings:
+                SETTINGS['enable_mask'] = True
+                SETTINGS['mask'] = read_mask_file(settings['default_mask'])
+                SETTINGS['mask_file'] = settings['default_mask']
+
+            if 'default_ff' in settings:
+                SETTINGS['enable_ff'] = True
+                SETTINGS['ff'] = read_ff_file(settings['default_ff'])
+                SETTINGS['ff_file'] = settings['default_ff']
+                if 'min_ff' in settings:
+                    SETTINGS['ff_min'] = settings['min_ff']
+                if 'max_ff' in settings:
+                    SETTINGS['ff_max'] = settings['max_ff']
 
         except Exception as err:
             self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)

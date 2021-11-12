@@ -235,6 +235,3 @@ class SardanaDataSet(Base2DDetectorDataSet):
             return None, None
 
         return super(SardanaDataSet, self).get_roi_plot(sect)
-
-
-# ----------------------------------------------------------------------

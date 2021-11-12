@@ -51,8 +51,8 @@ class DataPool(QtCore.QObject):
         self._rois = OrderedDict()
         self._last_roi_key = -1
 
-        self.settings = {'delimiter': ';',
-                         'format': '%.6e'}
+        self.settings = {'export_file_delimiter': ';',
+                         'export_file_format': '%.6e'}
 
         self._batcher = None
         self._opener = None
@@ -79,12 +79,12 @@ class DataPool(QtCore.QObject):
         if 'max_memory_usage' in settings:
             self._max_memory = int(settings['max_memory_usage'])
 
-        if 'delimiter' in settings:
-            if settings['delimiter'] == 'semicolumn':
-                self.settings['delimiter'] = ';'
+        if 'export_file_delimiter' in settings:
+            if settings['export_file_delimiter'] == 'semicolumn':
+                self.settings['export_file_delimiter'] = ';'
 
-        if 'format' in settings:
-            self.settings['format'] = '%' + settings['format']
+        if 'export_file_format' in settings:
+            self.settings['export_file_format'] = '%' + settings['export_file_format']
 
     # ----------------------------------------------------------------------
     def report_error(self, title, informative_text, detailed_text):
@@ -509,8 +509,8 @@ class DataPool(QtCore.QObject):
         :return:
         """
         if file_type == '.txt':
-            np.savetxt(save_name, data, fmt=self.settings['format'],
-                       delimiter=self.settings['delimiter'],
+            np.savetxt(save_name, data, fmt=self.settings['export_file_format'],
+                       delimiter=self.settings['export_file_delimiter'],
                        newline='\n', header=';'.join(header))
 
     # ----------------------------------------------------------------------

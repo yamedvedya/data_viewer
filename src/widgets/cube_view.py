@@ -120,8 +120,8 @@ class CubeView(AbstractWidget):
         if 'borders' in settings:
             self.sp_borders.setValue(int(settings['borders']))
 
-        if 'background' in settings:
-            self.chk_white_bck.setChecked(str(settings['background']).lower() in ['w', 'white'])
+        if 'white_background' in settings:
+            self.chk_white_bck.setChecked(strtobool(settings['white_background']))
 
         self.display_file()
 

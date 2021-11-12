@@ -18,7 +18,8 @@ from PyQt5 import QtWidgets, QtCore
 from src.widgets.abstract_widget import AbstractWidget
 from src.gui.file_browser_ui import Ui_FileBrowser
 
-from src.utils.utils import FileFilter
+from src.utils.utils import FileFilter, read_mask_file, read_ff_file
+from src.data_sources.sardana.sardana_data_set import SETTINGS
 
 WIDGET_NAME = 'DataBrowser'
 
@@ -95,18 +96,36 @@ class FileBrowser(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
-        if 'door_address' in settings:
-            if self._eid is not None:
-                self._toggle_watch_door(False)
-                _need_to_reset = True
-            else:
-                _need_to_reset = False
-            try:
-                self._door_server = PyTango.DeviceProxy(settings['door_address'])
-                if _need_to_reset:
-                    self._toggle_watch_door(True)
-            except:
-                self._parent.report_error('Cannot connect to {}'.format(settings['door_address']))
+        try:
+            if 'door_address' in settings:
+                if self._eid is not None:
+                    self._toggle_watch_door(False)
+                    _need_to_reset = True
+                else:
+                    _need_to_reset = False
+                try:
+                    self._door_server = PyTango.DeviceProxy(settings['door_address'])
+                    if _need_to_reset:
+                        self._toggle_watch_door(True)
+                except:
+                    self._parent.report_error('Cannot connect to {}'.format(settings['door_address']))
+
+            if 'default_mask' in settings:
+                SETTINGS['enable_mask'] = True
+                SETTINGS['mask'] = read_mask_file(settings['default_mask'])
+                SETTINGS['mask_file'] = settings['default_mask']
+
+            if 'default_ff' in settings:
+                SETTINGS['enable_ff'] = True
+                SETTINGS['ff'] = read_ff_file(settings['default_ff'])
+                SETTINGS['ff_file'] = settings['default_ff']
+                if 'min_ff' in settings:
+                    SETTINGS['ff_min'] = settings['min_ff']
+                if 'max_ff' in settings:
+                    SETTINGS['ff_max'] = settings['max_ff']
+
+        except Exception as err:
+            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
     def safe_close(self):
