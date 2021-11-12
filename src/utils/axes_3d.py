@@ -12,57 +12,73 @@ class CustomTextItem(gl.GLGraphicsItem.GLGraphicsItem):
         self.Y = Y
         self.Z = Z
 
+    # ---------------------------------------------------------------------
     def setGLViewWidget(self, GLViewWidget):
         self.GLViewWidget = GLViewWidget
 
+    # ---------------------------------------------------------------------
     def setText(self, text):
         self.text = text
         self.update()
 
-    def setX(self, X):
-        self.X = X
+    # ---------------------------------------------------------------------
+    def moveTo(self, x, y, z):
+        self.X = x
+        self.Y = y
+        self.Z = z
+
         self.update()
 
-    def setY(self, Y):
-        self.Y = Y
-        self.update()
-
-    def setZ(self, Z):
-        self.Z = Z
-        self.update()
-
+    # ---------------------------------------------------------------------
     def paint(self):
         self.GLViewWidget.qglColor(QtCore.Qt.black)
         self.GLViewWidget.renderText(self.X, self.Y, self.Z, self.text)
 
 
+# ---------------------------------------------------------------------
 class Custom3DAxis(gl.GLAxisItem):
     """Class defined to extend 'gl.GLAxisItem'."""
-    def __init__(self, parent, color=(0,0,0,.6)):
+    def __init__(self, parent, color=(0, 0, 0, .6)):
         gl.GLAxisItem.__init__(self)
         self.parent = parent
         self.c = color
 
-    def add_labels(self, x_title='X', y_title='Y', z_title='Z'):
-        """Adds axes labels."""
-        if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
-            return
+        x, y, z = self.size()
 
-        x,y,z = self.size()
-
-        #X label
-        self.xLabel = CustomTextItem(X=0.75*x, Y=-y/20, Z=-z/20, text=x_title)
+        self.xLabel = CustomTextItem(X=x, Y=-y, Z=-z, text='')
         self.xLabel.setGLViewWidget(self.parent)
         self.parent.addItem(self.xLabel)
+
         #Y label
-        self.yLabel = CustomTextItem(X=-x/20, Y=0.75*y, Z=-z/20, text=y_title)
+        self.yLabel = CustomTextItem(X=-x, Y=y, Z=-z, text='')
         self.yLabel.setGLViewWidget(self.parent)
         self.parent.addItem(self.yLabel)
+
         #Z label
-        self.zLabel = CustomTextItem(X=-x/20, Y=-y/20, Z=0.75*z, text=z_title)
+        self.zLabel = CustomTextItem(X=-x, Y=-y, Z=z, text='')
         self.zLabel.setGLViewWidget(self.parent)
         self.parent.addItem(self.zLabel)
 
+    # ---------------------------------------------------------------------
+    def set_labels(self, x_title='X', y_title='Y', z_title='Z'):
+        if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
+            return
+
+        x, y, z = self.size()
+
+        #X label
+        self.xLabel.setText(x_title)
+        self.xLabel.moveTo(0.75*x, -y/20, -z/20)
+
+        #Y label
+        self.yLabel.setText(y_title)
+        self.yLabel.moveTo(-x/20, 0.75*y, -z/20)
+
+        #Z label
+        self.zLabel.setText(z_title)
+        self.zLabel.moveTo(-x/20, -y/20, 0.75*z)
+
+    # ---------------------------------------------------------------------
     def add_tick_values(self, xticks=[], yticks=[], zticks=[]):
         """Adds ticks values."""
         if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
@@ -88,6 +104,7 @@ class Custom3DAxis(gl.GLAxisItem):
             val.setGLViewWidget(self.parent)
             self.parent.addItem(val)
 
+    # ---------------------------------------------------------------------
     def paint(self):
         self.setupGLState()
         if self.antialias:

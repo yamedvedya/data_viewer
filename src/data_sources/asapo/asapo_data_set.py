@@ -230,3 +230,9 @@ class ASAPODataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def apply_settings(self):
         self._need_apply_mask = self._corrections_required()
+
+        self._hist_lin = None
+        self._hist_log = None
+        self._hist_sqrt = None
+
+        self._levels = None

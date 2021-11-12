@@ -92,6 +92,8 @@ class Base2DDetectorDataSet(BaseDataSet):
         """
         Apply several corrections to the data value.
         """
+        logger.debug(f"Applying correction for {self.my_name}")
+
         _settings = self._get_settings()
 
         _pixel_mask = None

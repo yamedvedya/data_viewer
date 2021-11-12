@@ -61,7 +61,7 @@ class FrameView(AbstractWidget):
             self._ui.chk_auto_levels.clicked.connect(self._toggle_auto_levels)
             self._ui.bg_lev_mode.buttonClicked.connect(self._change_level_mode)
             self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
-            self.hist.item.sigLevelChangeFinished.connect(self.switch_off_auto_levels)
+            self.hist.item.sigLevelChangeFinished.connect(lambda: self._toggle_auto_levels(False))
             self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
 
             self._main_view.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
@@ -100,6 +100,17 @@ class FrameView(AbstractWidget):
         self._ui.cut_selectors.layout().setContentsMargins(0, 0, 0, 0)
 
         self.data_pool = data_pool
+
+    # ----------------------------------------------------------------------
+    def _block_hist_signal(self, state):
+        if state:
+            self.hist.scene().sigMouseClicked.disconnect()
+            self.hist.item.sigLevelChangeFinished.disconnect()
+            self.hist.item.sigLookupTableChanged.disconnect()
+        else:
+            self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
+            self.hist.item.sigLevelChangeFinished.connect(lambda: self._toggle_auto_levels(False))
+            self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
@@ -188,20 +199,20 @@ class FrameView(AbstractWidget):
         self._ui.chk_auto_levels.blockSignals(False)
 
     # ----------------------------------------------------------------------
-    def switch_off_auto_levels(self):
-
-        self._change_chk_auto_levels_state(False)
-        self._second_view.new_levels()
-
-    # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
 
         if state:
+            self._block_hist_signal(True)
             self._fake_image_item.setAutoLevels()
             l_min, l_max = self._fake_image_item.levels
             self.hist.item.setLevels(l_min, l_max)
+            self._block_hist_signal(False)
 
-        self.update_image()
+            self.update_image()
+        else:
+            self._change_chk_auto_levels_state(False)
+
+        self._second_view.new_levels()
 
     # ----------------------------------------------------------------------
     def _change_level_mode(self, button):
@@ -235,6 +246,13 @@ class FrameView(AbstractWidget):
                 'y': [ind for ind, sect in enumerate(selection) if sect['axis'] == 'Y'][0]}
 
     # ----------------------------------------------------------------------
+    def data_updated(self):
+        if self._main_view.current_file is not None:
+            self._toggle_auto_levels(True)
+            self._change_chk_auto_levels_state(True)
+            self._fake_image_item.sigImageChanged.emit()
+
+    # ----------------------------------------------------------------------
     def update_image(self):
 
         selection = self._ui.cut_selectors.get_current_selection()
@@ -244,13 +262,13 @@ class FrameView(AbstractWidget):
         logger.debug(f"Update image with sel {selection}")
 
         if self.backend == 'pyqt':
-            self.hist.item.sigLevelChangeFinished.disconnect()
+            self._block_hist_signal(True)
 
         self._main_view.update_image()
         self._second_view.update_image()
 
         if self.backend == 'pyqt':
-            self.hist.item.sigLevelChangeFinished.connect(self.switch_off_auto_levels)
+            self._block_hist_signal(False)
 
         self.section_updated.emit()
 

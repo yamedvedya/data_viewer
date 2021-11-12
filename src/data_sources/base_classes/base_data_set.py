@@ -241,6 +241,9 @@ class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def get_histogram(self, mode):
+
+        logger.debug(f"Histogram request {self.my_name}")
+
         if self._hist_lin is None:
             self._hist_lin, self._hist_log, self._hist_sqrt, self._levels = self._calculate_hist()
 
@@ -255,6 +258,9 @@ class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def get_levels(self, mode):
+
+        logger.debug(f"Level request {self.my_name}")
+
         if self._levels is None:
             self._hist_lin, self._hist_log, self._hist_sqrt, self._levels = self._calculate_hist()
 
@@ -269,6 +275,8 @@ class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def _calculate_hist(self):
+
+        logger.debug(f"Calculating histogram for {self.my_name}")
 
         original_data = self._get_data()
 

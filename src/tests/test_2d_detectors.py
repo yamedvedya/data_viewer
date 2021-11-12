@@ -62,3 +62,13 @@ def test_2d_functionality(change_test_dir, viewer):
         section[section_axis]['integration'] = False
 
         viewer.data_pool.save_section('test007', section)
+
+def test_roi_functionality(change_test_dir, viewer):
+
+    _load_file(viewer)
+
+    ind, roi_key, dims = viewer.data_pool.add_new_roi()
+
+    assert viewer.data_pool.get_roi_key(ind) == roi_key
+    assert viewer.data_pool.get_roi_index(roi_key) == ind
+

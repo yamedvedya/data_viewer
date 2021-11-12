@@ -212,6 +212,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
 
         self._need_apply_mask = True
 
+        self._hist_lin = None
+        self._hist_log = None
+        self._hist_sqrt = None
+
+        self._levels = None
+
     # ----------------------------------------------------------------------
     def get_2d_picture(self):
 

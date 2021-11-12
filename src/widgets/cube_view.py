@@ -50,7 +50,7 @@ class CubeView(AbstractWidget):
 
         self._ui.h_layout.insertWidget(0, self.view_widget, 1)
 
-        self._ui.hist.item.sigLevelChangeFinished.connect(self.display_file)
+        self._ui.hist.item.sigLevelChangeFinished.connect(lambda: self._auto_levels(False))
         self._ui.hist.item.sigLookupTableChanged.connect(self.display_file)
 
         self._ui.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
@@ -66,13 +66,19 @@ class CubeView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _auto_levels(self, state):
         if state:
+            self._block_hist_signals(True)
+
             self._fake_image_item.setAutoLevels()
             l_min, l_max = self._fake_image_item.levels
             self._ui.hist.item.setLevels(l_min, l_max)
 
-            self.display_file()
+            self._block_hist_signals(False)
+        else:
+            self._change_chk_auto_levels_state(False)
 
-        # ----------------------------------------------------------------------
+        self.display_file()
+
+    # ----------------------------------------------------------------------
     def _hist_mouse_clicked(self, event):
 
         if event.double():
@@ -82,12 +88,16 @@ class CubeView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _change_level_mode(self, button):
 
+        self._block_hist_signals(True)
+
         if button == self._ui.rb_lin_levels:
             self._fake_image_item.setMode('lin')
         elif button == self._ui.rb_sqrt_levels:
             self._fake_image_item.setMode('sqrt')
         else:
             self._fake_image_item.setMode('log')
+
+        self._block_hist_signals(False)
 
         self._auto_levels(True)
         self._change_chk_auto_levels_state(True)
@@ -142,14 +152,33 @@ class CubeView(AbstractWidget):
         self.cmb_area.blockSignals(False)
 
     # ----------------------------------------------------------------------
+    def _block_hist_signals(self, state):
+        if state:
+            self._ui.hist.item.sigLevelChangeFinished.disconnect()
+            self._ui.hist.item.sigLookupTableChanged.disconnect()
+        else:
+            self._ui.hist.item.sigLevelChangeFinished.connect(lambda: self._auto_levels(False))
+            self._ui.hist.item.sigLookupTableChanged.connect(self.display_file)
+
+    # ----------------------------------------------------------------------
+    def roi_changed(self, roi_ind):
+        if roi_ind == self.cmb_area.currentIndex() - 1:
+            self.display_file()
+
+    # ----------------------------------------------------------------------
     def new_file(self):
 
-        self._ui.hist.item.sigLevelChangeFinished.disconnect()
-        self._ui.hist.item.sigLookupTableChanged.disconnect()
+        self._block_hist_signals(True)
         self._fake_image_item.setNewFile(self._parent.get_current_file())
-        self._ui.hist.item.sigLevelChangeFinished.connect(self.display_file)
-        self._ui.hist.item.sigLookupTableChanged.connect(self.display_file)
+        self._block_hist_signals(False)
+
         self.display_file()
+
+    # ----------------------------------------------------------------------
+    def data_updated(self):
+        self._auto_levels(True)
+        self._change_chk_auto_levels_state(True)
+        self._fake_image_item.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
     def display_file(self):
@@ -211,7 +240,7 @@ class CubeView(AbstractWidget):
         self.axes.setSize(data_to_display.shape[0], data_to_display.shape[1], data_to_display.shape[2])
         axes = self._data_pool.get_file_axes(file_name)
 
-        self.axes.add_labels(axes[0], axes[1], axes[2])
+        self.axes.set_labels(axes[0], axes[1], axes[2])
 
     # ----------------------------------------------------------------------
     def _set_background(self, status):

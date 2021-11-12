@@ -118,8 +118,10 @@ class DataViewer(QtWidgets.QMainWindow):
         self.frame_view.new_file_selected.connect(self.cube_view.new_file)
 
         self.frame_view.update_roi.connect(self.rois_view.roi_changed)
+        self.frame_view.update_roi.connect(self.cube_view.roi_changed)
 
         self.rois_view.update_roi.connect(self.frame_view.roi_changed)
+        self.rois_view.update_roi.connect(self.cube_view.roi_changed)
 
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.new_file_added.connect(self.rois_view.add_file)
@@ -130,9 +132,11 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.data_pool.roi_changed.connect(self.frame_view.roi_changed)
         self.data_pool.roi_changed.connect(self.rois_view.roi_changed)
+        self.data_pool.roi_changed.connect(self.cube_view.roi_changed)
 
-        self.data_pool.data_updated.connect(self.frame_view.update_image)
+        self.data_pool.data_updated.connect(self.frame_view.data_updated)
         self.data_pool.data_updated.connect(self.rois_view.update_plots)
+        self.data_pool.data_updated.connect(self.cube_view.data_updated)
 
         self._load_ui_settings()
         self.apply_settings()
@@ -161,14 +165,15 @@ class DataViewer(QtWidgets.QMainWindow):
             self.file_browser.set_settings(settings['SARDANA_SCANS'])
         if 'ASAPO' in settings and self.has_asapo:
             self.asapo_browser.set_settings(settings['ASAPO'])
+        if 'DATA_POOL' in settings:
+            self.data_pool.set_settings(settings['DATA_POOL'])
+
         if 'FRAME_VIEW' in settings:
             self.frame_view.set_settings(settings['FRAME_VIEW'])
         if 'ROIS_VIEW' in settings:
             self.rois_view.set_settings(settings['ROIS_VIEW'])
         if 'CUBE_VIEW' in settings:
             self.cube_view.set_settings(settings['CUBE_VIEW'])
-        if 'DATA_POOL' in settings:
-            self.data_pool.set_settings(settings['DATA_POOL'])
 
     # ----------------------------------------------------------------------
     def get_current_file(self):
