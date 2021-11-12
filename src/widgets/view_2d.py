@@ -137,6 +137,10 @@ class View2d(QtWidgets.QWidget):
         pass
 
     # ----------------------------------------------------------------------
+    def get_files_list(self):
+        return self._my_files
+
+    # ----------------------------------------------------------------------
     def _switch_file(self, index):
 
         self.previous_file = self.current_file
@@ -199,8 +203,8 @@ class ViewPyQt(View2d):
 
         self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
         self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
-
-        self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+        self._main_plot.getViewBox().sigRangeChangedManually.connect(self._range_changed)
+        self._main_plot_signals_connected = True
 
     # ----------------------------------------------------------------------
     def apply_setting(self, setting, state):
@@ -223,28 +227,12 @@ class ViewPyQt(View2d):
             self._main_plot.getViewBox().setAspectLocked(state)
 
     # ----------------------------------------------------------------------
-    def block_signals(self, flag):
-        super(ViewPyQt, self).block_signals(flag)
-        if flag:
-            self._main_plot.scene().sigMouseMoved.disconnect()
-            self._main_plot.scene().sigMouseClicked.disconnect()
-
-            self._main_plot.getViewBox().sigRangeChanged.disconnect()
-        else:
-            self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)
-            self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
-
-            self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+    def _range_changed(self):
+        self._frame_viewer.new_view_box(self._type, self._main_plot.getViewBox().viewRect())
 
     # ----------------------------------------------------------------------
-    def _range_changed(self, view_box):
-        self._frame_viewer.new_view_box(self._type, view_box)
-
-    # ----------------------------------------------------------------------
-    def new_view_box(self, view_box):
-        self._main_plot.getViewBox().sigRangeChanged.disconnect()
-        self._main_plot.getViewBox().setRange(view_box.viewRect())
-        self._main_plot.getViewBox().sigRangeChanged.connect(self._range_changed)
+    def new_view_box(self, view_rect):
+        self._main_plot.getViewBox().setRange(view_rect)
 
     # ----------------------------------------------------------------------
     def new_lookup_table(self):
@@ -383,6 +371,7 @@ class ViewPyQt(View2d):
         if event.double():
             try:
                 self._main_plot.autoRange()
+                self._frame_viewer.new_view_box(self._type, self._main_plot.getViewBox().viewRect())
             except:
                 pass
 

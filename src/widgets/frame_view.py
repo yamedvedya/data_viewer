@@ -164,12 +164,12 @@ class FrameView(AbstractWidget):
             self._main_view.move_marker(pos)
 
     # ----------------------------------------------------------------------
-    def new_view_box(self, source, view_box):
+    def new_view_box(self, source, view_rect):
 
         if source == 'main':
-            self._second_view.new_view_box(view_box)
+            self._second_view.new_view_box(view_rect)
         else:
-            self._main_view.new_view_box(view_box)
+            self._main_view.new_view_box(view_rect)
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
@@ -258,6 +258,8 @@ class FrameView(AbstractWidget):
         selection = self._ui.cut_selectors.get_current_selection()
         logger.debug(f"Saving selection {selection} for file {self._main_view.current_file}")
         self.data_pool.save_section(self._main_view.current_file, selection)
+        for file in self._second_view.get_files_list():
+            self.data_pool.save_section(file, selection)
 
         logger.debug(f"Update image with sel {selection}")
 
@@ -324,6 +326,9 @@ class FrameView(AbstractWidget):
         """
         Update widget in case if main file was changed
         """
+        if self._main_view.current_file is None:
+            return
+
         self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))
         if self.backend == 'pyqt':
             self._fake_image_item.setNewFile(self._main_view.current_file)

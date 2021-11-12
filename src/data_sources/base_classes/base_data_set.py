@@ -178,16 +178,22 @@ class BaseDataSet(object):
         rest_axes = list(range(len(self._data_shape)))
 
         x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
-        section = [(x_axis_ind, self._section[x_axis_ind]['min'], self._section[x_axis_ind]['max'])]
+        section = [(x_axis_ind, self._section[x_axis_ind]['min'], self._section[x_axis_ind]['max'] + 1)]
         rest_axes.remove(x_axis_ind)
 
         y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
-        section.append((y_axis_ind, self._section[y_axis_ind]['min'], self._section[y_axis_ind]['max']))
+        section.append((y_axis_ind, self._section[y_axis_ind]['min'], self._section[y_axis_ind]['max'] + 1))
         rest_axes.remove(y_axis_ind)
 
         for axis in rest_axes:
+            if self._section[axis]['min'] > self.get_max_frame_along_axis(axis):
+                return None
+
             if self._section[axis]['integration']:
-                section.append((axis, self._section[axis]['min'], self._section[axis]['max']))
+                if self._section[axis]['max'] > self.get_max_frame_along_axis(axis):
+                    return None
+
+                section.append((axis, self._section[axis]['min'], self._section[axis]['max'] + 1))
             else:
                 section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
 
