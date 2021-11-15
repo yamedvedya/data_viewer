@@ -6,8 +6,8 @@ import os
 import sys
 
 # ----------------------------------------------------------------------
-in_dirs = ["src/uis"]
-out_dirs = ["src/gui"]
+in_dirs = ["data_viewer/uis"]
+out_dirs = ["data_viewer/gui"]
 
 ui_compilers = {"linux2": "python -m PyQt5.uic.pyuic",
                 "linux": "python -m PyQt5.uic.pyuic",

@@ -10,8 +10,8 @@ import sys
 
 from PyQt5 import QtWidgets
 
-from src.main_window import DataViewer
-from src.utils.option_parser import get_options
+from data_viewer.main_window import DataViewer
+from data_viewer.utils.option_parser import get_options
 
 # ----------------------------------------------------------------------
 def main():
