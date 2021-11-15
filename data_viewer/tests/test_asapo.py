@@ -35,9 +35,9 @@ def message_data():
 @pytest.fixture
 def viewer(message_data):
 
-    app = QtWidgets.QApplication([os.getcwd() + 'main.py', '--asapo'])
+    app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--asapo'])
     if app is None:
-        app = QtWidgets.QApplication([os.getcwd() + 'main.py', '--asapo'])
+        app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--asapo'])
 
     main = DataViewer(get_options(['--asapo']))
 

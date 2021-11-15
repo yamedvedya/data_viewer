@@ -30,7 +30,7 @@ def excepthook(exc_type, exc_value, traceback_obj):
     :return:
     """
     separator = '-' * 80
-    log_path = f"{os.path.expanduser('~')}/batchfit_error.log"
+    log_path = f"{os.path.expanduser('~')}/data_viewer_error.log"
     time_string = time.strftime("%Y-%m-%d, %H:%M:%S")
     tb_info_file = StringIO()
     traceback.print_tb(traceback_obj, None, tb_info_file)
@@ -45,9 +45,15 @@ def excepthook(exc_type, exc_value, traceback_obj):
         f.close()
     except IOError:
         pass
-    #errorbox = ErrorMessageBox()
-    #errorbox.setText(str(notice) + str(msg))
-    #errorbox.exec_()
+
+    msg_box = QtWidgets.QMessageBox()
+    msg_box.setModal(False)
+    msg_box.setIcon(QtWidgets.QMessageBox.Critical)
+    msg_box.setText(msg)
+    msg_box.setInformativeText(msg)
+    msg_box.setWindowTitle("Error")
+    msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+    msg_box.show()
 
 
 def setup_logger(args):
@@ -55,7 +61,10 @@ def setup_logger(args):
     format = (
         "%(asctime)s %(filename)s:%(lineno)d "
         "%(levelname)-8s %(message)s")
-    logging.basicConfig(level=log_level, format=format)
+
+    filename = f"{os.path.expanduser('~')}/data_viewer.log"
+    print(f"Logs to file: {filename}")
+    logging.basicConfig(level=log_level, format=format, filename=filename)
     logging.info("Log level set to %s", log_level)
 
 

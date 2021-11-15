@@ -68,9 +68,9 @@ def viewer():
     h5py.File = MagicMock(return_value=generate_fake_file())
     os.listdir = MagicMock(return_value=['test.nxs'])
 
-    app = QtWidgets.QApplication([os.getcwd() + 'main.py', '--sardana'])
+    app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--sardana'])
     if app is None:
-        app = QtWidgets.QApplication([os.getcwd() + 'main.py', '--sardana'])
+        app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--sardana'])
 
     main = DataViewer(get_options(['--sardana']))
 
