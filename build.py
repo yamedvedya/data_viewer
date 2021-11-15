@@ -29,7 +29,7 @@ def compile_uis(ui_compiler, rc_compiler, in_dirs, out_dirs):
             if ext == ".ui":
                 cmd = "{} {}/{} -o {}/{}{}.py".format(ui_compiler, in_dir, f, out_dir, base, "_ui")
             else:
-                cmd = "{} {}/{} -o {}{}.py".format(rc_compiler, in_dir, f, base, "_rc")
+                cmd = "{} {}/{} -o {}/{}{}.py".format(rc_compiler, in_dir, f, out_dir, base, "_rc")
 
             print(cmd)
             os.system(cmd)
