@@ -16,6 +16,7 @@ sys.path.append(f"{os.path.dirname(__file__)}/gui")
 
 from data_viewer.main_window import DataViewer
 from data_viewer.utils.option_parser import get_options
+from .version import __version__
 
 
 def excepthook(exc_type, exc_value, traceback_obj):

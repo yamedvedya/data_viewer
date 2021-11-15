@@ -15,6 +15,8 @@ import os
 from PyQt5 import QtWidgets
 
 from data_viewer.gui.AboutDialog_ui import Ui_AboutDialog
+from data_viewer.version import __version__
+
 
 # ----------------------------------------------------------------------
 class AboutDialog(QtWidgets.QDialog):
@@ -49,5 +51,7 @@ class AboutDialog(QtWidgets.QDialog):
                         mtime = ftime
 
         txt = datetime.fromtimestamp(mtime).strftime(self.DATETIME)
-        self._ui.lbModified.setText("({})".format(txt))
+        self._ui.lbModified.setText(f"Last modification: {txt}")
+        self._ui.label_4.setText(f"Version: {__version__}")
+
 
