@@ -141,11 +141,11 @@ class ProgramSetup(QtWidgets.QDialog):
 
         if str(self._ui.le_door_address.text()) != '':
             settings = self._set_or_make_filed(settings, 'SARDANA_SCANS',
-                                               'door_address', str(self._ui.le_door_address.text()))
+                                               ['door_address'], [str(self._ui.le_door_address.text())])
 
         if self._ui.gb_sardana_default_mask.isChecked():
             settings = self._set_or_make_filed(settings, 'SARDANA_SCANS',
-                                               'default_mask', str(self._ui.le_sardana_mask_file.text()))
+                                               ['default_mask'], [str(self._ui.le_sardana_mask_file.text())])
 
         if self._ui.gb_sardana_default_ff.isChecked():
             settings = self._set_or_make_filed(settings, 'SARDANA_SCANS',
@@ -182,7 +182,7 @@ class ProgramSetup(QtWidgets.QDialog):
             settings['ASAPO']['max_ff'] = str(self._ui.dsp_asapo_ff_max.value())
 
         for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
-            settings['FRAME_VIEW'][f'display_{setting}'] = getattr(self._ui, f'chk_{setting}').isChecked()
+            settings['FRAME_VIEW'][f'display_{setting}'] = str(getattr(self._ui, f'chk_{setting}').isChecked())
 
         if 'backend' in settings['FRAME_VIEW']:
             settings['FRAME_VIEW']['backend'] = self._ui.cmb_backend.currentText()
@@ -191,7 +191,7 @@ class ProgramSetup(QtWidgets.QDialog):
             settings['CUBE_VIEW'][setting] = str(getattr(self._ui, f'sp_{setting}').value())
 
         for setting in ['smooth', 'white_background']:
-            settings['CUBE_VIEW'][setting] = getattr(self._ui, f'chk_{setting}').isChecked()
+            settings['CUBE_VIEW'][setting] = str(getattr(self._ui, f'chk_{setting}').isChecked())
 
         self._main_window.apply_settings(settings)
 

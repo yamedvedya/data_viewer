@@ -136,7 +136,10 @@ class FileBrowser(AbstractWidget):
     def _toggle_watch_door(self, state):
         if state:
             if self._door_server is not None:
-                self._eid = self._door_server.subscribe_event('Info', PyTango.EventType.CHANGE_EVENT, self.new_info)
+                try:
+                    self._eid = self._door_server.subscribe_event('Info', PyTango.EventType.CHANGE_EVENT, self.new_info)
+                except Exception as err:
+                    self._parent.report_error("Cannot plug to the door", repr(err))
         else:
             if self._eid is not None:
                 self._door_server.unsubscribe_event(self._eid)
