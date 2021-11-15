@@ -11,6 +11,15 @@ class PostInstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
         print("Run pre-setup")
+        # Set version
+        cmd = "git log -1 --format='%at' | xargs -I{} date -d @{} +'%Y/%m/%d %H:%M:%S'"
+        version = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
+        version = version.replace("\n", "")
+        file = open('data_viewer/version.py', 'w')
+        file.write('__version__="{}"'.format(version))
+        file.close()
+
+        # build qt gui
         cmd = "python build.py"
         output = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
         print(output)
@@ -28,8 +37,7 @@ VERSION = '0.0.1'
 # What packages are required for this module to be executed?
 REQUIRED = [
     'hdf5plugin', 'attrs', 'pyqtgraph', 'psutil', 'xrayutilities',
-    'numpy', 'scipy', 'h5py', 'PyQt5', 'PyOpenGL', 'silx', 'python-dateutil',
-    'https://gitlab.desy.de/fs-sc/asapoworker/-/tree/master'
+    'numpy', 'scipy', 'h5py', 'PyQt5', 'PyOpenGL', 'silx', 'python-dateutil'
 ]
 
 # Import the README and use it as the long-description.

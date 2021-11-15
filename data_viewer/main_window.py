@@ -30,6 +30,9 @@ from data_viewer.widgets.aboutdialog import AboutDialog
 from data_viewer.convertor.convert import Converter
 
 
+logger = logging.getLogger(APP_NAME)
+
+
 class DataViewer(QtWidgets.QMainWindow):
     """
     """
@@ -48,8 +51,6 @@ class DataViewer(QtWidgets.QMainWindow):
             self.folder = options.dir
         else:
             self.folder = os.getcwd()
-
-        self.log = _init_logger()
 
         self.parameter_actions = []
         self.parameter_action_group = None
@@ -288,7 +289,7 @@ class DataViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def report_error(self, text, informative_text='', detailed_text=''):
 
-        self.log.error("Error: {}, {}, {} ".format(text, informative_text, detailed_text))
+        logger.error("Error: {}, {}, {} ".format(text, informative_text, detailed_text))
 
         self.msg = QtWidgets.QMessageBox()
         self.msg.setModal(False)
@@ -303,7 +304,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def _close_me(self):
-        self.log.info("Closing the app...")
+        logger.info("Closing the app...")
         if self.has_sardana:
             self.file_browser.safe_close()
         self._save_ui_settings()
@@ -334,7 +335,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.rois_view.save_ui_settings(settings)
         self.frame_view.save_ui_settings(settings)
-
 
         settings.setValue("MainWindow/geometry", self.saveGeometry())
         settings.setValue("MainWindow/state", self.saveState())
@@ -400,26 +400,4 @@ class DataViewer(QtWidgets.QMainWindow):
         mem = float(process.memory_info().rss) / (1024. * 1024.)
         cpu = psutil.cpu_percent()
 
-        self._lb_resources_status.setText("| {:.2f}MB | CPU {} % |".format(mem,
-                                                                           cpu))
-
-
-# ----------------------------------------------------------------------
-def _init_logger():
-    main_log = logging.getLogger(APP_NAME)
-    main_log.setLevel(10)
-
-    format = logging.Formatter("%(asctime)s %(module)s %(lineno)-6d %(levelname)-6s %(message)s")
-
-    if not os.path.exists('./logs'):
-        os.mkdir('./logs')
-
-    fh = logging.FileHandler('./logs/main_log')
-    fh.setFormatter(format)
-    main_log.addHandler(fh)
-
-    ch = logging.StreamHandler()
-    ch.setFormatter(format)
-    main_log.addHandler(ch)
-
-    return main_log
+        self._lb_resources_status.setText("| {:.2f}MB | CPU {} % |".format(mem, cpu))
