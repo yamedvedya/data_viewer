@@ -31,9 +31,6 @@ class CubeView(AbstractWidget):
 
         self._data_pool = data_pool
 
-        self._make_actions()
-        self._ui.v_layout.setStretch(1, 1)
-
         self._fake_image_item = FakeImageItem(data_pool)
         self._ui.hist.item.setImageItem(self._fake_image_item)
         self._ui.hist.setBackground('w')
@@ -46,9 +43,31 @@ class CubeView(AbstractWidget):
         self.axes = Custom3DAxis(self.view_widget, color=(0.2,0.2,0.2,.6))
         self.view_widget.addItem(self.axes)
 
-        self.volume_item = None        
+        self.volume_item = None
+        self._default_scale = np.array([1, 1, 1])
+        self._current_scale = np.array([1, 1, 1])
+        self._view_distance = 1
 
-        self._ui.h_layout.insertWidget(0, self.view_widget, 1)
+        self._ui.h_layout.insertWidget(1, self.view_widget, 1)
+
+        self._ui.cmb_area.currentIndexChanged.connect(self.display_file)
+
+        self._ui.sp_slices.valueChanged.connect(self.display_file)
+        self._ui.chk_smooth.clicked.connect(self.display_file)
+        self._ui.sp_borders.valueChanged.connect(self.display_file)
+        self._ui.chk_white_bck.stateChanged.connect(self._set_background)
+
+        self._ui.sp_cam_distance.valueChanged.connect(self._move_camera)
+        self._ui.sp_cam_elevation.valueChanged.connect(self._move_camera)
+        self._ui.sp_cam_azimuth.valueChanged.connect(self._move_camera)
+
+        self._ui.cmd_reset_camera.clicked.connect(self._reset_view)
+
+        self._ui.sp_x_scale.valueChanged.connect(self._scale)
+        self._ui.sp_y_scale.valueChanged.connect(self._scale)
+        self._ui.sp_z_scale.valueChanged.connect(self._scale)
+
+        self._ui.cmd_reset_scale.clicked.connect(self._reset_scale)
 
         self._ui.hist.item.sigLevelChangeFinished.connect(lambda: self._auto_levels(False))
         self._ui.hist.item.sigLookupTableChanged.connect(self.display_file)
@@ -111,10 +130,10 @@ class CubeView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _refresh_camera_position(self):
         for param in ['distance', 'elevation', 'azimuth']:
-            if not getattr(self, f'sp_cam_{param}').hasFocus():
-                getattr(self, f'sp_cam_{param}').blockSignals(True)
-                getattr(self, f'sp_cam_{param}').setValue(int(self.view_widget.opts[param]))
-                getattr(self, f'sp_cam_{param}').blockSignals(False)
+            if not getattr(self._ui, f'sp_cam_{param}').hasFocus():
+                getattr(self._ui, f'sp_cam_{param}').blockSignals(True)
+                getattr(self._ui, f'sp_cam_{param}').setValue(int(self.view_widget.opts[param]))
+                getattr(self._ui, f'sp_cam_{param}').blockSignals(False)
 
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
@@ -122,16 +141,16 @@ class CubeView(AbstractWidget):
         self._block_signals(True)
 
         if 'slices' in settings:
-            self.sp_slices.setValue(int(settings['slices']))
+            self._ui.sp_slices.setValue(int(settings['slices']))
 
         if 'smooth' in settings:
-            self.chk_smooth.setChecked(strtobool(settings['smooth']))
+            self._ui.chk_smooth.setChecked(strtobool(settings['smooth']))
 
         if 'borders' in settings:
-            self.sp_borders.setValue(int(settings['borders']))
+            self._ui.sp_borders.setValue(int(settings['borders']))
 
         if 'white_background' in settings:
-            self.chk_white_bck.setChecked(strtobool(settings['white_background']))
+            self._ui.chk_white_bck.setChecked(strtobool(settings['white_background']))
 
         self.display_file()
 
@@ -139,14 +158,14 @@ class CubeView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def fill_roi(self):
-        current_selection = self.cmb_area.currentText()
-        self.cmb_area.blockSignals(True)
-        self.cmb_area.clear()
-        self.cmb_area.addItem('Whole data')
+        current_selection = self._ui.cmb_area.currentText()
+        self._ui.cmb_area.blockSignals(True)
+        self._ui.cmb_area.clear()
+        self._ui.cmb_area.addItem('Whole data')
         for ind in range(self._data_pool.roi_counts()):
-            self.cmb_area.addItem(f'ROI_{ind}')
+            self._ui.cmb_area.addItem(f'ROI_{ind}')
 
-        if not refresh_combo_box(self.cmb_area, current_selection):
+        if not refresh_combo_box(self._ui.cmb_area, current_selection):
             self.display_file()
 
         self.cmb_area.blockSignals(False)
@@ -186,16 +205,42 @@ class CubeView(AbstractWidget):
         self._fake_image_item.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
+    def clear_view(self):
+
+        self._block_signals(True)
+
+        if self.volume_item is not None:
+            self.view_widget.removeItem(self.volume_item)
+            self.volume_item = None
+
+        self._ui.x_label.setText('')
+        self._ui.y_label.setText('')
+        self._ui.z_label.setText('')
+
+        self._ui.sp_x_scale.setValue(1)
+        self._ui.sp_y_scale.setValue(1)
+        self._ui.sp_z_scale.setValue(1)
+
+        self.axes.setSize(1, 1, 1)
+        self.axes.set_labels('', '', '')
+
+        self._block_signals(False)
+
+    # ----------------------------------------------------------------------
     def display_file(self):
+
+        self.clear_view()
 
         file_name = self._parent.get_current_file()
         if file_name is None:
             return
 
-        data = self._data_pool.get_3d_cube(file_name, self.cmb_area.currentIndex() - 1)
+        data = self._data_pool.get_3d_cube(file_name, self._ui.cmb_area.currentIndex() - 1)
 
         if data is None:
             return
+
+        self._block_signals(True)
 
         levels = self._ui.hist.item.getLevels()
 
@@ -207,12 +252,12 @@ class CubeView(AbstractWidget):
         data = np.maximum(np.minimum((data - levels[0]) / float(levels[1] - levels[0]) * 255, 255), 0)
 
         data_to_display = np.zeros(data.shape + (4,), dtype=np.ubyte)
-        data_to_display[..., 0] = 0 if self.chk_white_bck.isChecked() else 255
-        data_to_display[..., 1] = 0 if self.chk_white_bck.isChecked() else 255
-        data_to_display[..., 2] = 0 if self.chk_white_bck.isChecked() else 255
+        data_to_display[..., 0] = 0 if self._ui.chk_white_bck.isChecked() else 255
+        data_to_display[..., 1] = 0 if self._ui.chk_white_bck.isChecked() else 255
+        data_to_display[..., 2] = 0 if self._ui.chk_white_bck.isChecked() else 255
         data_to_display[..., 3] = data
 
-        borders = int(self.sp_borders.value())
+        borders = int(self._ui.sp_borders.value())
         if borders > 0:
             data_to_display[:, :borders, :borders] = [255, 0, 0, 255]
             data_to_display[:borders, :, :borders] = [255, 0, 0, 255]
@@ -230,22 +275,43 @@ class CubeView(AbstractWidget):
             data_to_display[-borders:, :, -borders:] = [255, 0, 0, 255]
             data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
 
-        if self.volume_item is not None:
-            self.view_widget.removeItem(self.volume_item)
-        self.volume_item = gl.GLVolumeItem(data_to_display,  sliceDensity=int(self.sp_slices.value()),
-                                           smooth=self.chk_smooth.isChecked(), glOptions='translucent')
+        self._default_scale = np.array([1, 1, 1])
+
+        axes_sizes = data_to_display.shape[:3]
+        max_size = np.max(data_to_display.shape[:3])
+        for axis in range(3):
+            if axes_sizes[axis] < max_size/3:
+                self._default_scale[axis] = int(np.ceil(max_size/(3*axes_sizes[axis])))
+
+        self._ui.sp_x_scale.setValue(self._default_scale[0])
+        self._ui.sp_y_scale.setValue(self._default_scale[1])
+        self._ui.sp_z_scale.setValue(self._default_scale[2])
+
+        self._current_scale = self._default_scale
+
+        self.volume_item = gl.GLVolumeItem(data_to_display,  sliceDensity=int(self._ui.sp_slices.value()),
+                                           smooth=self._ui.chk_smooth.isChecked(), glOptions='translucent')
+
+        self.volume_item.scale(self._default_scale[0], self._default_scale[1], self._default_scale[2])
 
         self.view_widget.addItem(self.volume_item)
         self.volume_item.translate(-data_to_display.shape[0] / 2,
                                    -data_to_display.shape[1] / 2,
                                    -data_to_display.shape[2] / 2)
 
-        self.view_widget.setCameraPosition(distance=max(data_to_display.shape)*5)
+        self._view_distance = max(data_to_display.shape)*5
+        self.view_widget.setCameraPosition(distance=self._view_distance)
 
         self.axes.setSize(data_to_display.shape[0], data_to_display.shape[1], data_to_display.shape[2])
         axes = self._data_pool.get_file_axes(file_name)
 
+        self._ui.x_label.setText(axes[0])
+        self._ui.y_label.setText(axes[1])
+        self._ui.z_label.setText(axes[2])
+
         self.axes.set_labels(axes[0], axes[1], axes[2])
+
+        self._block_signals(False)
 
     # ----------------------------------------------------------------------
     def _set_background(self, status):
@@ -255,99 +321,46 @@ class CubeView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _reset_view(self):
-        self.chk_white_bck.blockSignals(True)
-        self.chk_white_bck.setChecked(False)
         self.view_widget.reset()
-        self.chk_white_bck.blockSignals(False)
-        self.display_file()
+        self.view_widget.setCameraPosition(distance=self._view_distance)
+        self.view_widget.setBackgroundColor('w' if self._ui.chk_white_bck.isChecked() else 'b')
 
     # ----------------------------------------------------------------------
     def _move_camera(self):
 
-        self.view_widget.setCameraPosition(distance=self.sp_cam_distance.value(),
-                                           elevation=self.sp_cam_elevation.value(),
-                                           azimuth=self.sp_cam_azimuth.value())
+        self.view_widget.setCameraPosition(distance=self._ui.sp_cam_distance.value(),
+                                           elevation=self._ui.sp_cam_elevation.value(),
+                                           azimuth=self._ui.sp_cam_azimuth.value())
 
     # ----------------------------------------------------------------------
-    def _make_actions(self):
+    def _scale(self):
 
-        toolbar = QtWidgets.QToolBar("Main toolbar", self)
+        new_scale = np.array([int(self._ui.sp_x_scale.value()),
+                              int(self._ui.sp_y_scale.value()),
+                              int(self._ui.sp_z_scale.value())])
+        d_scale = new_scale/self._current_scale
 
-        label = QtWidgets.QLabel("Area to render: ", self)
-        toolbar.addWidget(label)
+        self.volume_item.scale(d_scale[0], d_scale[1], d_scale[2])
 
-        self.cmb_area = QtWidgets.QComboBox(self)
-        self.cmb_area.addItem('Whole data')
-        self.cmb_area.currentTextChanged.connect(self.display_file)
-        toolbar.addWidget(self.cmb_area)
+        self._current_scale = new_scale
 
-        toolbar.addSeparator()
+    # ----------------------------------------------------------------------
+    def _reset_scale(self):
+        self._block_signals(True)
 
-        label = QtWidgets.QLabel("View options: ", self)
-        toolbar.addWidget(label)
+        self._ui.sp_x_scale.setValue(self._default_scale[0])
+        self._ui.sp_y_scale.setValue(self._default_scale[1])
+        self._ui.sp_z_scale.setValue(self._default_scale[2])
 
-        label = QtWidgets.QLabel("Slices: ", self)
-        toolbar.addWidget(label)
+        self._scale()
 
-        self.sp_slices = QtWidgets.QSpinBox(self)
-        self.sp_slices.valueChanged.connect(self.display_file)
-        toolbar.addWidget(self.sp_slices)
-
-        self.chk_smooth = QtWidgets.QCheckBox('Smooth', self)
-        self.chk_smooth.clicked.connect(self.display_file)
-        toolbar.addWidget(self.chk_smooth)
-
-        label = QtWidgets.QLabel("Borders: ", self)
-        toolbar.addWidget(label)
-
-        self.sp_borders = QtWidgets.QSpinBox(self)
-        self.sp_borders.valueChanged.connect(self.display_file)
-        toolbar.addWidget(self.sp_borders)
-
-        self.chk_white_bck = QtWidgets.QCheckBox('White background', self)
-        self.chk_white_bck.stateChanged.connect(self._set_background)
-        toolbar.addWidget(self.chk_white_bck)
-
-        toolbar.addSeparator()
-
-        label = QtWidgets.QLabel("Camera position: ", self)
-        toolbar.addWidget(label)
-
-        label = QtWidgets.QLabel("Distance: ", self)
-        toolbar.addWidget(label)
-
-        self.sp_cam_distance = QtWidgets.QSpinBox(self)
-        self.sp_cam_distance.setMaximum(100000)
-        self.sp_cam_distance.setMinimum(0)
-        self.sp_cam_distance.valueChanged.connect(self._move_camera)
-        toolbar.addWidget(self.sp_cam_distance)
-
-        label = QtWidgets.QLabel("Elevation: ", self)
-        toolbar.addWidget(label)
-
-        self.sp_cam_elevation = QtWidgets.QSpinBox(self)
-        self.sp_cam_elevation.setMaximum(180)
-        self.sp_cam_elevation.setMinimum(-180)
-        self.sp_cam_elevation.valueChanged.connect(self._move_camera)
-        toolbar.addWidget(self.sp_cam_elevation)
-
-        label = QtWidgets.QLabel("Azimuth: ", self)
-        toolbar.addWidget(label)
-
-        self.sp_cam_azimuth = QtWidgets.QSpinBox(self)
-        self.sp_cam_azimuth.setMaximum(360)
-        self.sp_cam_azimuth.setMinimum(-360)
-        self.sp_cam_azimuth.valueChanged.connect(self._move_camera)
-        toolbar.addWidget(self.sp_cam_azimuth)
-
-        cmd_reset = QtWidgets.QPushButton('Reset view')
-        cmd_reset.clicked.connect(self._reset_view)
-        toolbar.addWidget(cmd_reset)
-
-        self._ui.v_layout.insertWidget(0, toolbar, 0)
+        self._block_signals(False)
 
     # ----------------------------------------------------------------------
     def _block_signals(self, flag):
 
-        self.sp_slices.blockSignals(flag)
-        self.chk_smooth.blockSignals(flag)
+        self._ui.sp_slices.blockSignals(flag)
+        self._ui.chk_smooth.blockSignals(flag)
+        self._ui.sp_x_scale.blockSignals(flag)
+        self._ui.sp_y_scale.blockSignals(flag)
+        self._ui.sp_z_scale.blockSignals(flag)

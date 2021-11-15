@@ -101,6 +101,10 @@ class SectionView(QtWidgets.QWidget):
         self._main_plot.sigXRangeChanged.connect(self._new_range)
 
     # ----------------------------------------------------------------------
+    def clear_view(self):
+        pass
+
+    # ----------------------------------------------------------------------
     def get_current_file(self):
         return self._parent.get_current_file()
 
