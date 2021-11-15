@@ -19,6 +19,7 @@ from data_viewer.utils.option_parser import get_options
 from .version import __version__
 
 
+# --------------------------------------------------------------------
 def excepthook(exc_type, exc_value, traceback_obj):
     """
     Global function to catch unhandled exceptions. This function will result in an error dialog which displays the
@@ -56,6 +57,7 @@ def excepthook(exc_type, exc_value, traceback_obj):
     msg_box.show()
 
 
+# --------------------------------------------------------------------
 def setup_logger(args):
     log_level = "DEBUG"
     format = (
@@ -68,6 +70,7 @@ def setup_logger(args):
     logging.info("Log level set to %s", log_level)
 
 
+# --------------------------------------------------------------------
 def main():
     args = get_options(sys.argv)
     setup_logger(args)
