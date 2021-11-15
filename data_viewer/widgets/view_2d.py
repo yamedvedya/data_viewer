@@ -99,25 +99,27 @@ class View2d(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _close_file(self, index):
+        self.plot_2d.clear()
         file_to_remove = self._my_files[index]
         del self._my_files[index]
         self.current_file = None
         self._tb_files.removeTab(index)
         self.data_pool.remove_file(file_to_remove)
 
-        if len(self._my_files) == 0:
+        if len(self._my_files) == 0 and self._type != 'main':
             self.hide()
 
     # ----------------------------------------------------------------------
     def file_closed_by_pool(self, file_name):
         if file_name in self._my_files:
+            self.plot_2d.clear()
             index = self._my_files.index(file_name)
             del self._my_files[index]
             if self.current_file == file_name:
                 self.current_file = None
             self._tb_files.removeTab(index)
 
-            if len(self._my_files) == 0:
+            if len(self._my_files) == 0 and self._type != 'main':
                 self.hide()
 
     # ----------------------------------------------------------------------

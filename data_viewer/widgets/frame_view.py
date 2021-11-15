@@ -24,6 +24,8 @@ class FrameView(AbstractWidget):
     section_updated = QtCore.pyqtSignal()
     new_file_selected = QtCore.pyqtSignal()
 
+    clear_view = QtCore.pyqtSignal()
+
     update_roi = QtCore.pyqtSignal(int)
 
     # ----------------------------------------------------------------------
@@ -327,6 +329,10 @@ class FrameView(AbstractWidget):
         Update widget in case if main file was changed
         """
         if self._main_view.current_file is None:
+            self._fake_image_item.setEmptyFile()
+            self._change_chk_auto_levels_state(True)
+            self._ui.cut_selectors.refresh_selectors([])
+            self.clear_view.emit()
             return
 
         self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))

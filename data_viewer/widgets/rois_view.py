@@ -44,6 +44,11 @@ class RoisView(AbstractWidget):
         self._add_roi()
 
     # ----------------------------------------------------------------------
+    def clear_view(self):
+        for widget in self._roi_widgets.values():
+            widget.clear_view()
+
+    # ----------------------------------------------------------------------
     def get_current_file(self):
         return self._parent.get_current_file()
 

@@ -35,6 +35,12 @@ class FakeImageItem(QtCore.QObject):
         self.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
+    def setEmptyFile(self):
+        self._current_file = None
+        self.levels = (0, 1)
+        self.sigImageChanged.emit()
+
+    # ----------------------------------------------------------------------
     def setLookupTable(self, lut):
         if self._image_item is not None:
             self._image_item.setLookupTable(lut)

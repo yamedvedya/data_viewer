@@ -52,6 +52,9 @@ class AboutDialog(QtWidgets.QDialog):
 
         txt = datetime.fromtimestamp(mtime).strftime(self.DATETIME)
         self._ui.lbModified.setText(f"Last modification: {txt}")
-        self._ui.label_4.setText(f"Version: {__version__}")
+        try:
+            self._ui.label_4.setText(f"Version: {__version__}")
+        except:
+            pass
 
 
