@@ -333,7 +333,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.rois_view.save_ui_settings(settings)
         self.frame_view.save_ui_settings(settings)
 
-
         settings.setValue("MainWindow/geometry", self.saveGeometry())
         settings.setValue("MainWindow/state", self.saveState())
 
@@ -398,26 +397,4 @@ class DataViewer(QtWidgets.QMainWindow):
         mem = float(process.memory_info().rss) / (1024. * 1024.)
         cpu = psutil.cpu_percent()
 
-        self._lb_resources_status.setText("| {:.2f}MB | CPU {} % |".format(mem,
-                                                                           cpu))
-
-
-# ----------------------------------------------------------------------
-def _init_logger():
-    main_log = logging.getLogger(APP_NAME)
-    main_log.setLevel(10)
-
-    format = logging.Formatter("%(asctime)s %(module)s %(lineno)-6d %(levelname)-6s %(message)s")
-
-    if not os.path.exists('./logs'):
-        os.mkdir('./logs')
-
-    fh = logging.FileHandler('./logs/main_log')
-    fh.setFormatter(format)
-    main_log.addHandler(fh)
-
-    ch = logging.StreamHandler()
-    ch.setFormatter(format)
-    main_log.addHandler(ch)
-
-    return main_log
+        self._lb_resources_status.setText("| {:.2f}MB | CPU {} % |".format(mem, cpu))
