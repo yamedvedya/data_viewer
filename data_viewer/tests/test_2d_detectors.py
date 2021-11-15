@@ -63,12 +63,30 @@ def test_2d_functionality(change_test_dir, viewer):
 
         viewer.data_pool.save_section('test007', section)
 
+
 def test_roi_functionality(change_test_dir, viewer):
 
     _load_file(viewer)
+
+    viewer.frame_view.add_file("test007", "second")
 
     ind, roi_key, dims = viewer.data_pool.add_new_roi()
 
     assert viewer.data_pool.get_roi_key(ind) == roi_key
     assert viewer.data_pool.get_roi_index(roi_key) == ind
+
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 1, 'pos', y_dim*3) == y_dim - 2
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 1, 'pos', -10) == 0
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 1, 'width', y_dim * 3) == y_dim - 1
+
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 1, 'width', 25) == 25
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 1, 'pos', 15) == 15
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 2, 'pos', 15) == 15
+    assert viewer.data_pool.roi_parameter_changed(roi_key, 2, 'width', 25) == 25
+
+    fake_data_cube = generate_fake_data()
+    assert np.all(np.isclose(fake_data_cube[:, 15:40, 15:40], viewer.data_pool.get_roi_cut('test007', roi_key)))
+
+    axis, plot = viewer.data_pool.get_roi_plot('test007', roi_key)
+    assert np.all(np.isclose(np.sum(np.sum(fake_data_cube[:, 15:40, 15:40], axis=2), axis=1), plot))
 
