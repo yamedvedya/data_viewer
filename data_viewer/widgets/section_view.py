@@ -87,6 +87,8 @@ class SectionView(QtWidgets.QWidget):
             self._section_ranger.append(widget)
             self._selector_layout.layout().addWidget(widget)
 
+        self._selector_layout.layout().addSpacerItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+
         self._ui.cb_section_axis.currentIndexChanged.connect(self._set_new_section_axis)
 
         self._main_plot.scene().sigMouseMoved.connect(self._mouse_moved)

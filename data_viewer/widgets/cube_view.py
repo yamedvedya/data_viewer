@@ -176,6 +176,11 @@ class CubeView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def data_updated(self):
+
+        file_name = self._parent.get_current_file()
+        if file_name is None:
+            return
+
         self._auto_levels(True)
         self._change_chk_auto_levels_state(True)
         self._fake_image_item.sigImageChanged.emit()
