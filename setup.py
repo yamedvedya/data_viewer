@@ -2,20 +2,9 @@
 import io
 import os
 from subprocess import check_output, STDOUT
-from distutils.command.build import build
 from setuptools.command.install import install
 
 from setuptools import setup, find_packages
-
-
-class PreInstallCommand(build):
-    """Pre-installation for installation mode."""
-    def run(self):
-        print("Run pre-build")
-        cmd = "python build.py"
-        output = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
-        print(output)
-        build.run(self)
 
 
 class PostInstallCommand(install):
@@ -39,7 +28,8 @@ VERSION = '0.0.1'
 # What packages are required for this module to be executed?
 REQUIRED = [
     'hdf5plugin', 'attrs', 'pyqtgraph', 'psutil', 'xrayutilities',
-    'numpy', 'scipy', 'h5py'
+    'numpy', 'scipy', 'h5py', 'PyQt5', 'PyOpenGL', 'silx', 'python-dateutil',
+    'https://gitlab.desy.de/fs-sc/asapoworker/-/tree/master'
 ]
 
 # Import the README and use it as the long-description.
@@ -73,7 +63,6 @@ setup(
                         'data_viewer/*.py'],
     },
     cmdclass={
-        'build': PreInstallCommand,
         'install': PostInstallCommand,
     },
     install_requires=REQUIRED,
