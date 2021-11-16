@@ -1,6 +1,7 @@
 # Created by matveyev at 14.04.2021
 import asapo_consumer
 import numpy as np
+import logging
 
 from PyQt5 import QtCore
 from distutils.util import strtobool
@@ -16,8 +17,11 @@ from data_viewer.utils.utils import read_mask_file, read_ff_file
 from data_viewer.data_sources.asapo.asapo_data_set import SETTINGS
 
 from data_viewer.gui.asapo_browser_ui import Ui_ASAPOBrowser
+from data_viewer.main_window import APP_NAME
 
 WIDGET_NAME = 'ASAPOBrowser'
+logger = logging.getLogger(APP_NAME)
+
 
 # ----------------------------------------------------------------------
 class ASAPOBrowser(AbstractWidget):
@@ -138,7 +142,7 @@ class ASAPOBrowser(AbstractWidget):
                     SETTINGS['ff_max'] = settings['max_ff']
 
         except Exception as err:
-            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
+            logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
     def reset_detectors(self, new_detector_list):
