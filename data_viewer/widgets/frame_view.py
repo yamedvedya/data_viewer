@@ -122,7 +122,7 @@ class FrameView(AbstractWidget):
                 try:
                     getattr(self, f'action_{action}').setChecked(strtobool(settings[f'display_{action}']))
                 except Exception as err:
-                    self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
+                    logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
     def add_file(self, file_name, move_from='second'):

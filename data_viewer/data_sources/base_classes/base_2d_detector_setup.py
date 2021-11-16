@@ -1,4 +1,5 @@
 # Created by matveyev at 13.08.2021
+import logging
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore
@@ -8,6 +9,7 @@ from data_viewer.main_window import APP_NAME
 from data_viewer.utils.utils import read_mask_file, read_ff_file
 
 WIDGET_NAME = ''
+logger = logging.getLogger(APP_NAME)
 
 
 class Base2DDetectorSetup(QtWidgets.QWidget):
@@ -102,7 +104,7 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
         try:
             self.restoreGeometry(QtCore.QSettings(APP_NAME).value("{}/geometry".format(WIDGET_NAME)))
         except Exception as err:
-            self._main_window.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
+            logger.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
 
     # ----------------------------------------------------------------------
     def _get_ui(self):
@@ -194,7 +196,7 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
             try:
                 self._plot_2d.setImage(_mask, autoLevels=True)
             except Exception as err:
-                self._main_window.log.error("{} : cannot display mask geometry: {}".format(WIDGET_NAME, err))
+                logger.error("{} : cannot display mask geometry: {}".format(WIDGET_NAME, err))
                 self._plot_2d.clear()
         else:
             self._plot_2d.clear()

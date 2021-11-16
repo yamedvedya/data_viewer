@@ -1,6 +1,7 @@
 # Created by matveyev at 15.02.2021
 
 import os
+import logging
 
 try:
     from watchdog.observers import Observer
@@ -26,6 +27,7 @@ WIDGET_NAME = 'DataBrowser'
 file_formats = ["*.nxs", "*.h5"]
 
 FILE_REFRESH_PERIOD = 1
+logger = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------
@@ -125,7 +127,7 @@ class FileBrowser(AbstractWidget):
                     SETTINGS['ff_max'] = settings['max_ff']
 
         except Exception as err:
-            self._parent.log.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
+            logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
     def safe_close(self):

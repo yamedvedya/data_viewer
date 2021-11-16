@@ -1,8 +1,10 @@
 # Created by matveyev at 14.04.2021
 
+import logging
 from PyQt5 import QtWidgets
 
 WIDGET_NAME = None
+logger = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------
@@ -21,7 +23,7 @@ class AbstractWidget(QtWidgets.QWidget):
         try:
             self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
         except Exception as err:
-            self._parent.log.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
+            logger.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
 
     # ----------------------------------------------------------------------
     def save_ui_settings(self, settings):
