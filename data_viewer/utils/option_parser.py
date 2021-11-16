@@ -1,7 +1,7 @@
 from optparse import OptionParser
 
 
-def get_options(args):
+def get_options(args=None):
     parser = OptionParser()
 
     parser.add_option("-d", "--dir", dest="dir",
@@ -18,6 +18,6 @@ def get_options(args):
     parser.add_option("--def_file", dest="def_file", help="open file after start")
     parser.add_option("--def_stream", dest="def_stream", help="open file after start")
 
-    (options, _) = parser.parse_args()
+    (options, _) = parser.parse_args(args)
 
     return options
