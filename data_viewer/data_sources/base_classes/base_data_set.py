@@ -211,16 +211,31 @@ class BaseDataSet(object):
 
         data = self._get_data()
 
+        axes_order = list(range(len(data.shape)))
+        for ind, (axis, _, _) in enumerate(section):
+            move_from = axes_order.index(axis)
+            data = np.moveaxis(data, move_from, ind)
+            del axes_order[move_from]
+            axes_order.insert(ind, move_from)
+
         logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
 
-        for axis_slice in sorted(section, reverse=True):
+        for ind, axis_slice in list(enumerate(section))[::-1]:
             axis, start, stop = axis_slice
-            i = section.index(axis_slice)
-            data = data.take(indices=range(start, stop), axis=axis)
-            if do_sum and i >= output_dim:
-                data = np.sum(data, axis=axis)
+            start = max(start, 0)
+            stop = min(stop, data.shape[ind])
+            data = data.take(indices=range(start, stop), axis=ind)
+            if do_sum and ind >= output_dim:
+                data = np.sum(data, axis=ind)
 
         data = np.squeeze(data)
+
+        if np.ndim(data) == 0:
+            data = np.zeros(5)
+
+        while np.ndim(data) < output_dim:
+            data = data[..., np.newaxis]
+
         logger.debug(f"Data after cut {data.shape} ")
         return data
 
