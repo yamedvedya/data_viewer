@@ -78,6 +78,10 @@ class SectionView(QtWidgets.QWidget):
         self._selector_layout.setSpacing(0)
         self._selector_layout.setContentsMargins(0, 0, 0, 0)
 
+        self._ui.cb_section_axis.clear()
+        self._ui.cb_section_axis.addItems(self.data_pool.get_file_axes(self._parent.get_current_file()))
+        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
+
         self._section_ranger = []
 
         for ind in range(1, self.my_dims):

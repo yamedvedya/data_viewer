@@ -168,7 +168,7 @@ class CubeView(AbstractWidget):
         if not refresh_combo_box(self._ui.cmb_area, current_selection):
             self.display_file()
 
-        self.cmb_area.blockSignals(False)
+        self._ui.cmb_area.blockSignals(False)
 
     # ----------------------------------------------------------------------
     def _block_hist_signals(self, state):
@@ -181,7 +181,7 @@ class CubeView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
-        if roi_ind == self.cmb_area.currentIndex() - 1:
+        if roi_ind == self._ui.cmb_area.currentIndex() - 1:
             self.display_file()
 
     # ----------------------------------------------------------------------
@@ -222,7 +222,9 @@ class CubeView(AbstractWidget):
         self._ui.sp_z_scale.setValue(1)
 
         self.axes.setSize(1, 1, 1)
-        self.axes.set_labels('', '', '')
+        self.axes.set_x_label('')
+        self.axes.set_y_label('')
+        self.axes.set_z_label('')
 
         self._block_signals(False)
 
@@ -291,10 +293,13 @@ class CubeView(AbstractWidget):
         self.axes.setSize(data_to_display.shape[0], data_to_display.shape[1], data_to_display.shape[2])
 
         self._ui.x_label.setText(axes_names[0])
-        self._ui.y_label.setText(axes_names[1])
-        self._ui.z_label.setText(axes_names[2])
-
-        self.axes.set_labels(axes_names[0], axes_names[1], axes_names[2])
+        self.axes.set_x_label(axes_names[0])
+        if len(axes_names) > 1:
+            self._ui.y_label.setText(axes_names[1])
+            self.axes.set_y_label(axes_names[1])
+        if len(axes_names) > 2:
+            self._ui.z_label.setText(axes_names[2])
+            self.axes.set_z_label(axes_names[2])
 
         self._block_signals(False)
 

@@ -234,23 +234,37 @@ class BaseDataSet(object):
         return np.arange(0, self._data_shape[plot_axis])
 
     # ----------------------------------------------------------------------
-    def get_3d_cube(self, roi_ind):
+    def get_3d_cube(self, roi_params):
 
         logger.debug(f"Request 3D picture")
 
-        rest_axes = list(range(len(self._data_shape)))
+        n_dims = len(self._data_shape)
+        rest_axes = list(range(n_dims))
+
+        if roi_params is None:
+            lims = [[0, size] for size in self._data_shape]
+        else:
+            lims = [[0, size] for size in self._data_shape]
+            for axis in rest_axes[1:]:
+                lims[roi_params[f'axis_{axis}']] = [roi_params[f'axis_{axis}_pos'],
+                                                    roi_params[f'axis_{axis}_pos'] + roi_params[f'axis_{axis}_width']]
 
         x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
-        section = [(x_axis_ind, self._section[x_axis_ind]['min'], self._section[x_axis_ind]['max'] + 1)]
+        section = [(x_axis_ind, lims[x_axis_ind][0], lims[x_axis_ind][1])]
         rest_axes.remove(x_axis_ind)
+        axes_names = [self._axes_names[x_axis_ind]]
 
-        y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
-        section.append((y_axis_ind, self._section[y_axis_ind]['min'], self._section[y_axis_ind]['max'] + 1))
-        rest_axes.remove(y_axis_ind)
+        if n_dims > 1:
+            y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
+            section.append((y_axis_ind, lims[y_axis_ind][0], lims[y_axis_ind][1]))
+            rest_axes.remove(y_axis_ind)
+            axes_names.append(self._axes_names[y_axis_ind])
 
-        z_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Z'][0]
-        section.append((z_axis_ind, self._section[z_axis_ind]['min'], self._section[z_axis_ind]['max'] + 1))
-        rest_axes.remove(z_axis_ind)
+        if n_dims > 2:
+            z_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Z'][0]
+            section.append((z_axis_ind, lims[z_axis_ind][0], lims[z_axis_ind][1]))
+            rest_axes.remove(z_axis_ind)
+            axes_names.append(self._axes_names[z_axis_ind])
 
         for axis in rest_axes:
             if self._section[axis]['min'] > self.get_max_frame_along_axis(axis):
@@ -264,7 +278,7 @@ class BaseDataSet(object):
             else:
                 section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
 
-        return self._cut_data(section, True, 3), [self._axes_names[ind] for ind in [x_axis_ind, y_axis_ind, z_axis_ind]]
+        return self._cut_data(section, True, 3), axes_names
 
     # ----------------------------------------------------------------------
     def get_histogram(self, mode):

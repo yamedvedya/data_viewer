@@ -60,22 +60,36 @@ class Custom3DAxis(gl.GLAxisItem):
         self.parent.addItem(self.zLabel)
 
     # ---------------------------------------------------------------------
-    def set_labels(self, x_title='X', y_title='Y', z_title='Z'):
+    def set_x_label(self, label=''):
         if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
             return
 
         x, y, z = self.size()
 
         #X label
-        self.xLabel.setText(x_title)
+        self.xLabel.setText(label)
         self.xLabel.moveTo(0.75*x, -y/20, -z/20)
 
-        #Y label
-        self.yLabel.setText(y_title)
-        self.yLabel.moveTo(-x/20, 0.75*y, -z/20)
+    # ---------------------------------------------------------------------
+    def set_y_label(self, label=''):
+        if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
+            return
 
-        #Z label
-        self.zLabel.setText(z_title)
+        x, y, z = self.size()
+
+        # X label
+        self.yLabel.setText(label)
+        self.yLabel.moveTo(-x / 20, 0.75 * y, -z / 20)
+
+    # ---------------------------------------------------------------------
+    def set_z_label(self, label=''):
+        if not (hasattr(gl.GLViewWidget(), 'qglColor') and hasattr(gl.GLViewWidget(), 'renderText')):
+            return
+
+        x, y, z = self.size()
+
+        # Z label
+        self.zLabel.setText(label)
         self.zLabel.moveTo(-x/20, -y/20, 0.75*z)
 
     # ---------------------------------------------------------------------

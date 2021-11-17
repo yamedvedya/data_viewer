@@ -158,7 +158,6 @@ class Base2DDetectorDataSet(BaseDataSet):
             del axes_order[move_from]
             axes_order.insert(ind, move_from)
 
-
         logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
 
         for ind, axis_slice in list(enumerate(section))[::-1]:
@@ -172,11 +171,10 @@ class Base2DDetectorDataSet(BaseDataSet):
 
         data = np.squeeze(data)
 
-        # ToDo Remove this temporary fix
         if np.ndim(data) == 0:
-            data = np.zeros(5)[:, None]
-        if np.ndim(data) == 1 and output_dim == 2:
-            data = data[:, None]
+            data = np.zeros(5)
+        while np.ndim(data) < output_dim:
+            data = data[..., np.newaxis]
 
         logger.debug(f"Data after cut {data.shape} ")
         return data

@@ -46,7 +46,7 @@ class CutSelector(QtWidgets.QWidget):
         self._ui.cut_selectors.setLayout(QtWidgets.QGridLayout(self._ui.cut_selectors))
         self._ui.cut_selectors.layout().setContentsMargins(0, 0, 0, 0)
 
-        self._last_axes = {}
+        self._last_axes = {'X': -1, 'Y': -1, 'Z': -1}
 
     # ----------------------------------------------------------------------
     def _new_layout(self):
@@ -193,7 +193,6 @@ class CutSelector(QtWidgets.QWidget):
         self.block_signals(False)
 
         self.new_axis.emit(labels)
-        self.new_cut.emit()
 
     # ----------------------------------------------------------------------
     def set_limits(self, limits):
@@ -235,6 +234,10 @@ class CutSelector(QtWidgets.QWidget):
 
         self._last_axes = {}
 
+        self._last_axes = {'X': -1, 'Y': -1, 'Z': -1}
+
+        n_dims = len(selections)
+
         for ind, (x_but, y_but, z_but, array_selector, integration_box, section) in \
                                                                         enumerate(zip(self._x_buttons_group.buttons(),
                                                                                       self._y_buttons_group.buttons(),
@@ -244,8 +247,16 @@ class CutSelector(QtWidgets.QWidget):
                                                                                       selections)):
 
             x_but.setChecked(section['axis'] == 'X')
-            y_but.setChecked(section['axis'] == 'Y')
-            z_but.setChecked(section['axis'] == 'Z')
+            if n_dims > 1:
+                y_but.setChecked(section['axis'] == 'Y')
+                y_but.setEnabled(True)
+            else:
+                y_but.setEnabled(False)
+            if n_dims > 2:
+                z_but.setChecked(section['axis'] == 'Z')
+                z_but.setEnabled(True)
+            else:
+                z_but.setEnabled(False)
             self._last_axes[section['axis']] = ind
 
             integration_box.setChecked(section['integration'])

@@ -28,6 +28,8 @@ class FrameView(AbstractWidget):
 
     update_roi = QtCore.pyqtSignal(int)
 
+    new_axes = QtCore.pyqtSignal()
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
         """
@@ -184,6 +186,10 @@ class FrameView(AbstractWidget):
 
         self._main_view.new_axes(axes_labels)
         self._second_view.new_axes(axes_labels)
+
+        self.update_image()
+
+        self.new_axes.emit()
 
     # ----------------------------------------------------------------------
     def _new_lookup_table(self):
