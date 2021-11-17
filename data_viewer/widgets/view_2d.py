@@ -407,5 +407,7 @@ class ViewSilx(View2d):
     def update_image(self):
         data_to_display = super(ViewSilx, self).update_image()
         if data_to_display is not None:
-            self.plot_2d.addImage(np.transpose(data_to_display), replace=True)
-
+            sections = self.data_pool.get_section(self.current_file)
+            origen = [s['min'] for s in sections if s['axis'] == 'X']
+            origen += [s['min'] for s in sections if s['axis'] == 'Y']
+            self.plot_2d.addImage(np.transpose(data_to_display), replace=True, origin=origen)
