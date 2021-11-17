@@ -14,7 +14,7 @@ if 'asapo_consumer' in sys.modules:
 from data_viewer.data_sources.beamview.beam_view_data_set import BeamLineView
 from data_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from data_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
-from data_viewer.data_sources.test_datasets.test_datasets import Sardana3DPeak, Sardana3DSin
+from data_viewer.data_sources.test_datasets.test_datasets import Sardana3DPeak, Sardana3DSin, ASAPO2DPeak, ASAPO3DPeak
 
 
 # ----------------------------------------------------------------------
@@ -77,6 +77,10 @@ class Opener(QtCore.QThread):
                     new_file = Sardana3DPeak(self.data_pool)
                 elif self.params['test_name'] == 'Sardana3DSin':
                     new_file = Sardana3DSin(self.data_pool)
+                elif self.params['test_name'] == 'ASAPO2DPeak':
+                    new_file = ASAPO2DPeak(self.data_pool)
+                elif self.params['test_name'] == 'ASAPO3DPeak':
+                    new_file = ASAPO3DPeak(self.data_pool)
                 else:
                     raise RuntimeError('Unknown test')
 

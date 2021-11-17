@@ -34,7 +34,7 @@ class BeamLineView(BaseDataSet):
                           'range_limit': self._data_shape[0] - 1},
                          {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
                           'range_limit': self._data_shape[1] - 1},
-                         {'axis': '', 'integration': False, 'min': 0, 'max': self._data_shape[2] - 1, 'step': 1,
+                         {'axis': 'Z', 'integration': False, 'min': 0, 'max': self._data_shape[2] - 1, 'step': 1,
                           'range_limit': self._data_shape[2] - 1})
 
     # ----------------------------------------------------------------------

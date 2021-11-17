@@ -235,7 +235,7 @@ class CubeView(AbstractWidget):
         if file_name is None:
             return
 
-        data = self._data_pool.get_3d_cube(file_name, self._ui.cmb_area.currentIndex() - 1)
+        data, axes_names = self._data_pool.get_3d_cube(file_name, self._ui.cmb_area.currentIndex() - 1)
 
         if data is None:
             return
@@ -259,21 +259,7 @@ class CubeView(AbstractWidget):
 
         borders = int(self._ui.sp_borders.value())
         if borders > 0:
-            data_to_display[:, :borders, :borders] = [255, 0, 0, 255]
-            data_to_display[:borders, :, :borders] = [255, 0, 0, 255]
-            data_to_display[:borders, :borders, :] = [255, 0, 0, 255]
-
-            data_to_display[:, :borders, -borders:] = [255, 0, 0, 255]
-            data_to_display[:borders, :, -borders:] = [255, 0, 0, 255]
-            data_to_display[:borders, -borders:, :] = [255, 0, 0, 255]
-
-            data_to_display[:, -borders:, :borders] = [255, 0, 0, 255]
-            data_to_display[-borders:, :, :borders] = [255, 0, 0, 255]
-            data_to_display[-borders:, :borders, :] = [255, 0, 0, 255]
-
-            data_to_display[:, -borders:, -borders:] = [255, 0, 0, 255]
-            data_to_display[-borders:, :, -borders:] = [255, 0, 0, 255]
-            data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
+            data_to_display = self._color_border(data_to_display, borders)
 
         self._default_scale = np.array([1, 1, 1])
 
@@ -303,16 +289,35 @@ class CubeView(AbstractWidget):
         self.view_widget.setCameraPosition(distance=self._view_distance)
 
         self.axes.setSize(data_to_display.shape[0], data_to_display.shape[1], data_to_display.shape[2])
-        axes = self._data_pool.get_file_axes(file_name)
 
-        self._ui.x_label.setText(axes[0])
-        self._ui.y_label.setText(axes[1])
-        self._ui.z_label.setText(axes[2])
+        self._ui.x_label.setText(axes_names[0])
+        self._ui.y_label.setText(axes_names[1])
+        self._ui.z_label.setText(axes_names[2])
 
-        self.axes.set_labels(axes[0], axes[1], axes[2])
+        self.axes.set_labels(axes_names[0], axes_names[1], axes_names[2])
 
         self._block_signals(False)
 
+    @staticmethod
+    # ----------------------------------------------------------------------
+    def _color_border(data_to_display, borders):
+
+        data_to_display[:, :borders, :borders] = [255, 0, 0, 255]
+        data_to_display[:, :borders, -borders:] = [255, 0, 0, 255]
+        data_to_display[:, -borders:, :borders] = [255, 0, 0, 255]
+        data_to_display[:, -borders:, -borders:] = [255, 0, 0, 255]
+
+        data_to_display[:borders, :, :borders] = [255, 0, 0, 255]
+        data_to_display[:borders, :, -borders:] = [255, 0, 0, 255]
+        data_to_display[-borders:, :, :borders] = [255, 0, 0, 255]
+        data_to_display[-borders:, :, -borders:] = [255, 0, 0, 255]
+
+        data_to_display[:borders, -borders:, :] = [255, 0, 0, 255]
+        data_to_display[:borders, :borders, :] = [255, 0, 0, 255]
+        data_to_display[-borders:, :borders, :] = [255, 0, 0, 255]
+        data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
+
+        return data_to_display
     # ----------------------------------------------------------------------
     def _set_background(self, status):
 

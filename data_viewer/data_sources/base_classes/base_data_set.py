@@ -197,12 +197,7 @@ class BaseDataSet(object):
             else:
                 section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
 
-        data = self._cut_data(section, True, 2)
-
-        if x_axis_ind > y_axis_ind:
-            return np.transpose(data)
-        else:
-            return data
+        return self._cut_data(section, True, 2)
 
     # ----------------------------------------------------------------------
     def _cut_data(self, section, do_sum, output_dim):
@@ -239,11 +234,37 @@ class BaseDataSet(object):
         return np.arange(0, self._data_shape[plot_axis])
 
     # ----------------------------------------------------------------------
-    def get_3d_cube(self, section):
-        if section is None:
-            return self._get_data()
-        else:
-            return self.get_roi_cut(section, False)
+    def get_3d_cube(self, roi_ind):
+
+        logger.debug(f"Request 3D picture")
+
+        rest_axes = list(range(len(self._data_shape)))
+
+        x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
+        section = [(x_axis_ind, self._section[x_axis_ind]['min'], self._section[x_axis_ind]['max'] + 1)]
+        rest_axes.remove(x_axis_ind)
+
+        y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
+        section.append((y_axis_ind, self._section[y_axis_ind]['min'], self._section[y_axis_ind]['max'] + 1))
+        rest_axes.remove(y_axis_ind)
+
+        z_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Z'][0]
+        section.append((z_axis_ind, self._section[z_axis_ind]['min'], self._section[z_axis_ind]['max'] + 1))
+        rest_axes.remove(z_axis_ind)
+
+        for axis in rest_axes:
+            if self._section[axis]['min'] > self.get_max_frame_along_axis(axis):
+                return None
+
+            if self._section[axis]['integration']:
+                if self._section[axis]['max'] > self.get_max_frame_along_axis(axis):
+                    return None
+
+                section.append((axis, self._section[axis]['min'], self._section[axis]['max'] + 1))
+            else:
+                section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
+
+        return self._cut_data(section, True, 3), [self._axes_names[ind] for ind in [x_axis_ind, y_axis_ind, z_axis_ind]]
 
     # ----------------------------------------------------------------------
     def get_histogram(self, mode):

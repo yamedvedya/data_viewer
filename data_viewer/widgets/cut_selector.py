@@ -23,32 +23,37 @@ class CutSelector(QtWidgets.QWidget):
         self._ui = Ui_CutSelector()
         self._ui.setupUi(self)
 
+        self._my_dims = None
+
         self._x_buttons_group = QtWidgets.QButtonGroup()
         self._x_buttons_group.setExclusive(True)
 
         self._y_buttons_group = QtWidgets.QButtonGroup()
         self._y_buttons_group.setExclusive(True)
 
+        self._z_buttons_group = QtWidgets.QButtonGroup()
+        self._z_buttons_group.setExclusive(True)
+
         self._array_selectors = []
         self._integration_boxes = []
+
         self._x_buttons = []
         self._y_buttons = []
+        self._z_buttons = []
 
         self._axes_labels = []
 
         self._ui.cut_selectors.setLayout(QtWidgets.QGridLayout(self._ui.cut_selectors))
         self._ui.cut_selectors.layout().setContentsMargins(0, 0, 0, 0)
-        self._new_layout()
 
         self._last_axes = {}
 
     # ----------------------------------------------------------------------
     def _new_layout(self):
-        for button in self._x_buttons_group.buttons():
-            self._x_buttons_group.removeButton(button)
 
-        for button in self._y_buttons_group.buttons():
-            self._y_buttons_group.removeButton(button)
+        for axis in ['x', 'y', 'z']:
+            for button in getattr(self, f'_{axis}_buttons_group').buttons():
+                getattr(self, f'_{axis}_buttons_group').removeButton(button)
 
         layout = self._ui.cut_selectors.layout()
         for i in reversed(range(layout.count())):
@@ -71,14 +76,18 @@ class CutSelector(QtWidgets.QWidget):
         label.setAlignment(QtCore.Qt.AlignHCenter)
         layout.addWidget(label, 0, 2)
 
-        label = QtWidgets.QLabel('', self)
+        label = QtWidgets.QLabel('Z', self)
         label.setAlignment(QtCore.Qt.AlignHCenter)
         layout.addWidget(label, 0, 3)
-        layout.setColumnStretch(3, 1)
+
+        label = QtWidgets.QLabel('', self)
+        label.setAlignment(QtCore.Qt.AlignHCenter)
+        layout.addWidget(label, 0, 4)
+        layout.setColumnStretch(4, 1)
 
         label = QtWidgets.QLabel('Integration', self)
         label.setAlignment(QtCore.Qt.AlignHCenter)
-        layout.addWidget(label, 0, 4)
+        layout.addWidget(label, 0, 5)
 
     # ----------------------------------------------------------------------
     def refresh_selectors(self, axes):
@@ -110,14 +119,20 @@ class CutSelector(QtWidgets.QWidget):
             self._y_buttons_group.addButton(rb)
             self._y_buttons.append(rb)
 
+            rb = QtWidgets.QRadioButton(self)
+            rb.clicked.connect(lambda state, ax='Z', id=ind: self._new_axes(ax, id))
+            layout.addWidget(rb, ind + 1, 3)
+            self._z_buttons_group.addButton(rb)
+            self._z_buttons.append(rb)
+
             selector = ArraySelector(ind)
             selector.new_cut.connect(lambda: self.new_cut.emit())
-            layout.addWidget(selector, ind + 1, 3)
+            layout.addWidget(selector, ind + 1, 4)
             self._array_selectors.append(selector)
 
             chk_box = QtWidgets.QCheckBox(self)
             chk_box.clicked.connect(lambda state, id=ind: self._integration_changed(state, id))
-            layout.addWidget(chk_box, ind + 1, 4)
+            layout.addWidget(chk_box, ind + 1, 5)
             self._integration_boxes.append(chk_box)
 
     # ----------------------------------------------------------------------
@@ -130,17 +145,34 @@ class CutSelector(QtWidgets.QWidget):
 
         self.block_signals(True)
 
-        if axis == 'X' and self._last_axes['Y'] == ind:
-            self._y_buttons[self._last_axes['X']].setChecked(True)
-        elif axis == 'Y' and self._last_axes['X'] == ind:
-            self._x_buttons[self._last_axes['Y']].setChecked(True)
+        if axis == 'X' and ind in [self._last_axes['Y'], self._last_axes['Z']]:
+            if ind == self._last_axes['Y']:
+                self._y_buttons[self._last_axes['X']].setChecked(True)
+            else:
+                self._z_buttons[self._last_axes['X']].setChecked(True)
+
+        elif axis == 'Y' and ind in [self._last_axes['X'], self._last_axes['Z']]:
+            if ind == self._last_axes['X']:
+                self._x_buttons[self._last_axes['Y']].setChecked(True)
+            else:
+                self._z_buttons[self._last_axes['Y']].setChecked(True)
+
+        elif axis == 'Z' and ind in [self._last_axes['X'], self._last_axes['Y']]:
+            if ind == self._last_axes['X']:
+                self._x_buttons[self._last_axes['Z']].setChecked(True)
+            else:
+                self._y_buttons[self._last_axes['Z']].setChecked(True)
+
 
         labels = ['', '']
-        for ind, (name, x_but, y_but, array_selector, integration_box) in enumerate(zip(self._axes_labels,
-                                                                                        self._x_buttons_group.buttons(),
-                                                                                        self._y_buttons_group.buttons(),
-                                                                                        self._array_selectors,
-                                                                                        self._integration_boxes)):
+        for ind, (name, x_but, y_but, z_but, array_selector, integration_box) in \
+                                                                        enumerate(zip(self._axes_labels,
+                                                                                      self._x_buttons_group.buttons(),
+                                                                                      self._y_buttons_group.buttons(),
+                                                                                      self._z_buttons_group.buttons(),
+                                                                                      self._array_selectors,
+                                                                                      self._integration_boxes)):
+
             if x_but.isChecked() or y_but.isChecked():
                 array_selector.switch_integration_mode(True)
                 integration_box.setVisible(False)
@@ -151,6 +183,10 @@ class CutSelector(QtWidgets.QWidget):
                     self._last_axes['Y'] = ind
                     labels[1] = name
             else:
+                if z_but.isChecked():
+                    self._last_axes['Z'] = ind
+                    labels[0] = name
+
                 array_selector.switch_integration_mode(integration_box.isChecked())
                 integration_box.setVisible(True)
 
@@ -167,15 +203,18 @@ class CutSelector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def get_current_selection(self):
         section = []
-        for x_but, y_but, array_selector, integration_box in zip(self._x_buttons_group.buttons(),
-                                                                 self._y_buttons_group.buttons(),
-                                                                 self._array_selectors,
-                                                                 self._integration_boxes):
+        for x_but, y_but, z_but, array_selector, integration_box in zip(self._x_buttons_group.buttons(),
+                                                                        self._y_buttons_group.buttons(),
+                                                                        self._z_buttons_group.buttons(),
+                                                                        self._array_selectors,
+                                                                        self._integration_boxes):
 
             if x_but.isChecked():
                 axis = 'X'
             elif y_but.isChecked():
                 axis = 'Y'
+            elif z_but.isChecked():
+                axis = 'Z'
             else:
                 axis = ''
 
@@ -196,13 +235,17 @@ class CutSelector(QtWidgets.QWidget):
 
         self._last_axes = {}
 
-        for ind, (x_but, y_but, array_selector, integration_box, section) in enumerate(zip(self._x_buttons_group.buttons(),
-                                                                                           self._y_buttons_group.buttons(),
-                                                                                           self._array_selectors,
-                                                                                           self._integration_boxes,
-                                                                                           selections)):
+        for ind, (x_but, y_but, z_but, array_selector, integration_box, section) in \
+                                                                        enumerate(zip(self._x_buttons_group.buttons(),
+                                                                                      self._y_buttons_group.buttons(),
+                                                                                      self._z_buttons_group.buttons(),
+                                                                                      self._array_selectors,
+                                                                                      self._integration_boxes,
+                                                                                      selections)):
+
             x_but.setChecked(section['axis'] == 'X')
             y_but.setChecked(section['axis'] == 'Y')
+            z_but.setChecked(section['axis'] == 'Z')
             self._last_axes[section['axis']] = ind
 
             integration_box.setChecked(section['integration'])
@@ -214,6 +257,7 @@ class CutSelector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def block_signals(self, flag):
 
-        for widget in self._x_buttons + self._y_buttons + self._array_selectors + self._integration_boxes:
+        for widget in self._x_buttons + self._y_buttons + self._z_buttons + \
+                      self._array_selectors + self._integration_boxes:
             widget.blockSignals(flag)
 

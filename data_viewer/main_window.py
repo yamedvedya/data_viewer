@@ -112,6 +112,10 @@ class DataViewer(QtWidgets.QMainWindow):
             self.tests_browser, self.tests_browser_dock = self._add_dock(TestsBrowser, "Test Browser",
                                                                        QtCore.Qt.LeftDockWidgetArea, self)
             self.tests_browser.test_selected.connect(self.data_pool.open_test)
+            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
+                                                                               QtCore.Qt.LeftDockWidgetArea,
+                                                                               self, self.data_pool)
+            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
             self.has_tests = True
         else:
             self.has_tests = False

@@ -46,7 +46,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
         super(ASAPODataSet, self).__init__(data_pool)
 
         self.my_name = stream_name
-        self._detector_name = detector_name
 
         # read the current settings
         settings = configparser.ConfigParser()
@@ -68,7 +67,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         self._setup_receiver(consumer, stream_name, detector_name)
         self._additional_data['metadata'] = []
         self._additional_data['raw_img'] = []
-        self._additional_data['message_id'] = []
+        self._additional_data['already_loaded_ids'] = []
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
             self._data_shape = list(self._nD_data_array.shape)
@@ -81,23 +80,28 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self._section = []
         axis = ['' for _ in range(len(self._data_shape))]
-        axis[-2], axis[-1] = 'X', 'Y'
+
+        axis[-1] = 'X'
+        if len(axis) > 1:
+            axis[-2] = 'Y'
+        if len(axis) > 2:
+            axis[-3] = 'Z'
+
         for i, axis in enumerate(axis):
             if i == 0:
                 range_limit = self.max_messages
             else:
                 range_limit = 0
-            self._section.append({'axis': axis, 'integration': False, 'min': 0,
-                                  'max': self._data_shape[i] - 1, 'step': 1,
-                                  'range_limit': range_limit})
+            self._section.append({'axis': axis, 'integration': False, 'min': 0, 'max': self._data_shape[i] - 1,
+                                  'step': 1, 'range_limit': range_limit})
 
     # ----------------------------------------------------------------------
     def update_info(self, info):
         """
         Update data shape using new stream information.
 
-        If data sections uses the last message_id it will be update to
-        current last message_id
+        If data sections uses the last already_loaded_ids it will be update to
+        current last already_loaded_ids
         """
         old_max = self._data_shape[0]
         self._data_shape[0] = info['lastId']
@@ -174,19 +178,19 @@ class ASAPODataSet(Base2DDetectorDataSet):
         if frame_ids is None:
             frame_ids = np.arange(self.receiver.get_current_size())
         for frame in frame_ids:
-            if frame not in self._additional_data['message_id']:
-                if len(self._additional_data['message_id']) == self.max_messages:
-                    self._additional_data['message_id'].pop(0)
+            if frame not in self._additional_data['already_loaded_ids']:
+                if len(self._additional_data['already_loaded_ids']) == self.max_messages:
+                    self._additional_data['already_loaded_ids'].pop(0)
                     self._additional_data['metadata'].pop(0)
                 self.receiver.set_start_id(frame + 1)
                 data, meta_data = self.receiver.get_next(self.meta_only)
                 img = self._convert_image(data, meta_data)
                 img_list.append(img)
                 self._additional_data['metadata'].append(meta_data)
-                self._additional_data['message_id'].append(frame)
+                self._additional_data['already_loaded_ids'].append(frame)
                 self._additional_data['raw_img'].append(img.copy())
             else:
-                idx = self._additional_data['message_id'].index(frame)
+                idx = self._additional_data['already_loaded_ids'].index(frame)
                 img_list.append(self._additional_data['raw_img'][idx])
 
         img_array = np.stack(img_list)

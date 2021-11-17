@@ -151,19 +151,27 @@ class Base2DDetectorDataSet(BaseDataSet):
         section_sorted = sorted(section)
         data = self._get_data((section_sorted[0][1], section_sorted[0][2]))
 
+        axes_order = list(range(len(data.shape)))
+        for ind, (axis, _, _) in enumerate(section):
+            move_from = axes_order.index(axis)
+            data = np.moveaxis(data, move_from, ind)
+            del axes_order[move_from]
+            axes_order.insert(ind, move_from)
+
+
         logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
 
-        for axis_slice in section_sorted[::-1]:
+        for ind, axis_slice in list(enumerate(section))[::-1]:
             axis, start, stop = axis_slice
-            i = section.index(axis_slice)
             if axis > 0:
                 start = max(start, 0)
-                stop = min(stop, data.shape[axis])
-                data = data.take(indices=range(start, stop), axis=axis)
-            if do_sum and i >= output_dim:
-                data = np.sum(data, axis=axis)
+                stop = min(stop, data.shape[ind])
+                data = data.take(indices=range(start, stop), axis=ind)
+            if do_sum and ind >= output_dim:
+                data = np.sum(data, axis=ind)
 
         data = np.squeeze(data)
+
         # ToDo Remove this temporary fix
         if np.ndim(data) == 0:
             data = np.zeros(5)[:, None]
