@@ -83,7 +83,7 @@ class ArraySelector(QtWidgets.QWidget):
             new_max += 1
         elif mode == 'last':
             new_max = self._max_frame
-            if self._get_mode() != 'integration':
+            if z_min == z_max:
                 new_min = self._max_frame
 
         new_max = min(max(0, new_max), self._max_frame)
