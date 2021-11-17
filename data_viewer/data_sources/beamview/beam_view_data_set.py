@@ -17,8 +17,7 @@ class BeamLineView(BaseDataSet):
     def __init__(self, data_pool, file_name=None):
         super(BeamLineView, self).__init__(data_pool)
 
-        self._original_folder = os.path.dirname(file_name)
-        self._file_name = re.split(r"\d+mm", os.path.splitext(os.path.basename(file_name))[0])[0]
+        self._file_name = file_name
 
         self._axes_names = ['X', 'Y', 'Z']
 
@@ -39,23 +38,18 @@ class BeamLineView(BaseDataSet):
 
     # ----------------------------------------------------------------------
     def _get_data(self):
-        decorated_file_list = self._get_file_list()
-        return np.stack([np.loadtxt(os.path.join(self._original_folder, file_name))
-                         for _, file_name in decorated_file_list], axis=2)
+
+        with h5py.File(self._file_name, 'r') as in_file:
+            data = in_file['data_cube'][...]
+
+            self._additional_data['X'] = in_file['x_axis'][...]
+            self._additional_data['Y'] = in_file['y_axis'][...]
+            self._additional_data['Z'] = in_file['z_axis'][...]
+
+        return data
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):
-        decorated_file_list = self._get_file_list()
-        cube = np.loadtxt(os.path.join(self._original_folder, decorated_file_list[0][1]))
+        with h5py.File(self._file_name, 'r') as in_file:
+            return in_file['data_cube'].shape
 
-        return cube.shape[0], cube.shape[1], len(decorated_file_list)
-
-    # ----------------------------------------------------------------------
-    def _get_file_list(self):
-        file_list = [f for f in os.listdir(self._original_folder) if (f.endswith('.dat') and self._file_name in f)]
-        decorated_file_list = [(int(f.strip('mm.dat').strip(self._file_name)), f) for f in file_list]
-        decorated_file_list.sort()
-
-        self._additional_data['Z'] = np.array([distance for distance, _ in decorated_file_list])
-
-        return decorated_file_list

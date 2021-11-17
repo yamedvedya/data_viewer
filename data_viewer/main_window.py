@@ -80,7 +80,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if options.sardana:
             self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
-                                                                       QtCore.Qt.LeftDockWidgetArea, self)
+                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'sardana')
             self.file_browser.file_selected.connect(self.data_pool.open_file)
             self.has_sardana = True
         else:
@@ -101,9 +101,9 @@ class DataViewer(QtWidgets.QMainWindow):
             self.has_asapo = False
 
         if options.beam:
-            self.folder_browser, self.folder_browser_dock = self._add_dock(FolderBrowser, "Folder Browser",
-                                                                           QtCore.Qt.LeftDockWidgetArea, self)
-            self.folder_browser.file_selected.connect(self.data_pool.open_file)
+            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
+                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'beam')
+            self.file_browser.file_selected.connect(self.data_pool.open_file)
             self.has_beam_view = True
         else:
             self.has_beam_view = False
@@ -191,10 +191,8 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):
-        if self.has_sardana:
+        if self.has_sardana or self.has_beam_view:
             return self.file_browser.current_folder()
-        elif self.has_beam_view:
-            return self.folder_browser.current_folder()
         else:
             return os.getcwd()
 

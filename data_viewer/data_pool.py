@@ -140,7 +140,7 @@ class DataPool(QtCore.QObject):
             self.file_updated.emit(entry_name)
 
     # ----------------------------------------------------------------------
-    def open_file(self, file_name):
+    def open_file(self, file_name, mode):
         """
             called by signal from file browser
 
@@ -159,11 +159,12 @@ class DataPool(QtCore.QObject):
             self._start_opener('sardana', f'Opening file {file_name}',
                                {'file_name': file_name, 'entry_name': entry_name})
         elif ".h5" in file_name:
-            self._start_opener('reciprocal', f'Opening file {file_name}',
-                               {'file_name': file_name, 'entry_name': entry_name})
-        elif '.dat' in file_name:
-            self._start_opener('beamline', f'Opening folder {os.path.dirname(file_name)}',
-                               {'file_name': file_name, 'entry_name': entry_name})
+            if mode == 'beam':
+                self._start_opener('beamline', f'Opening file {file_name}',
+                                   {'file_name': file_name, 'entry_name': entry_name})
+            else:
+                self._start_opener('reciprocal', f'Opening file {file_name}',
+                                   {'file_name': file_name, 'entry_name': entry_name})
 
     # ----------------------------------------------------------------------
     def open_test(self, test_name):

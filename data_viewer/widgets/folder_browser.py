@@ -15,11 +15,6 @@ file_formats = ["*.dat"]
 
 
 # ----------------------------------------------------------------------
-def _scan_folder(folder):
-    return set([f_name for f_name in os.listdir(folder) if f_name.endswith('.txt')])
-
-
-# ----------------------------------------------------------------------
 class FolderBrowser(AbstractWidget):
     """
     """

@@ -14,14 +14,21 @@ import numpy as np
 from distutils.util import strtobool
 import logging
 
-import asapo_consumer
+try:
+    import asapo_consumer
+except:
+    pass
+
 import configparser
 
 from data_viewer.main_window import APP_NAME
 from data_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
 
-from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
-from AsapoWorker.data_handler import get_image
+try:
+    from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
+    from AsapoWorker.data_handler import get_image
+except:
+    pass
 
 SETTINGS = {'enable_mask': False,
             'mask': None,

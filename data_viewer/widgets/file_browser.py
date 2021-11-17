@@ -31,24 +31,20 @@ logger = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------
-def _scan_folder(folder):
-    return set([f_name for f_name in os.listdir(folder) if f_name.endswith('.nxs')])
-
-
-# ----------------------------------------------------------------------
 class FileBrowser(AbstractWidget):
     """
     """
 
-    file_selected = QtCore.pyqtSignal(str)
+    file_selected = QtCore.pyqtSignal(str, str)
 
     # ----------------------------------------------------------------------
-    def __init__(self, parent):
+    def __init__(self, parent, mode):
         """
         """
         super(FileBrowser, self).__init__(parent)
         self._ui = Ui_FileBrowser()
         self._ui.setupUi(self)
+        self._mode = mode
 
         self.file_browser = QtWidgets.QFileSystemModel()
         self.file_browser.setRootPath("")
@@ -85,7 +81,11 @@ class FileBrowser(AbstractWidget):
         self._ui.tr_file_browser.doubleClicked.connect(self._open_folder)
         self._ui.le_filter.textEdited.connect(self._apply_filter)
         self._ui.chk_monitor.clicked.connect(self._toggle_watch_dog)
-        self._ui.chk_door.clicked.connect(self._toggle_watch_door)
+
+        if self._mode == 'sardana':
+            self._ui.chk_door.clicked.connect(self._toggle_watch_door)
+        else:
+            self._ui.chk_door.setVisible(False)
 
         self._ui.cmd_reload.clicked.connect(self._reload)
 
@@ -99,32 +99,33 @@ class FileBrowser(AbstractWidget):
     # ----------------------------------------------------------------------
     def set_settings(self, settings):
         try:
-            if 'door_address' in settings:
-                if self._eid is not None:
-                    self._toggle_watch_door(False)
-                    _need_to_reset = True
-                else:
-                    _need_to_reset = False
-                try:
-                    self._door_server = PyTango.DeviceProxy(settings['door_address'])
-                    if _need_to_reset:
-                        self._toggle_watch_door(True)
-                except:
-                    self._parent.report_error('Cannot connect to {}'.format(settings['door_address']))
+            if self._mode == 'sardana':
+                if 'door_address' in settings:
+                    if self._eid is not None:
+                        self._toggle_watch_door(False)
+                        _need_to_reset = True
+                    else:
+                        _need_to_reset = False
+                    try:
+                        self._door_server = PyTango.DeviceProxy(settings['door_address'])
+                        if _need_to_reset:
+                            self._toggle_watch_door(True)
+                    except:
+                        self._parent.report_error('Cannot connect to {}'.format(settings['door_address']))
 
-            if 'default_mask' in settings:
-                SETTINGS['enable_mask'] = True
-                SETTINGS['mask'] = read_mask_file(settings['default_mask'])
-                SETTINGS['mask_file'] = settings['default_mask']
+                if 'default_mask' in settings:
+                    SETTINGS['enable_mask'] = True
+                    SETTINGS['mask'] = read_mask_file(settings['default_mask'])
+                    SETTINGS['mask_file'] = settings['default_mask']
 
-            if 'default_ff' in settings:
-                SETTINGS['enable_ff'] = True
-                SETTINGS['ff'] = read_ff_file(settings['default_ff'])
-                SETTINGS['ff_file'] = settings['default_ff']
-                if 'min_ff' in settings:
-                    SETTINGS['ff_min'] = settings['min_ff']
-                if 'max_ff' in settings:
-                    SETTINGS['ff_max'] = settings['max_ff']
+                if 'default_ff' in settings:
+                    SETTINGS['enable_ff'] = True
+                    SETTINGS['ff'] = read_ff_file(settings['default_ff'])
+                    SETTINGS['ff_file'] = settings['default_ff']
+                    if 'min_ff' in settings:
+                        SETTINGS['ff_min'] = settings['min_ff']
+                    if 'max_ff' in settings:
+                        SETTINGS['ff_max'] = settings['max_ff']
 
         except Exception as err:
             logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
@@ -153,7 +154,7 @@ class FileBrowser(AbstractWidget):
             if event.attr_value.value is not None:
                 info = str(event.attr_value.value[0])
                 if info.startswith("Operation saved in") and info.endswith('(nxs)'):
-                    self.file_selected.emit(info.strip("Operation saved in").strip('(nxs)').strip())
+                    self.file_selected.emit(info.strip("Operation saved in").strip('(nxs)').strip(), self._mode)
 
     # ----------------------------------------------------------------------
     def _open_folder(self):
@@ -175,7 +176,7 @@ class FileBrowser(AbstractWidget):
                 self.file_browser.setRootPath(name)
         else:
             file_name = str(self.file_browser.filePath(file_index))
-            self.file_selected.emit(file_name)
+            self.file_selected.emit(file_name, self._mode)
 
     # ----------------------------------------------------------------------
     def _apply_filter(self, text):
@@ -221,4 +222,4 @@ class FileBrowser(AbstractWidget):
     def _on_created(self, event):
         for type in file_formats:
             if type in event.src_path:
-                self.file_selected.emit(event.src_path)
+                self.file_selected.emit(event.src_path, self._mode)
