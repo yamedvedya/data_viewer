@@ -105,12 +105,13 @@ class ASAPODataSet(Base2DDetectorDataSet):
         """
         old_max = self._data_shape[0]
         self._data_shape[0] = info['lastId']
-        sel = sorted(self._section, key=lambda d: d['axis'])[0]
-
+        sel = self._section[0]
         if sel['max'] == old_max-1:
-            sel['max'] = info['lastId']-1
-            if not sel['integration']:
-                sel['min'] = info['lastId']-1
+            sel['max'] = info['lastId'] - 1
+            if not sel['integration'] and sel['axis'] == '':
+                sel['min'] = info['lastId'] - 1
+            if sel['max'] - sel['min'] >= sel['range_limit']:
+                sel['min'] = sel['max'] - sel['range_limit'] - 1
 
     # ----------------------------------------------------------------------
     def _corrections_required(self):
