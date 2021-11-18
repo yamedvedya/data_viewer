@@ -100,6 +100,7 @@ class RoisView(AbstractWidget):
         del self._opened_files[file_name]
 
         for widget in self._roi_widgets.values():
+            widget.main_file_changed()
             widget.delete_file(file_name)
 
     # ----------------------------------------------------------------------

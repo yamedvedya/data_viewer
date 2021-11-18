@@ -156,7 +156,8 @@ class SectionView(QtWidgets.QWidget):
         if file_name in self._section_plots:
             self._section_plots[file_name].release()
             del self._section_plots[file_name]
-            self.update_limits()
+            if self._enabled:
+                self.update_limits()
 
     # ----------------------------------------------------------------------
     def update_plots(self):
@@ -168,8 +169,9 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def update_limits(self):
-        for widget in self._section_ranger:
-            widget.refresh_view()
+        if self._enabled:
+            for widget in self._section_ranger:
+                widget.refresh_view()
 
     # ----------------------------------------------------------------------
     def _normalize_plots(self, state):
