@@ -14,7 +14,8 @@ if 'asapo_consumer' in sys.modules:
 from data_viewer.data_sources.beamview.beam_view_data_set import BeamLineView
 from data_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from data_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
-from data_viewer.data_sources.test_datasets.test_datasets import Sardana3DPeak, Sardana3DSin, ASAPO2DPeak, ASAPO3DPeak
+from data_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, \
+    ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView
 
 
 # ----------------------------------------------------------------------
@@ -73,14 +74,18 @@ class Opener(QtCore.QThread):
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'test':
-                if self.params['test_name'] == 'Sardana3DPeak':
-                    new_file = Sardana3DPeak(self.data_pool)
-                elif self.params['test_name'] == 'Sardana3DSin':
-                    new_file = Sardana3DSin(self.data_pool)
+                if self.params['test_name'] == 'SardanaPeak1':
+                    new_file = SardanaPeak1(self.data_pool)
+                elif self.params['test_name'] == 'SardanaPeak2':
+                    new_file = SardanaPeak2(self.data_pool)
                 elif self.params['test_name'] == 'ASAPO2DPeak':
                     new_file = ASAPO2DPeak(self.data_pool)
                 elif self.params['test_name'] == 'ASAPO3DPeak':
                     new_file = ASAPO3DPeak(self.data_pool)
+                elif self.params['test_name'] == 'ASAPO4DPeak':
+                    new_file = ASAPO4DPeak(self.data_pool)
+                elif self.params['test_name'] == 'BeamView':
+                    new_file = BeamView(self.data_pool)
                 else:
                     raise RuntimeError('Unknown test')
 

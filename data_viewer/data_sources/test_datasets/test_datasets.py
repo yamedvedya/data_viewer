@@ -5,34 +5,49 @@ import configparser
 
 from data_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
 from data_viewer.data_sources.asapo.asapo_data_set import ASAPODataSet
+from data_viewer.data_sources.beamview.beam_view_data_set import BeamLineView
 
-__all__ = ['Sardana3DSin', 'Sardana3DPeak', 'ASAPO2DPeak', 'ASAPO3DPeak']
+__all__ = ['SardanaPeak1', 'SardanaPeak2', 'ASAPO2DPeak', 'ASAPO3DPeak', 'ASAPO4DPeak', 'BeamView']
 
-# # --------------------------------------------------------------------
-# class __TestDataSet(object):
-#     pass
+
+class BaseTestDataSet(object):
+
+    dims = []
+
+    my_name = ''
+
+    # ----------------------------------------------------------------------
+    def get_info(self):
+        return self.my_name, f'{len(self.dims)}D', 'x'.join([str(dim) for dim in self.dims])
+
+    # ----------------------------------------------------------------------
+
+    def _reload_data(self, frame_ids=None):
+        if frame_ids is None:
+            return np.copy(self._original_data)
+        else:
+            return np.copy(self._original_data[frame_ids])
+
+    # ----------------------------------------------------------------------
+    def _get_data_shape(self):
+
+        return self.dims
 
 
 # --------------------------------------------------------------------
-class __Fake3DSardana(SardanaDataSet):
-
-    x_dim = None
-    y_dim = None
-    z_dim = None
-
-    my_name = None
+class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
+
         super(SardanaDataSet, self).__init__(data_pool)
 
         self._axes_names = ['scan point', 'detector X', 'detector Y']
 
         self._additional_data['scanned_values'] = ['omega', 'point_nb']
-        self._additional_data['omega'] = np.linspace(1, 2, self.z_dim)
-        self._additional_data['point_nb'] = np.arange(self.z_dim)
+        self._additional_data['point_nb'] = np.arange(self.dims[0])
 
-        self.__original_data = self._generate_fake_data()
+        self._original_data = self._generate_fake_data()
 
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
@@ -48,47 +63,17 @@ class __Fake3DSardana(SardanaDataSet):
                           'range_limit': self._data_shape[2]})
 
     # ----------------------------------------------------------------------
-    def _reload_data(self, frame_ids=None):
-        if frame_ids is None:
-            return np.copy(self.__original_data)
-        else:
-            return np.copy(self.__original_data[frame_ids])
-
-    # ----------------------------------------------------------------------
-    def _get_data_shape(self):
-
-        return self.z_dim, self.y_dim, self.x_dim
-
-    # ----------------------------------------------------------------------
-    def _generate_fake_data(self):
-        raise RuntimeError('Not implemented')
-
-    # ----------------------------------------------------------------------
-    def get_info(self):
-        return self.my_name, '3D', f'{self.z_dim}x{self.y_dim}x{self.x_dim}'
-
-
-# ----------------------------------------------------------------------
-class Sardana3DSin(__Fake3DSardana):
-
-    x_dim = 200
-    y_dim = 100
-    z_dim = 11
-
-    my_name = 'Sardana3DSin'
-
-    # ----------------------------------------------------------------------
     def _generate_fake_data(self):
 
-        frame = np.zeros((self.y_dim, self.x_dim))
-        for ind in range(self.y_dim):
-            frame[ind] = np.sin(np.linspace(0, np.pi, self.x_dim))
-        for ind in range(self.x_dim):
-            frame[:, ind] *= np.sin(np.linspace(0, np.pi, self.y_dim))
+        y, x = np.meshgrid(np.linspace(-self.dims[1]/2, self.dims[1]/2, self.dims[1]),
+                           np.linspace(-self.dims[2]/2, self.dims[2]/2, self.dims[2]))
 
-        data_cube = np.zeros((self.z_dim, self.y_dim, self.x_dim))
-        for ind, scale in enumerate(np.sin(np.linspace(0, np.pi, self.z_dim))):
-            data_cube[ind] = frame * scale
+        mean, sigma = 1, 4
+        frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * 100
+
+        data_cube = np.zeros(self.dims)
+        for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[0])), 4)):
+            data_cube[ind, scale] = frame * scale
 
         data_cube -= np.min(data_cube)
 
@@ -96,47 +81,47 @@ class Sardana3DSin(__Fake3DSardana):
 
 
 # ----------------------------------------------------------------------
-class Sardana3DPeak(__Fake3DSardana):
+class SardanaPeak1(__Fake3DSardana):
 
-    x_dim = 151
-    y_dim = 101
-    z_dim = 21
+    dims = [11, 101, 201]
 
-    my_name = 'Sardana3DPeak'
-
-    # ----------------------------------------------------------------------
-    def _generate_fake_data(self):
-
-        y, x = np.meshgrid(np.linspace(-75, 75, 151), np.linspace(-50, 50, 101))
-
-        mean, sigma = 2, 6
-        frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2)))*100
-
-        data_cube = np.zeros((self.z_dim, self.y_dim, self.x_dim))
-        for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.z_dim)), 4)):
-            data_cube[ind] = frame * scale
-
-        data_cube -= np.min(data_cube)
-
-        return data_cube
-
-
-# --------------------------------------------------------------------
-class __FakeNDASAPO(ASAPODataSet):
-
-    dims = []
-
-    my_name = None
+    my_name = 'SardanaPeak1'
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
+
+        super(SardanaPeak1, self).__init__(data_pool)
+
+        self._additional_data['omega'] = np.linspace(1, 2, self.dims[0])
+
+
+# ----------------------------------------------------------------------
+class SardanaPeak2(__Fake3DSardana):
+
+    dims = [21, 151, 101]
+
+    my_name = 'SardanaPeak2'
+
+    # ----------------------------------------------------------------------
+    def __init__(self, data_pool):
+        super(SardanaPeak2, self).__init__(data_pool)
+
+        self._additional_data['omega'] = np.linspace(1.5, 2.5, self.dims[0])
+
+
+# --------------------------------------------------------------------
+class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
+
+    # ----------------------------------------------------------------------
+    def __init__(self, data_pool):
+
         super(ASAPODataSet, self).__init__(data_pool)
 
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
         self.max_messages = int(settings['ASAPO']['max_messages'])
 
-        self.__original_data = self._generate_fake_data()
+        self._original_data = self._generate_fake_data()
 
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
@@ -171,24 +156,29 @@ class __FakeNDASAPO(ASAPODataSet):
                                   'step': 1, 'range_limit': range_limit})
 
     # ----------------------------------------------------------------------
-    def _reload_data(self, frame_ids=None):
-        if frame_ids is None:
-            return np.copy(self.__original_data)
-        else:
-            return np.copy(self.__original_data[frame_ids])
-
-    # ----------------------------------------------------------------------
-    def _get_data_shape(self):
-
-        return self.dims
-
-    # ----------------------------------------------------------------------
     def _generate_fake_data(self):
-        raise RuntimeError('Not implemented')
 
-    # ----------------------------------------------------------------------
-    def get_info(self):
-        return self.my_name, f'{len(self.dims)}D', 'x'.join([str(dim) for dim in self.dims])
+        def _get_frame():
+            x, y = np.meshgrid(np.linspace(-self.dims[-2] / 2, self.dims[-2] / 2, self.dims[-2]),
+                               np.linspace(-self.dims[-1] / 2, self.dims[-1] / 2, self.dims[-1]))
+
+            mean, sigma = 1, 4
+            return np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * 100
+
+        def _fill_axis(data, rest_axes):
+            if len(rest_axes):
+                for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[rest_axes[0]])), 4)):
+                    data[ind] = _fill_axis(data[ind], rest_axes[1:])
+            else:
+                data = _get_frame()
+
+            return data
+
+        data_cube = _fill_axis(np.zeros(self.dims), list(range(len(self.dims[:-2]))))
+
+        data_cube -= np.min(data_cube)
+
+        return data_cube
 
 
 # ----------------------------------------------------------------------
@@ -198,17 +188,6 @@ class ASAPO2DPeak(__FakeNDASAPO):
 
     my_name = 'ASAPO2DPeak'
 
-    # ----------------------------------------------------------------------
-    def _generate_fake_data(self):
-        y, x = np.meshgrid(np.linspace(-75, 75, 151), np.linspace(-50, 50, 101))
-
-        mean, sigma = 2, 6
-        data_cube = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * 100
-
-        data_cube -= np.min(data_cube)
-
-        return data_cube
-
 
 # ----------------------------------------------------------------------
 class ASAPO3DPeak(__FakeNDASAPO):
@@ -217,18 +196,39 @@ class ASAPO3DPeak(__FakeNDASAPO):
 
     my_name = 'ASAPO3DPeak'
 
-    # ----------------------------------------------------------------------
-    def _generate_fake_data(self):
 
-        y, x = np.meshgrid(np.linspace(-75, 75, 151), np.linspace(-50, 50, 101))
+# ----------------------------------------------------------------------
+class ASAPO4DPeak(__FakeNDASAPO):
+
+    dims = [5, 21, 101, 151]
+
+    my_name = 'ASAPO4DPeak'
+
+
+# --------------------------------------------------------------------
+class BeamView(BeamLineView, BaseTestDataSet):
+
+    my_name = 'BeamView'
+
+    dims = [101, 101, 15]
+
+    # ----------------------------------------------------------------------
+    def _get_data(self):
+
+        x, y = np.meshgrid(np.linspace(-self.dims[0]/2, self.dims[0]/2, self.dims[0]),
+                           np.linspace(-self.dims[1]/2, self.dims[1]/2, self.dims[1]))
 
         mean, sigma = 2, 6
         frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2)))*100
 
         data_cube = np.zeros(self.dims)
-        for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[0])), 4)):
-            data_cube[ind] = frame * scale
+        for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[2])), 4)):
+            data_cube[..., ind] = frame * scale
 
         data_cube -= np.min(data_cube)
+
+        self._additional_data['X'] = np.linspace(-self.dims[0]/2, self.dims[0]/2, self.dims[0])
+        self._additional_data['Y'] = np.linspace(-self.dims[1]/2, self.dims[2]/2, self.dims[0])
+        self._additional_data['Z'] = np.arange(0, self.dims[2]*3, self.dims[2])
 
         return data_cube
