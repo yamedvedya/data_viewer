@@ -13,7 +13,7 @@ logger = logging.getLogger(APP_NAME)
 
 class CutSelector(QtWidgets.QWidget):
 
-    new_cut = QtCore.pyqtSignal()
+    new_cut = QtCore.pyqtSignal(bool)
     new_axis = QtCore.pyqtSignal(list)
 
     def __init__(self, parent):
@@ -126,7 +126,7 @@ class CutSelector(QtWidgets.QWidget):
             self._z_buttons.append(rb)
 
             selector = ArraySelector(ind)
-            selector.new_cut.connect(lambda: self.new_cut.emit())
+            selector.new_cut.connect(lambda id=ind: self._new_range(id))
             layout.addWidget(selector, ind + 1, 4)
             self._array_selectors.append(selector)
 
@@ -136,9 +136,13 @@ class CutSelector(QtWidgets.QWidget):
             self._integration_boxes.append(chk_box)
 
     # ----------------------------------------------------------------------
+    def _new_range(self, ind):
+        self.new_cut.emit(ind not in [self._last_axes['X'], self._last_axes['Y'], self._last_axes['Z']])
+
+    # ----------------------------------------------------------------------
     def _integration_changed(self, state, ind):
         self._array_selectors[ind].switch_integration_mode(state)
-        self.new_cut.emit()
+        self._new_range(ind)
 
     # ----------------------------------------------------------------------
     def _new_axes(self, axis, ind):

@@ -83,6 +83,14 @@ class CubeView(AbstractWidget):
         self._status_timer.start(100)
 
     # ----------------------------------------------------------------------
+    def _get_area(self):
+        current_choose = self._ui.cmb_area.currentText()
+        if current_choose == 'Whole cube':
+            return -1
+        else:
+            return self._data_pool.get_roi_key(int(current_choose.split('_')[1]))
+
+    # ----------------------------------------------------------------------
     def _auto_levels(self, state):
         if state:
             self._block_hist_signals(True)
@@ -161,9 +169,11 @@ class CubeView(AbstractWidget):
         current_selection = self._ui.cmb_area.currentText()
         self._ui.cmb_area.blockSignals(True)
         self._ui.cmb_area.clear()
-        self._ui.cmb_area.addItem('Whole data')
+        self._ui.cmb_area.addItem('Whole cube')
         for ind in range(self._data_pool.roi_counts()):
-            self._ui.cmb_area.addItem(f'ROI_{ind}')
+            roi_key = self._data_pool.get_roi_key(ind)
+            if self._data_pool.get_file_dimension(self._parent.get_current_file()) == self._data_pool.get_roi_param(roi_key, 'dimensions'):
+                self._ui.cmb_area.addItem(f'ROI_{ind}')
 
         if not refresh_combo_box(self._ui.cmb_area, current_selection):
             self.display_file()
@@ -181,13 +191,15 @@ class CubeView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
-        if roi_ind == self._ui.cmb_area.currentIndex() - 1:
+
+        if roi_ind == self._get_area():
             self.display_file()
 
     # ----------------------------------------------------------------------
     def main_file_changed(self):
 
         self._block_hist_signals(True)
+        self.fill_roi()
         self._fake_image_item.setNewFile(self._parent.get_current_file())
         self._block_hist_signals(False)
 
@@ -237,7 +249,7 @@ class CubeView(AbstractWidget):
         if file_name is None:
             return
 
-        data, axes_names = self._data_pool.get_3d_cube(file_name, self._ui.cmb_area.currentIndex() - 1)
+        data, axes_names = self._data_pool.get_3d_cube(file_name, self._get_area())
 
         if data is None:
             return

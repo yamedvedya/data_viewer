@@ -41,7 +41,7 @@ class FrameView(AbstractWidget):
         self.hist = self._ui.hist
         self.hist.setBackground('w')
 
-        self._ui.cut_selectors.new_cut.connect(self.update_image)
+        self._ui.cut_selectors.new_cut.connect(self._new_cut)
         self._ui.cut_selectors.new_axis.connect(self._update_axes)
 
         settings = configparser.ConfigParser()
@@ -259,6 +259,12 @@ class FrameView(AbstractWidget):
             self._toggle_auto_levels(True)
             self._change_chk_auto_levels_state(True)
             self._fake_image_item.sigImageChanged.emit()
+
+    # ----------------------------------------------------------------------
+    def _new_cut(self, invisible_axis):
+        self.update_image()
+        if invisible_axis:
+            self.new_axes.emit()
 
     # ----------------------------------------------------------------------
     def update_image(self):
