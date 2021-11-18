@@ -20,19 +20,6 @@ class BaseTestDataSet(object):
     def get_info(self):
         return self.my_name, f'{len(self.dims)}D', 'x'.join([str(dim) for dim in self.dims])
 
-    # ----------------------------------------------------------------------
-
-    def _reload_data(self, frame_ids=None):
-        if frame_ids is None:
-            return np.copy(self._original_data)
-        else:
-            return np.copy(self._original_data[frame_ids])
-
-    # ----------------------------------------------------------------------
-    def _get_data_shape(self):
-
-        return self.dims
-
 
 # --------------------------------------------------------------------
 class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
@@ -55,29 +42,41 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
         else:
             self._data_shape = self._get_data_shape()
 
-        self._section = ({'axis': '', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
+        self._section = ({'axis': 'Z', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
                           'range_limit': self._data_shape[0]},
-                         {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
+                         {'axis': 'X', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
                           'range_limit': self._data_shape[1]},
-                         {'axis': 'X', 'integration': False, 'min': 0, 'max': self._data_shape[2] - 1, 'step': 1,
+                         {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._data_shape[2] - 1, 'step': 1,
                           'range_limit': self._data_shape[2]})
 
     # ----------------------------------------------------------------------
     def _generate_fake_data(self):
 
-        y, x = np.meshgrid(np.linspace(-self.dims[1]/2, self.dims[1]/2, self.dims[1]),
-                           np.linspace(-self.dims[2]/2, self.dims[2]/2, self.dims[2]))
+        y, x = np.meshgrid(np.linspace(-self.dims[2]/2, self.dims[2]/2, self.dims[2]),
+                           np.linspace(-self.dims[1]/2, self.dims[1]/2, self.dims[1]))
 
         mean, sigma = 1, 4
         frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * 100
 
         data_cube = np.zeros(self.dims)
         for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[0])), 4)):
-            data_cube[ind, scale] = frame * scale
+            data_cube[ind] = frame * scale
 
-        data_cube -= np.min(data_cube)
+        data_cube -= np.min(data_cube) - 1
 
         return data_cube
+
+    # ----------------------------------------------------------------------
+    def _reload_data(self, frame_ids=None):
+        if frame_ids is None:
+            return np.copy(self._original_data)
+        else:
+            return np.copy(self._original_data[frame_ids])
+
+    # ----------------------------------------------------------------------
+    def _get_data_shape(self):
+
+        return self.dims
 
 
 # ----------------------------------------------------------------------
@@ -159,8 +158,8 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
     def _generate_fake_data(self):
 
         def _get_frame():
-            x, y = np.meshgrid(np.linspace(-self.dims[-2] / 2, self.dims[-2] / 2, self.dims[-2]),
-                               np.linspace(-self.dims[-1] / 2, self.dims[-1] / 2, self.dims[-1]))
+            y, x = np.meshgrid(np.linspace(-self.dims[-1] / 2, self.dims[-1] / 2, self.dims[-1]),
+                               np.linspace(-self.dims[-2] / 2, self.dims[-2] / 2, self.dims[-2]))
 
             mean, sigma = 1, 4
             return np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * 100
@@ -168,7 +167,7 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
         def _fill_axis(data, rest_axes):
             if len(rest_axes):
                 for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[rest_axes[0]])), 4)):
-                    data[ind] = _fill_axis(data[ind], rest_axes[1:])
+                    data[ind] = _fill_axis(data[ind], rest_axes[1:]) * scale
             else:
                 data = _get_frame()
 
@@ -176,9 +175,21 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
 
         data_cube = _fill_axis(np.zeros(self.dims), list(range(len(self.dims[:-2]))))
 
-        data_cube -= np.min(data_cube)
+        data_cube -= np.min(data_cube) - 1
 
         return data_cube
+
+    # ----------------------------------------------------------------------
+    def _reload_data(self, frame_ids=None):
+        if frame_ids is None:
+            return np.copy(self._original_data)
+        else:
+            return np.copy(self._original_data[frame_ids])
+
+    # ----------------------------------------------------------------------
+    def _get_data_shape(self):
+
+        return self.dims
 
 
 # ----------------------------------------------------------------------
@@ -232,3 +243,9 @@ class BeamView(BeamLineView, BaseTestDataSet):
         self._additional_data['Z'] = np.arange(0, self.dims[2]*3, self.dims[2])
 
         return data_cube
+
+    # ----------------------------------------------------------------------
+    def _get_data_shape(self):
+
+        return self.dims
+

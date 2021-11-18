@@ -44,11 +44,6 @@ class RoisView(AbstractWidget):
         self._add_roi()
 
     # ----------------------------------------------------------------------
-    def clear_view(self):
-        for widget in self._roi_widgets.values():
-            widget.clear_view()
-
-    # ----------------------------------------------------------------------
     def get_current_file(self):
         return self._parent.get_current_file()
 
@@ -72,6 +67,8 @@ class RoisView(AbstractWidget):
 
         for file_name, color in self._opened_files.items():
             self._roi_widgets[idx].add_file(file_name, color)
+
+        self.update_roi.emit(idx)
 
     # ----------------------------------------------------------------------
     def _close_tab(self, idx):
@@ -117,3 +114,8 @@ class RoisView(AbstractWidget):
     def roi_changed(self, roi_id):
 
         self._roi_widgets[roi_id].roi_changed()
+
+    # ----------------------------------------------------------------------
+    def main_file_changed(self):
+        for widget in self._roi_widgets.values():
+            widget.main_file_changed()

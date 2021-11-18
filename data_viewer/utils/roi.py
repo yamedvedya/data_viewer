@@ -26,26 +26,22 @@ class ROI(object):
             self._fill_section(axis)
 
     # ------------------------------------------------------------------
-    def roi_parameter_changed(self, section_axis, param, value, axes_limits):
+    def roi_parameter_changed(self, axis, param, value, axes_limits):
 
-        value = int(value)
-        if section_axis == self._section_params['axis_0']:
+        if axis == 0:
             if param == 'pos':
-                return axes_limits[self._section_params['axis_0']][0]
+                return axes_limits[0]
             else:
-                return axes_limits[self._section_params['axis_0']][1] - \
-                       axes_limits[self._section_params['axis_0']][0]
+                return axes_limits[1] - axes_limits[0]
 
-        real_axis = self._section_params['axis_{}'.format(section_axis)]
         if param == 'pos':
-            value = max(value, axes_limits[real_axis][0])
-            value = min(value,
-                        axes_limits[real_axis][1] - self._section_params['axis_{}_width'.format(section_axis)])
+            value = max(value, axes_limits[0])
+            value = min(value, axes_limits[1] - self._section_params['axis_{}_width'.format(axis)])
         else:
             value = max(value, 1)
-            value = min(value, axes_limits[real_axis][1] - self._section_params['axis_{}_pos'.format(section_axis)])
+            value = min(value, axes_limits[1] - self._section_params['axis_{}_pos'.format(axis)])
 
-        self._section_params['axis_{}_{}'.format(section_axis, param)] = value
+        self._section_params['axis_{}_{}'.format(axis, param)] = value
         return value
 
     # ------------------------------------------------------------------

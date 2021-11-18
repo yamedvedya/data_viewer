@@ -120,13 +120,14 @@ class DataViewer(QtWidgets.QMainWindow):
         else:
             self.has_tests = False
 
-        self.frame_view.new_file_selected.connect(self.cube_view.new_file)
+        self.frame_view.main_file_changed.connect(self.cube_view.main_file_changed)
+        self.frame_view.main_file_changed.connect(self.rois_view.main_file_changed)
 
         self.frame_view.update_roi.connect(self.rois_view.roi_changed)
         self.frame_view.update_roi.connect(self.cube_view.roi_changed)
 
         self.frame_view.clear_view.connect(self.cube_view.clear_view)
-        self.frame_view.clear_view.connect(self.rois_view.clear_view)
+        self.frame_view.clear_view.connect(self.rois_view.main_file_changed)
 
         self.frame_view.new_axes.connect(self.cube_view.display_file)
 

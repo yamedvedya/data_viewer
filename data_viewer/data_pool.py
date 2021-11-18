@@ -392,30 +392,51 @@ class DataPool(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def set_section_axis(self, roi_key, axis):
-
+        """
+            set new section axis for ROI
+            :param roi_key - key for ROIs dict,
+            :param axis - new ROI axis
+        """
         logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, axis: {axis}")
         self._rois[roi_key].set_section_axis(axis)
         self.roi_changed.emit(roi_key)
 
     # ----------------------------------------------------------------------
-    def roi_parameter_changed(self, roi_key, section_axis, param, value):
+    def get_roi_axis(self, roi_key, real_axis):
+        """
+            return internal ROI axis for given real axis
+            :param roi_key - key for ROIs dict,
+            :param real_axis - data cube axis
+            :return int, ROI internal axis
+        """
+        section_params = self._rois[roi_key].get_section_params()
+        for ind in range(section_params['dimensions']):
+            if section_params['axis_{}'.format(ind)] == real_axis:
+                return ind
+
+        return None
+
+    # ----------------------------------------------------------------------
+    def roi_parameter_changed(self, roi_key, roi_axis, param, value):
         """
             function checks if the requested ROI`s value is valid. If value is valid - returns it,
             if not, returns the most close valid one
             :param roi_key - key for ROIs dict,
-            :param section_axis - which axes is modified,
+            :param roi_axis - which real_axis is modified,
             :param param - 'width', 'pos'
             :param value - requested by user value
             :returns accepted value
         """
-        logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, section_axis: {section_axis}, param: {param}, value: {value}")
+        logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, axis: {roi_axis}, param: {param}, value: {value}")
 
-        axis_lim = self.get_all_axes_limits(self.get_roi_param(roi_key, 'dimensions'))
+        section_params = self._rois[roi_key].get_section_params()
+        real_axis = section_params['axis_{}'.format(roi_axis)]
+
+        axis_lim = self.get_all_axes_limits()
         if axis_lim is not None:
-            value = self._rois[roi_key].roi_parameter_changed(section_axis, param, value, axis_lim)
-            return value
+            return self._rois[roi_key].roi_parameter_changed(roi_axis, param, value, axis_lim[real_axis])
         else:
-            return None
+            return value
 
     # ----------------------------------------------------------------------
     def get_roi_axis_name(self, roi_key, file):
@@ -450,11 +471,12 @@ class DataPool(QtCore.QObject):
             axis_min = axis_lim[real_axis][0]
             axis_max = axis_lim[real_axis][1]
 
-            return axis_min, axis_max - section_params['axis_{}_width'.format(section_axis)], \
+            return axis_min, axis_max, \
+                   axis_max - axis_min - section_params['axis_{}_width'.format(section_axis)], \
                    axis_max - axis_min - section_params['axis_{}_pos'.format(section_axis)]
 
         else:
-            return None, None, None
+            return None, None, None, None
 
     # ----------------------------------------------------------------------
     def get_file_dimension(self, file_name):

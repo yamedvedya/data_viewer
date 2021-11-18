@@ -33,10 +33,10 @@ class SectionRange(QtWidgets.QWidget):
         self._ui.sb_width.valueChanged.connect(lambda value: self._roi_value_changed('width', int(value)))
 
     # ----------------------------------------------------------------------
-    def _disable_me(self, flag):
-        self._ui.sb_pos.setEnabled(not flag)
-        self._ui.sb_width.setEnabled(not flag)
-        self.sld.setEnabled(not flag)
+    def enable_me(self, flag):
+        self._ui.sb_pos.setEnabled(flag)
+        self._ui.sb_width.setEnabled(flag)
+        self.sld.setEnabled(flag)
 
     # ----------------------------------------------------------------------
     def refresh_view(self):
@@ -45,36 +45,26 @@ class SectionRange(QtWidgets.QWidget):
             self._ui.lb_axis.setText(self._data_pool.get_file_axes(self._parent.get_current_file())
                                      [self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}')])
 
-            pos_min, pos_max, width_max = self._data_pool.get_roi_limits(self._roi_id, self._my_id)
-            if pos_min is not None:
-                self._disable_me(False)
-                self.set_min_max(pos_min, pos_max, width_max)
-                self.update_value()
-            else:
-                self._disable_me(True)
+            self._update_limits()
+            self._update_value()
         else:
             self._ui.lb_axis.setText('')
 
         self._block_signals(False)
 
     # ----------------------------------------------------------------------
-    def set_min_max(self, pos_min, pos_max, width_max):
-        if not pos_min <= int(self._ui.sb_pos.value()) <= pos_max:
-            self._roi_value_changed('pos', max(min(int(self._ui.sb_pos.value()), pos_max), pos_min))
+    def _update_limits(self):
+        axis_min, axis_max, max_pos, max_width = self._data_pool.get_roi_limits(self._roi_id, self._my_id)
+        self._ui.sb_pos.setMinimum(axis_min)
+        self._ui.sb_pos.setMaximum(max_pos)
 
-        self._ui.sb_pos.setMinimum(pos_min)
-        self._ui.sb_pos.setMaximum(pos_max)
+        self._ui.sb_width.setMaximum(max_width)
 
-        if self._ui.sb_width.value() >= width_max:
-            self._roi_value_changed('width', min(int(self._ui.sb_width.value()), width_max))
-
-        self._ui.sb_width.setMaximum(width_max)
-
-        self.sld.setMinimum(pos_min)
-        self.sld.setMaximum(pos_min + width_max)
+        self.sld.setMinimum(axis_min)
+        self.sld.setMaximum(axis_max)
 
     # ----------------------------------------------------------------------
-    def update_value(self):
+    def _update_value(self):
         self._ui.sb_pos.setValue(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos'))
         self._ui.sb_width.setValue(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width'))
 
@@ -89,6 +79,12 @@ class SectionRange(QtWidgets.QWidget):
 
         accepted_value = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, param, value)
         getattr(self._ui, f'sb_{param}').setValue(accepted_value)
+
+        self.sld.setLow(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos'))
+        self.sld.setHigh(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos') +
+                         self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width'))
+
+        self._update_limits()
 
         self._block_signals(False)
 
@@ -105,6 +101,8 @@ class SectionRange(QtWidgets.QWidget):
 
         accepted_width = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, 'width', vmax - vmin)
         self._ui.sb_width.setValue(accepted_width)
+
+        self._update_limits()
 
         self._block_signals(False)
 

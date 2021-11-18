@@ -22,7 +22,7 @@ class FrameView(AbstractWidget):
     """
     """
     section_updated = QtCore.pyqtSignal()
-    new_file_selected = QtCore.pyqtSignal()
+    main_file_changed = QtCore.pyqtSignal()
 
     clear_view = QtCore.pyqtSignal()
 
@@ -346,7 +346,7 @@ class FrameView(AbstractWidget):
             self._fake_image_item.setNewFile(self._main_view.current_file)
             self._change_chk_auto_levels_state(True)
         self.update_file(self._main_view.current_file)
-        self.new_file_selected.emit()
+        self.main_file_changed.emit()
 
     # ----------------------------------------------------------------------
     def _setup_actions(self):

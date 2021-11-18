@@ -36,6 +36,8 @@ class SectionView(QtWidgets.QWidget):
         self.my_id = my_id
         self.my_dims = my_dims
 
+        self._enabled = True
+
         self._enabled_fits = []
 
         self._main_plot = pg.PlotItem()
@@ -105,8 +107,16 @@ class SectionView(QtWidgets.QWidget):
         self._main_plot.sigXRangeChanged.connect(self._new_range)
 
     # ----------------------------------------------------------------------
-    def clear_view(self):
-        pass
+    def main_file_changed(self):
+        if self.get_current_file() is not None:
+            self._enabled = self.data_pool.get_file_dimension(self.get_current_file()) == self.my_dims
+        else:
+            self._enabled = False
+
+        self._ui.cb_section_axis.setEnabled(self._enabled)
+
+        for widget in self._section_ranger:
+            widget.enable_me(self._enabled)
 
     # ----------------------------------------------------------------------
     def get_current_file(self):

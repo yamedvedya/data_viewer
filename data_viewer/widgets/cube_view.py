@@ -185,7 +185,7 @@ class CubeView(AbstractWidget):
             self.display_file()
 
     # ----------------------------------------------------------------------
-    def new_file(self):
+    def main_file_changed(self):
 
         self._block_hist_signals(True)
         self._fake_image_item.setNewFile(self._parent.get_current_file())

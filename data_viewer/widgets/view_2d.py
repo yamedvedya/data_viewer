@@ -270,6 +270,19 @@ class ViewPyQt(View2d):
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
 
+        if self.current_file is None:
+            self._rois[roi_ind][0].setVisible(False)
+            self._rois[roi_ind][1].setVisible(False)
+            return
+
+        if self.data_pool.get_roi_param(roi_ind, 'dimensions') != self.data_pool.get_file_dimension(self.current_file):
+            self._rois[roi_ind][0].setVisible(False)
+            self._rois[roi_ind][1].setVisible(False)
+            return
+
+        self._rois[roi_ind][0].setVisible(True)
+        self._rois[roi_ind][1].setVisible(True)
+
         self._rois[roi_ind][0].sigRegionChangeFinished.disconnect()
 
         current_axes = self._frame_viewer.get_current_axes()
@@ -278,27 +291,28 @@ class ViewPyQt(View2d):
         x_width, y_width = 1, 1
 
         axes_limits = self.data_pool.get_all_axes_limits()
-        if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, 'axis_0'):
+
+        if current_axes['x'] == self.data_pool.get_roi_param(self._rois[roi_ind][2], 'axis_0'):
             x_pos = axes_limits[current_axes['x']][0]
             x_width = axes_limits[current_axes['x']][1] - axes_limits[current_axes['x']][0]
         else:
             axis = 1
             while axis < 100:
-                if current_axes['x'] == self.data_pool.get_roi_param(roi_ind, f'axis_{axis}'):
-                    x_pos = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_pos')
-                    x_width = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_width')
+                if current_axes['x'] == self.data_pool.get_roi_param(self._rois[roi_ind][2], f'axis_{axis}'):
+                    x_pos = self.data_pool.get_roi_param(self._rois[roi_ind][2], f'axis_{axis}_pos')
+                    x_width = self.data_pool.get_roi_param(self._rois[roi_ind][2], f'axis_{axis}_width')
                     break
                 axis += 1
 
-        if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, 'axis_0'):
+        if current_axes['y'] == self.data_pool.get_roi_param(self._rois[roi_ind][2], 'axis_0'):
             y_pos = axes_limits[current_axes['y']][0]
             y_width = axes_limits[current_axes['y']][1] - axes_limits[current_axes['y']][0]
         else:
             axis = 1
             while axis < 100:
-                if current_axes['y'] == self.data_pool.get_roi_param(roi_ind, f'axis_{axis}'):
-                    y_pos = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_pos')
-                    y_width = self.data_pool.get_roi_param(roi_ind, f'axis_{axis}_width')
+                if current_axes['y'] == self.data_pool.get_roi_param(self._rois[roi_ind][2], f'axis_{axis}'):
+                    y_pos = self.data_pool.get_roi_param(self._rois[roi_ind][2], f'axis_{axis}_pos')
+                    y_width = self.data_pool.get_roi_param(self._rois[roi_ind][2], f'axis_{axis}_width')
                     break
                 axis += 1
 
@@ -313,13 +327,16 @@ class ViewPyQt(View2d):
         current_axes = self._frame_viewer.get_current_axes()
 
         pos, size = rect.pos(), rect.size()
-        accepted_x_pos = self.data_pool.roi_parameter_changed(roi_ind, current_axes['x'], 'pos', int(pos.x()))
-        accepted_x_width = self.data_pool.roi_parameter_changed(roi_ind, current_axes['x'], 'width', int(size.x()))
 
-        accepted_y_pos = self.data_pool.roi_parameter_changed(roi_ind, current_axes['y'], 'pos', int(pos.y()))
-        accepted_y_width = self.data_pool.roi_parameter_changed(roi_ind, current_axes['y'], 'width', int(size.y()))
+        x_axis = self.data_pool.get_roi_axis(self._rois[roi_ind][2], current_axes['x'])
+        accepted_x_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], x_axis, 'pos', int(pos.x()))
+        accepted_x_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], x_axis, 'width', int(size.x()))
 
-        self.update_roi.emit(roi_ind)
+        y_axis = self.data_pool.get_roi_axis(self._rois[roi_ind][2], current_axes['y'])
+        accepted_y_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'pos', int(pos.y()))
+        accepted_y_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'width', int(size.y()))
+
+        self.update_roi.emit(self._rois[roi_ind][2])
 
         self._rois[roi_ind][0].sigRegionChangeFinished.disconnect()
         self._rois[roi_ind][0].setPos([accepted_x_pos, accepted_y_pos])
