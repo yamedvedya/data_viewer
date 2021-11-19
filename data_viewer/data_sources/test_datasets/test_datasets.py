@@ -5,7 +5,7 @@ import configparser
 
 from data_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
 from data_viewer.data_sources.asapo.asapo_data_set import ASAPODataSet
-from data_viewer.data_sources.beamview.beam_view_data_set import BeamLineView
+from data_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 
 __all__ = ['SardanaPeak1', 'SardanaPeak2', 'ASAPO2DPeak', 'ASAPO3DPeak', 'ASAPO4DPeak', 'BeamView']
 
@@ -239,8 +239,8 @@ class BeamView(BeamLineView, BaseTestDataSet):
         data_cube -= np.min(data_cube)
 
         self._additional_data['X'] = np.linspace(-self.dims[0]/2, self.dims[0]/2, self.dims[0])
-        self._additional_data['Y'] = np.linspace(-self.dims[1]/2, self.dims[2]/2, self.dims[0])
-        self._additional_data['Z'] = np.arange(0, self.dims[2]*3, self.dims[2])
+        self._additional_data['Y'] = np.linspace(-self.dims[1]/2, self.dims[1]/2, self.dims[0])
+        self._additional_data['Z'] = np.arange(0, self.dims[2]) * 3
 
         return data_cube
 

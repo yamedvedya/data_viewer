@@ -11,7 +11,7 @@ from PyQt5 import QtCore
 if 'asapo_consumer' in sys.modules:
     from data_viewer.data_sources.asapo.asapo_data_set import ASAPODataSet
 
-from data_viewer.data_sources.beamview.beam_view_data_set import BeamLineView
+from data_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 from data_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from data_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
 from data_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, \

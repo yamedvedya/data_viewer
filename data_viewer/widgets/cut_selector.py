@@ -24,6 +24,9 @@ class CutSelector(QtWidgets.QWidget):
         self._ui.setupUi(self)
 
         self._my_dims = None
+        self._data_pool = None
+
+        self._frame_viewer = parent
 
         self._x_buttons_group = QtWidgets.QButtonGroup()
         self._x_buttons_group.setExclusive(True)
@@ -47,6 +50,10 @@ class CutSelector(QtWidgets.QWidget):
         self._ui.cut_selectors.layout().setContentsMargins(0, 0, 0, 0)
 
         self._last_axes = {'X': -1, 'Y': -1, 'Z': -1}
+
+    # ----------------------------------------------------------------------
+    def set_data_pool(self, data_pool):
+        self._data_pool = data_pool
 
     # ----------------------------------------------------------------------
     def _new_layout(self):
@@ -125,7 +132,7 @@ class CutSelector(QtWidgets.QWidget):
             self._z_buttons_group.addButton(rb)
             self._z_buttons.append(rb)
 
-            selector = ArraySelector(ind)
+            selector = ArraySelector(ind, self._data_pool, self._frame_viewer)
             selector.new_cut.connect(lambda id=ind: self._new_range(id))
             layout.addWidget(selector, ind + 1, 4)
             self._array_selectors.append(selector)

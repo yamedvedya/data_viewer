@@ -7,6 +7,8 @@ General class for opened file/stream
 import numpy as np
 import logging
 
+from PyQt5 import QtCore
+
 from data_viewer.main_window import APP_NAME
 
 logger = logging.getLogger(APP_NAME)
@@ -97,6 +99,11 @@ class BaseDataSet(object):
         return [lim-1 for lim in self._data_shape]
 
     # ----------------------------------------------------------------------
+    def get_axis_resolution(self, axis):
+
+        return 0
+
+    # ----------------------------------------------------------------------
     def get_frame_for_value(self, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
@@ -125,7 +132,7 @@ class BaseDataSet(object):
         :return: unit value
         """
 
-        return self._axes_names[axis], pos
+        return pos
 
     # ----------------------------------------------------------------------
     def get_max_frame_along_axis(self, axis):
@@ -155,13 +162,14 @@ class BaseDataSet(object):
         :return: np.arrays: X and
         """
 
-        if len(self._data_shape) > sect['dimensions']:
+        if len(self._data_shape) != sect['dimensions']:
             return 0, 0
 
         slices = [(sect['axis_0'], 0, self._data_shape[sect['axis_0']])] # [(axis, from, to), etc]
         for axis in range(1, len(self._data_shape)):
-            slices.append((sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'],
-                           sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width']))
+            a_min = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'])
+            a_max = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width'])
+            slices.append((sect[f'axis_{axis}'], a_min, a_max))
 
         return self._cut_data(slices, do_sum, 1)
 
@@ -178,11 +186,15 @@ class BaseDataSet(object):
         rest_axes = list(range(len(self._data_shape)))
 
         x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
-        section = [(x_axis_ind, self._section[x_axis_ind]['min'], self._section[x_axis_ind]['max'] + 1)]
+        x_min = self._section[x_axis_ind]['min']
+        x_max = self._section[x_axis_ind]['max']
+        section = [(x_axis_ind, x_min, x_max + 1)]
         rest_axes.remove(x_axis_ind)
 
         y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
-        section.append((y_axis_ind, self._section[y_axis_ind]['min'], self._section[y_axis_ind]['max'] + 1))
+        y_min = self._section[y_axis_ind]['min']
+        y_max = self._section[y_axis_ind]['max']
+        section.append((y_axis_ind, y_min, y_max + 1))
         rest_axes.remove(y_axis_ind)
 
         for axis in rest_axes:
@@ -197,7 +209,12 @@ class BaseDataSet(object):
             else:
                 section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
 
-        return self._cut_data(section, True, 2)
+        x_min = self.get_value_for_frame(x_axis_ind, x_min)
+        x_max = self.get_value_for_frame(x_axis_ind, x_max)
+        y_min = self.get_value_for_frame(y_axis_ind, y_min)
+        y_max = self.get_value_for_frame(y_axis_ind, y_max)
+
+        return self._cut_data(section, True, 2), QtCore.QRect(x_min, y_min, x_max - x_min, y_max-y_min)
 
     # ----------------------------------------------------------------------
     def _cut_data(self, section, do_sum, output_dim):

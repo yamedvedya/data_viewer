@@ -25,6 +25,8 @@ class SectionRange(QtWidgets.QWidget):
         self._data_pool = data_pool
         self._parent = parent
 
+        self._slider_shift = 0
+
         self.sld = RangeSlider(QtCore.Qt.Horizontal, self)
         self._ui.v_layout.insertWidget(4, self.sld, 0)
         self.sld.sliderMoved.connect(self._new_slider_range)
@@ -60,17 +62,21 @@ class SectionRange(QtWidgets.QWidget):
 
         self._ui.sb_width.setMaximum(max_width)
 
-        self.sld.setMinimum(axis_min)
-        self.sld.setMaximum(axis_max)
+        self._slider_shift = axis_min
+        self.sld.setMinimum(0)
+        self.sld.setMaximum(axis_max-axis_min)
 
     # ----------------------------------------------------------------------
     def _update_value(self):
-        self._ui.sb_pos.setValue(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos'))
-        self._ui.sb_width.setValue(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width'))
 
-        self.sld.setLow(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos'))
-        self.sld.setHigh(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos') +
-                         self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width'))
+        pos = self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos')
+        width = self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width')
+
+        self._ui.sb_pos.setValue(pos)
+        self._ui.sb_width.setValue(width)
+
+        self.sld.setLow(pos - self._slider_shift)
+        self.sld.setHigh(pos + width - self._slider_shift)
 
     # ----------------------------------------------------------------------
     def _roi_value_changed(self, param, value):
@@ -80,9 +86,9 @@ class SectionRange(QtWidgets.QWidget):
         accepted_value = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, param, value)
         getattr(self._ui, f'sb_{param}').setValue(accepted_value)
 
-        self.sld.setLow(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos'))
+        self.sld.setLow(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos') - self._slider_shift)
         self.sld.setHigh(self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_pos') +
-                         self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width'))
+                         self._data_pool.get_roi_param(self._roi_id, f'axis_{self._my_id}_width') - self._slider_shift)
 
         self._update_limits()
 
@@ -96,7 +102,7 @@ class SectionRange(QtWidgets.QWidget):
 
         self._block_signals(True)
 
-        accepted_pos = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, 'pos', vmin)
+        accepted_pos = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, 'pos', vmin + self._slider_shift)
         self._ui.sb_pos.setValue(accepted_pos)
 
         accepted_width = self._data_pool.roi_parameter_changed(self._roi_id, self._my_id, 'width', vmax - vmin)

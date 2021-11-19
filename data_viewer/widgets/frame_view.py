@@ -38,6 +38,8 @@ class FrameView(AbstractWidget):
         self._ui = Ui_FrameView()
         self._ui.setupUi(self)
 
+        self._ui.cut_selectors.set_data_pool(data_pool)
+
         self.hist = self._ui.hist
         self.hist.setBackground('w')
 
@@ -158,9 +160,9 @@ class FrameView(AbstractWidget):
         self._second_view.file_closed_by_pool(file_name)
 
     # ----------------------------------------------------------------------
-    def new_coordinate(self, source,x_name, x_value, y_name, y_value, pos):
+    def new_coordinate(self, source, x_value, y_value, pos):
 
-        self._coordinate_label.setText(f'{x_name}: {x_value}, {y_name}: {y_value}')
+        self._coordinate_label.setText(f'{x_value}, {y_value}')
 
         if source == 'main':
             self._second_view.move_marker(pos)

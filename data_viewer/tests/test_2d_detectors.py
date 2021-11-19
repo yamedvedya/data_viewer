@@ -36,7 +36,8 @@ def test_2d_functionality(change_test_dir, viewer):
         cut_data = np.sum(fake_data_cube.take(indices=[0], axis=section_axis), axis=section_axis)
         if do_rotate:
             cut_data = np.transpose(cut_data)
-        assert np.all(np.isclose(viewer.data_pool.get_2d_picture('test007'), cut_data))
+        data, x, y = viewer.data_pool.get_2d_picture('test007')
+        assert np.all(np.isclose(data, cut_data))
 
         section[section_axis]['integration'] = True
         section[section_axis]['max'] = 5
@@ -45,7 +46,8 @@ def test_2d_functionality(change_test_dir, viewer):
         cut_data = np.sum(fake_data_cube.take(indices=range(0, 5), axis=section_axis), axis=section_axis)
         if do_rotate:
             cut_data = np.transpose(cut_data)
-        assert np.all(np.isclose(viewer.data_pool.get_2d_picture('test007'), cut_data))
+        data, x, y = viewer.data_pool.get_2d_picture('test007')
+        assert np.all(np.isclose(data, cut_data))
 
         for axis in range(3):
             section[axis]['max'] = 5
@@ -55,7 +57,8 @@ def test_2d_functionality(change_test_dir, viewer):
         if do_rotate:
             cut_data = np.transpose(cut_data)
 
-        assert np.all(np.isclose(viewer.data_pool.get_2d_picture('test007'), cut_data))
+        data, x, y = viewer.data_pool.get_2d_picture('test007')
+        assert np.all(np.isclose(data, cut_data))
 
         for ind, lim in enumerate(old_max):
             section[ind]['max'] = lim

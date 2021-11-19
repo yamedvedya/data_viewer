@@ -613,6 +613,20 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_value_for_frame(axis, pos)
 
     # ----------------------------------------------------------------------
+    def get_axis_resolution(self, file, axis):
+        """
+        for some file types user can select the displayed unit for some axis
+        e.g. for Sardana scan we can display point_nb, or motor position etc...
+
+        here we return the expected resolution of axis to set the resolution of spin boxes
+        :param file:
+        :param axis:
+        :return: int
+        """
+
+        return self._files_data[file].get_axis_resolution(axis)
+
+    # ----------------------------------------------------------------------
     def get_file_axes(self, file):
         """
         some files can have own axes captions
@@ -652,10 +666,10 @@ class DataPool(QtCore.QObject):
                 continue
 
             for axis, max_frame in enumerate(data_set.get_axis_limits()):
-                _, min_v = data_set.get_value_for_frame(axis, 0)
+                min_v = data_set.get_value_for_frame(axis, 0)
                 new_limits[axis][0] = min(new_limits[axis][0], min_v)
 
-                _, max_v = data_set.get_value_for_frame(axis, max_frame)
+                max_v = data_set.get_value_for_frame(axis, max_frame)
                 new_limits[axis][1] = max(new_limits[axis][1], max_v)
 
         return new_limits

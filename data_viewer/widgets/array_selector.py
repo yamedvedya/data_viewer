@@ -1,5 +1,5 @@
 # Created by matveyev at 04.08.2021
-
+import numpy as np
 from PyQt5 import QtWidgets, QtCore
 import logging
 
@@ -13,7 +13,7 @@ class ArraySelector(QtWidgets.QWidget):
 
     new_cut = QtCore.pyqtSignal()
 
-    def __init__(self, my_id):
+    def __init__(self, my_id, data_pool, frame_viewer):
         """
         """
         super(ArraySelector, self).__init__()
@@ -23,6 +23,9 @@ class ArraySelector(QtWidgets.QWidget):
         self._my_id = my_id
         self.limit_range = 0
         self._max_frame = 0
+
+        self._data_pool = data_pool
+        self._frame_viewer = frame_viewer
 
         self._ui.sl_frame.valueChanged.connect(self._update_from_frame_slider)
         self._ui.sl_range.sliderMoved.connect(self._update_from_range_slider)
@@ -99,8 +102,8 @@ class ArraySelector(QtWidgets.QWidget):
         """
         Set values to slider given in the SpinBox.
         """
-        z_min = self._ui.sp_value_from.value()
-        z_max = self._ui.sp_value_to.value()
+        z_min = self._value_to_frame(self._ui.sp_value_from.value())
+        z_max = self._value_to_frame(self._ui.sp_value_to.value())
         z_min, z_max = self._apply_range_limit(z_min, z_max)
         self._set_slider_value(z_min, z_max)
         self._set_spin_boxes(z_min, z_max)
@@ -118,24 +121,26 @@ class ArraySelector(QtWidgets.QWidget):
         self.blockSignals(False)
 
     # ----------------------------------------------------------------------
+    def _frame_to_value(self, frame):
+        return self._data_pool.get_value_for_frame(self._frame_viewer.current_file(), self._my_id, frame)
+
+    # ----------------------------------------------------------------------
+    def _value_to_frame(self, frame):
+        return self._data_pool.get_frame_for_value(self._frame_viewer.current_file(), self._my_id, frame)
+
+    # ----------------------------------------------------------------------
     def _set_spin_boxes(self, z_min, z_max):
         """
         Set value of spin_boxes sp_value_from, sp_value_to and sp_step
         """
         self.blockSignals(True)
-        decimals = 0 if int(z_min) == z_min and int(z_max) == z_max else 4
+
+        z_min = self._frame_to_value(z_min)
+        z_max = self._frame_to_value(z_max)
 
         self._ui.sp_value_from.setValue(z_min)
         self._ui.sp_value_to.setValue(z_max)
-        self._ui.sp_value_from.setValue(z_min)
 
-        self._ui.sp_value_from.setDecimals(decimals)
-        self._ui.sp_value_to.setDecimals(decimals)
-        self._ui.sp_step.setDecimals(decimals)
-        if decimals == 0:
-            self._ui.sp_step.setMinimum(1)
-        else:
-            self._ui.sp_step.setMinimum(0.0001)
         self.blockSignals(False)
 
     # ----------------------------------------------------------------------
@@ -156,14 +161,27 @@ class ArraySelector(QtWidgets.QWidget):
         self._ui.sl_frame.setMaximum(max_frame)
         self._ui.sl_range.setMaximum(max_frame)
         self._ui.sl_range.setMinimum(0)
-        self._ui.sp_value_to.setMaximum(max_frame)
-        self._ui.sp_value_from.setMaximum(max_frame)
+
+        self._ui.sp_value_to.setMinimum(self._frame_to_value(0))
+        self._ui.sp_value_to.setMaximum(self._frame_to_value(max_frame))
+
+        self._ui.sp_value_from.setMinimum(self._frame_to_value(0))
+        self._ui.sp_value_from.setMaximum(self._frame_to_value(max_frame))
+
         self._max_frame = max_frame
 
         self.blockSignals(False)
 
     # ----------------------------------------------------------------------
     def set_section(self, section):
+
+        decimals = self._data_pool.get_axis_resolution(self._frame_viewer.current_file(), self._my_id)
+
+        self._ui.sp_value_from.setDecimals(decimals)
+        self._ui.sp_value_to.setDecimals(decimals)
+        self._ui.sp_step.setDecimals(decimals)
+
+        self._ui.sp_step.setMinimum(np.power(10., -decimals))
 
         if section['axis'] in ['X', 'Y']:
             self.switch_integration_mode(True)

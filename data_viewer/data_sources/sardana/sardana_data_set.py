@@ -163,10 +163,17 @@ class SardanaDataSet(Base2DDetectorDataSet):
         if axis == 0:
             if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
                 if 0 <= pos < len(self._additional_data[SETTINGS['displayed_param']]):
-                    return SETTINGS['displayed_param'], self._additional_data[SETTINGS['displayed_param']][pos]
-            return SETTINGS['displayed_param'], np.NaN
+                    return self._additional_data[SETTINGS['displayed_param']][pos]
+            return pos
         else:
-            return self._axes_names[axis], pos
+            return pos
+
+    # ----------------------------------------------------------------------
+    def get_axis_resolution(self, axis):
+        if axis == 0:
+            return 3
+        else:
+            return 0
 
     # ----------------------------------------------------------------------
     def _get_roi_axis(self, plot_axis):
@@ -222,7 +229,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
     def get_2d_picture(self):
 
         if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
-            return None
+            return None, None, None
 
         return super(SardanaDataSet, self).get_2d_picture()
 

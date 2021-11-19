@@ -14,7 +14,7 @@ from PyQt5 import QtWidgets
 # Add path to icon_rc filecp set
 sys.path.append(f"{os.path.dirname(__file__)}/gui")
 
-from data_viewer.main_window import DataViewer
+from data_viewer.main_window import DataViewer, APP_NAME
 from data_viewer.utils.option_parser import get_options
 from .version import __version__
 
@@ -69,6 +69,14 @@ def setup_logger(args):
     logging.basicConfig(level=log_level, format=format, filename=filename)
     logging.info("Log level set to %s", log_level)
 
+    if args.log:
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        # set a format which is simpler for console use
+        formatter = logging.Formatter("%(asctime)s %(module)s %(lineno)-6d %(levelname)-6s %(message)s")
+        console.setFormatter(formatter)
+        logging.getLogger(APP_NAME).addHandler(console)
+
 
 # --------------------------------------------------------------------
 def main():
@@ -85,6 +93,7 @@ def main():
     del app
 
 
-## Start Qt event loop unless running in interactive mode.
+# --------------------------------------------------------------------
+# Start Qt event loop unless running in interactive mode.
 if __name__ == '__main__':
     main()

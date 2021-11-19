@@ -159,20 +159,20 @@ class View2d(QtWidgets.QWidget):
     def update_image(self):
         if self.current_file is None:
             self.plot_2d.clear()
-            return None
+            return None, None
 
-        data_to_display = self.data_pool.get_2d_picture(self.current_file)
+        data_to_display, pos = self.data_pool.get_2d_picture(self.current_file)
 
         if data_to_display is None:
             self.plot_2d.clear()
-            return None
+            return None, None
 
         if self._frame_viewer.level_mode == 'log':
             data_to_display = np.log(data_to_display + 1)
         elif self._frame_viewer.level_mode == 'sqrt':
             data_to_display = np.sqrt(data_to_display + 1)
 
-        return data_to_display
+        return data_to_display, pos
 
 
 # ----------------------------------------------------------------------
@@ -368,16 +368,14 @@ class ViewPyQt(View2d):
             try:
                 current_axes = self._frame_viewer.get_current_axes()
 
-                x_name, x_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
-                y_name, y_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
+                x_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['x'], int(pos.x()))
+                y_value = self.data_pool.get_value_for_frame(self.current_file, current_axes['y'], int(pos.y()))
 
             except:
-                x_name = ''
                 x_value = ''
-                y_name = ''
                 y_value = ''
 
-            self._frame_viewer.new_coordinate(self._type, x_name, x_value, y_name, y_value, pos)
+            self._frame_viewer.new_coordinate(self._type, x_value, y_value, pos)
 
     # ----------------------------------------------------------------------
     def move_marker(self, pos):
@@ -397,9 +395,10 @@ class ViewPyQt(View2d):
     # ----------------------------------------------------------------------
     def update_image(self):
 
-        data_to_display = super(ViewPyQt, self).update_image()
+        data_to_display, pos = super(ViewPyQt, self).update_image()
         if data_to_display is not None:
             self.plot_2d.setImage(data_to_display, levels=self._frame_viewer.get_levels())
+            self.plot_2d.setRect(pos)
             for ind in range(len(self._rois)):
                 self.roi_changed(ind)
 
@@ -422,7 +421,7 @@ class ViewSilx(View2d):
 
     # ----------------------------------------------------------------------
     def update_image(self):
-        data_to_display = super(ViewSilx, self).update_image()
+        data_to_display, x, y = super(ViewSilx, self).update_image()
         if data_to_display is not None:
             sections = self.data_pool.get_section(self.current_file)
             origen = [s['min'] for s in sections if s['axis'] == 'X']
