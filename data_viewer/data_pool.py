@@ -242,8 +242,6 @@ class DataPool(QtCore.QObject):
 
         # than we need to update all axes rages and re-update all settings for all opened files
         self.get_all_axes_limits()
-        for data_set in self._files_data.values():
-            data_set.check_file_after_load()
 
         # now we read to notify the GUI about new added file
         self.new_file_added.emit(entry_name)
@@ -321,6 +319,49 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_levels(mode)
 
     # ----------------------------------------------------------------------
+    def get_possible_axis_units(self, file_name, axis):
+        """
+
+        :return: list, possible units for particular axis
+        """
+
+        return self._files_data[file_name].get_possible_axis_units(axis)
+
+    # ----------------------------------------------------------------------
+    def set_axis_units(self, file_name, axis, units):
+        """
+
+        :param: axis, particular axis
+        :param: units, user selected units
+        """
+        self._files_data[file_name].set_axis_units(axis, units)
+
+    # ----------------------------------------------------------------------
+    def get_axis_units(self, file_name, axis):
+        """
+
+        :return: str, selected units for particular axis
+        """
+        return self._files_data[file_name].get_axis_units(axis)
+
+    # ----------------------------------------------------------------------
+    def are_axes_valid(self, file_name):
+        """
+
+        :return: str, selected units for particular axis
+        """
+        return self._files_data[file_name].are_axes_valid()
+
+    # ----------------------------------------------------------------------
+    def get_file_dimension(self, file_name):
+        """
+            :param: file_name
+            :return: dimension of the file
+        """
+
+        return self._files_data[file_name].get_file_dimension()
+
+    # ----------------------------------------------------------------------
     #       ROIs plots section
     # ----------------------------------------------------------------------
     def roi_counts(self):
@@ -332,6 +373,33 @@ class DataPool(QtCore.QObject):
             :returns the key for Ns roi in dict
         """
         return list(self._rois.keys())[roi_num]
+
+    # ----------------------------------------------------------------------
+    def recalculate_rois(self, axis, new_units):
+
+        main_file = self.main_window.get_current_file()
+        if main_file is None:
+            return
+
+        for roi in self._rois.values():
+            roi_params = roi.get_section_params()
+            roi_axis = None
+            for roi_axis in range(roi_params['dimensions']):
+                if roi_params['axis_{}'.format(roi_axis)] == axis:
+                    break
+
+            if roi_axis is None or roi_axis == 0:
+                continue
+
+            new_pos = self._files_data[main_file].recalculate_value(axis, roi_params['axis_{}_pos'.format(roi_axis)],
+                                                                    new_units)
+            new_width = self._files_data[main_file].recalculate_value(axis, roi_params['axis_{}_width'.format(roi_axis)],
+                                                                    new_units)
+            if new_pos is None or new_width is None:
+                continue
+
+            roi_params['axis_{}_pos'.format(roi_axis)] = new_pos
+            roi_params['axis_{}_width'.format(roi_axis)] = new_width
 
     # ----------------------------------------------------------------------
     def add_new_roi(self):
@@ -348,9 +416,14 @@ class DataPool(QtCore.QObject):
         axis = None
         section = self.get_section(main_file)
         for ind, sect in enumerate(section):
-            if sect['axis'] == '':
+            if sect['axis'] == 'Z':
                 axis = ind
                 break
+        if axis is None:
+            for ind, sect in enumerate(section):
+                if sect['axis'] == '':
+                    axis = ind
+                    break
         if axis is None:
             for ind, sect in enumerate(section):
                 if sect['axis'] == 'X':
@@ -479,15 +552,6 @@ class DataPool(QtCore.QObject):
             return None, None, None, None
 
     # ----------------------------------------------------------------------
-    def get_file_dimension(self, file_name):
-        """
-            :param: file_name
-            :return: dimension of the file
-        """
-
-        return self._files_data[file_name].get_file_dimension()
-
-    # ----------------------------------------------------------------------
     #       ROIs batch processing section
     # ----------------------------------------------------------------------
     def _interrupt_batch(self):
@@ -584,7 +648,7 @@ class DataPool(QtCore.QObject):
         return self._files_data[file].get_additional_data(entry)
 
     # ----------------------------------------------------------------------
-    def get_frame_for_value(self, file, axis, pos):
+    def get_frame_for_value(self, file, axis, pos, check_range=False):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -596,7 +660,7 @@ class DataPool(QtCore.QObject):
         :param pos:
         :return:
         """
-        return self._files_data[file].get_frame_for_value(axis, pos)
+        return self._files_data[file].get_frame_for_value(axis, pos, check_range)
 
     # ----------------------------------------------------------------------
     def get_value_for_frame(self, file, axis, pos):

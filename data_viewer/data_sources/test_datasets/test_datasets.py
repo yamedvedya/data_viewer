@@ -29,10 +29,12 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
 
         super(SardanaDataSet, self).__init__(data_pool)
 
-        self._axes_names = ['scan point', 'detector X', 'detector Y']
+        self._possible_axes_units = [{'point_nb': np.arange(self.dims[0])},
+                                     {'detector X': np.arange(self.dims[1])},
+                                     {'detector Y': np.arange(self.dims[2])}]
 
-        self._additional_data['scanned_values'] = ['omega', 'point_nb']
-        self._additional_data['point_nb'] = np.arange(self.dims[0])
+        self._axes_units = ['point_nb', 'detector X', 'detector Y']
+        self._axis_units_is_valid = [True, True, True]
 
         self._original_data = self._generate_fake_data()
 
@@ -42,6 +44,9 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
         else:
             self._data_shape = self._get_data_shape()
 
+
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
         self._section = ({'axis': 'Z', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
                           'range_limit': self._data_shape[0]},
                          {'axis': 'X', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
@@ -91,8 +96,7 @@ class SardanaPeak1(__Fake3DSardana):
 
         super(SardanaPeak1, self).__init__(data_pool)
 
-        self._additional_data['omega'] = np.linspace(1, 2, self.dims[0])
-
+        self._possible_axes_units[0]['omega'] = np.linspace(1, 2, self.dims[0])
 
 # ----------------------------------------------------------------------
 class SardanaPeak2(__Fake3DSardana):
@@ -105,7 +109,7 @@ class SardanaPeak2(__Fake3DSardana):
     def __init__(self, data_pool):
         super(SardanaPeak2, self).__init__(data_pool)
 
-        self._additional_data['omega'] = np.linspace(1.5, 2.5, self.dims[0])
+        self._possible_axes_units[0]['omega'] = np.linspace(1.5, 2.5, self.dims[0])
 
 
 # --------------------------------------------------------------------
@@ -128,7 +132,12 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
         else:
             self._data_shape = self._get_data_shape()
 
-        self._axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+        axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+
+        self._possible_axes_units = [{name: np.arange(axis_len)} for name, axis_len in zip(axes_names, self._data_shape)]
+        self._axes_units = axes_names
+        self._axis_units_is_valid = [True for _ in axes_names]
+
 
         self._additional_data['metadata'] = [{'_id': ind, 'data_source': self.my_name}
                                              for ind in range(self._data_shape[0])]
@@ -136,8 +145,9 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
         self._additional_data['already_loaded_ids'] = list(range(self._data_shape[0]))
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
-        self._additional_data['scanned_values'] = ['frame_ID']
 
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
         self._section = []
         axis = ['' for _ in range(len(self._data_shape))]
         axis[-1] = 'X'

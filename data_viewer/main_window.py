@@ -126,6 +126,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.frame_view.update_roi.connect(self.rois_view.roi_changed)
         self.frame_view.update_roi.connect(self.cube_view.roi_changed)
 
+        self.frame_view.new_units.connect(self.rois_view.units_changed)
+
         self.frame_view.clear_view.connect(self.cube_view.clear_view)
         self.frame_view.clear_view.connect(self.rois_view.main_file_changed)
 

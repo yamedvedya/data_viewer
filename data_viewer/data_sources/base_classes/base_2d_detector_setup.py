@@ -28,7 +28,6 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
                 'ff_max': 100,
                 'enable_fill': False,
                 'fill_radius': 7,
-                'displayed_param': 'frame_ID',
                 }
     """
 

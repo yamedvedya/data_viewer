@@ -40,7 +40,6 @@ SETTINGS = {'enable_mask': False,
             'ff_max': 100,
             'enable_fill': False,
             'fill_radius': 7,
-            'displayed_param': 'frame_ID',
             }
 
 logger = logging.getLogger(APP_NAME)
@@ -51,6 +50,8 @@ class ASAPODataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def __init__(self, detector_name, stream_name, data_pool):
         super(ASAPODataSet, self).__init__(data_pool)
+
+        self._need_apply_mask = False
 
         self.my_name = stream_name
 
@@ -80,10 +81,19 @@ class ASAPODataSet(Base2DDetectorDataSet):
             self._data_shape = list(self._nD_data_array.shape)
         else:
             self._data_shape = self._get_data_shape()
-        self._axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+        axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+
+        self._possible_axes_units = [{name: np.arange(axis_len)} for name, axis_len in zip(axes_names, self._data_shape)]
+
+        self._axes_units = axes_names
+        self._axis_units_is_valid = [True for _ in axes_names]
 
         self._additional_data['frame_ID'] = np.arange(self._data_shape[0])
-        self._additional_data['scanned_values'] = ['frame_ID']
+
+        self._need_apply_mask = True
+
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
 
         self._section = []
         axis = ['' for _ in range(len(self._data_shape))]

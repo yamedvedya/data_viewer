@@ -22,8 +22,11 @@ class BaseDataSet(object):
         self.my_name = ''
         self._data_pool = data_pool
         self._additional_data = {}
-        self._axes_names = ['X', 'Y', 'Z']
 
+        self._axes_units = []
+        self._axis_units_is_valid = []
+
+        self._possible_axes_units = []  # [{unit_name: [unit values]} or None]
         # this is main array, which stores data
         self._nD_data_array = np.array([])
         # user can select mode, where data are not kept in memory. We need to have at least information about data shape
@@ -32,13 +35,17 @@ class BaseDataSet(object):
         # here we keep some auxiliary data: scanned motors, etc
         self._additional_data = {}
 
-        self._section = None
-
         self._hist_lin = None
         self._hist_log = None
         self._hist_sqrt = None
 
         self._levels = None
+
+        self._section = None
+
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
+        self._section = None
 
     # ----------------------------------------------------------------------
     def save_section(self, section):
@@ -47,15 +54,14 @@ class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def get_section(self):
+        if self._section is None:
+            self._set_default_section()
+
         return self._section
 
     # ----------------------------------------------------------------------
     def _get_data(self):
         return self._nD_data_array
-
-    # ----------------------------------------------------------------------
-    def check_file_after_load(self):
-        pass
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
@@ -68,7 +74,7 @@ class BaseDataSet(object):
         :param file:
         :return: dict {axis_index: axis_name}
         """
-        return self._axes_names
+        return self._axes_units
 
     # ----------------------------------------------------------------------
     def get_file_dimension(self):
@@ -87,7 +93,10 @@ class BaseDataSet(object):
         :param entry:
         :return: if file has requested entry - returns it, else None
         """
-        return self._additional_data[entry]
+        if entry in self._additional_data:
+            return self._additional_data[entry]
+        else:
+            return None
 
     # ----------------------------------------------------------------------
     def get_axis_limits(self):
@@ -100,11 +109,51 @@ class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def get_axis_resolution(self, axis):
+        """
 
+        :return: int, decimals for particular axis
+        """
         return 0
 
     # ----------------------------------------------------------------------
-    def get_frame_for_value(self, axis, pos):
+    def get_possible_axis_units(self, axis):
+        """
+
+        :return: list, possible units for particular axis
+        """
+        return self._possible_axes_units[axis]
+
+    # ----------------------------------------------------------------------
+    def set_axis_units(self, axis, units):
+        """
+
+        :param: axis, particular axis
+        :param: units, user selected units
+        """
+        if units in self._possible_axes_units[axis]:
+            self._axes_units[axis] = units
+            self._axis_units_is_valid[axis] = True
+        else:
+            self._axis_units_is_valid[axis] = False
+
+    # ----------------------------------------------------------------------
+    def get_axis_units(self, axis):
+        """
+
+        :return: str, selected units for particular axis
+        """
+        return self._axes_units[axis]
+
+    # ----------------------------------------------------------------------
+    def are_axes_valid(self):
+        """
+
+        :return: bool, are file compatible with current selection of axes
+        """
+        return np.all(self._axis_units_is_valid)
+
+    # ----------------------------------------------------------------------
+    def get_frame_for_value(self, axis, pos, check_range):
         """
         for some file types user can select the displayed unit for some axis
         e.g. for Sardana scan we can display point_nb, or motor position etc...
@@ -113,10 +162,16 @@ class BaseDataSet(object):
 
         :param axis: axis index
         :param pos: unit value
+        :param check_range: bool, if True - returns value only if pos within axis range, else None
         :return: frame index
         """
 
         axis_value = self._get_roi_axis(axis)
+
+        if check_range:
+            if not np.min(axis_value) - np.diff(axis_value)[0] < pos < np.max(axis_value) + np.diff(axis_value)[-1]:
+                return None
+
         return np.argmin(np.abs(axis_value-pos))
 
     # ----------------------------------------------------------------------
@@ -132,7 +187,7 @@ class BaseDataSet(object):
         :return: unit value
         """
 
-        return pos
+        return self._possible_axes_units[axis][self._axes_units[axis]][pos]
 
     # ----------------------------------------------------------------------
     def get_max_frame_along_axis(self, axis):
@@ -150,7 +205,7 @@ class BaseDataSet(object):
         :param sect: ROI parameters
         :return: X and Y of ROI plot
         """
-        logger.debug(f"Request roi plot with section {sect}")
+        logger.debug(f"{self.my_name}: Request roi plot with section {sect}")
         return self._get_roi_axis(sect['axis_0']), self.get_roi_cut(sect, True)
 
     # ----------------------------------------------------------------------
@@ -167,8 +222,8 @@ class BaseDataSet(object):
 
         slices = [(sect['axis_0'], 0, self._data_shape[sect['axis_0']])] # [(axis, from, to), etc]
         for axis in range(1, len(self._data_shape)):
-            a_min = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'])
-            a_max = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width'])
+            a_min = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'], False)
+            a_max = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width'], False)
             slices.append((sect[f'axis_{axis}'], a_min, a_max))
 
         return self._cut_data(slices, do_sum, 1)
@@ -182,39 +237,41 @@ class BaseDataSet(object):
 
         """
 
-        logger.debug(f"Request 2D picture")
+        logger.debug(f"{self.my_name}: Request 2D picture")
         rest_axes = list(range(len(self._data_shape)))
 
-        x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
-        x_min = self._section[x_axis_ind]['min']
-        x_max = self._section[x_axis_ind]['max']
-        section = [(x_axis_ind, x_min, x_max + 1)]
+        section = self.get_section()
+
+        x_axis_ind = [ind for ind, sect in enumerate(section) if sect['axis'] == 'X'][0]
+        x_min = section[x_axis_ind]['min']
+        x_max = section[x_axis_ind]['max']
+        cut_params = [(x_axis_ind, x_min, x_max + 1)]
         rest_axes.remove(x_axis_ind)
 
-        y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
-        y_min = self._section[y_axis_ind]['min']
-        y_max = self._section[y_axis_ind]['max']
-        section.append((y_axis_ind, y_min, y_max + 1))
+        y_axis_ind = [ind for ind, sect in enumerate(section) if sect['axis'] == 'Y'][0]
+        y_min = section[y_axis_ind]['min']
+        y_max = section[y_axis_ind]['max']
+        cut_params.append((y_axis_ind, y_min, y_max + 1))
         rest_axes.remove(y_axis_ind)
 
         for axis in rest_axes:
-            if self._section[axis]['min'] > self.get_max_frame_along_axis(axis):
+            if section[axis]['min'] > self.get_max_frame_along_axis(axis):
                 return None
 
-            if self._section[axis]['integration']:
-                if self._section[axis]['max'] > self.get_max_frame_along_axis(axis):
+            if section[axis]['integration']:
+                if section[axis]['max'] > self.get_max_frame_along_axis(axis):
                     return None
 
-                section.append((axis, self._section[axis]['min'], self._section[axis]['max'] + 1))
+                cut_params.append((axis, section[axis]['min'], section[axis]['max'] + 1))
             else:
-                section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
+                cut_params.append((axis, section[axis]['min'], section[axis]['min'] + 1))
 
         x_min = self.get_value_for_frame(x_axis_ind, x_min)
         x_max = self.get_value_for_frame(x_axis_ind, x_max)
         y_min = self.get_value_for_frame(y_axis_ind, y_min)
         y_max = self.get_value_for_frame(y_axis_ind, y_max)
 
-        return self._cut_data(section, True, 2), QtCore.QRect(x_min, y_min, x_max - x_min, y_max-y_min)
+        return self._cut_data(cut_params, True, 2), QtCore.QRectF(x_min, y_min, x_max - x_min, y_max-y_min)
 
     # ----------------------------------------------------------------------
     def _cut_data(self, section, do_sum, output_dim):
@@ -235,7 +292,7 @@ class BaseDataSet(object):
             del axes_order[move_from]
             axes_order.insert(ind, move_from)
 
-        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
+        logger.debug(f"{self.my_name}: Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
 
         for ind, axis_slice in list(enumerate(section))[::-1]:
             axis, start, stop = axis_slice
@@ -253,7 +310,7 @@ class BaseDataSet(object):
         while np.ndim(data) < output_dim:
             data = data[..., np.newaxis]
 
-        logger.debug(f"Data after cut {data.shape} ")
+        logger.debug(f"{self.my_name}: Data after cut {data.shape} ")
         return data
 
     # ----------------------------------------------------------------------
@@ -263,12 +320,12 @@ class BaseDataSet(object):
         :param plot_axis: axis index
         :return: np.array of X coordinate for ROI plot
         """
-        return np.arange(0, self._data_shape[plot_axis])
+        return self._possible_axes_units[plot_axis][self._axes_units[plot_axis]]
 
     # ----------------------------------------------------------------------
     def get_3d_cube(self, roi_params):
 
-        logger.debug(f"Request 3D picture")
+        logger.debug(f"{self.my_name}: Request 3D picture")
 
         n_dims = len(self._data_shape)
         rest_axes = list(range(n_dims))
@@ -281,41 +338,43 @@ class BaseDataSet(object):
                 lims[roi_params[f'axis_{axis}']] = [roi_params[f'axis_{axis}_pos'],
                                                     roi_params[f'axis_{axis}_pos'] + roi_params[f'axis_{axis}_width']]
 
-        x_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'X'][0]
-        section = [(x_axis_ind, lims[x_axis_ind][0], lims[x_axis_ind][1])]
+        section = self.get_section()
+
+        x_axis_ind = [ind for ind, sect in enumerate(section) if sect['axis'] == 'X'][0]
+        cut_params = [(x_axis_ind, lims[x_axis_ind][0], lims[x_axis_ind][1])]
         rest_axes.remove(x_axis_ind)
-        axes_names = [self._axes_names[x_axis_ind]]
+        axes_names = [self._axes_units[x_axis_ind]]
 
         if n_dims > 1:
-            y_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Y'][0]
-            section.append((y_axis_ind, lims[y_axis_ind][0], lims[y_axis_ind][1]))
+            y_axis_ind = [ind for ind, sect in enumerate(section) if sect['axis'] == 'Y'][0]
+            cut_params.append((y_axis_ind, lims[y_axis_ind][0], lims[y_axis_ind][1]))
             rest_axes.remove(y_axis_ind)
-            axes_names.append(self._axes_names[y_axis_ind])
+            axes_names.append(self._axes_units[y_axis_ind])
 
         if n_dims > 2:
-            z_axis_ind = [ind for ind, sect in enumerate(self._section) if sect['axis'] == 'Z'][0]
-            section.append((z_axis_ind, lims[z_axis_ind][0], lims[z_axis_ind][1]))
+            z_axis_ind = [ind for ind, sect in enumerate(section) if sect['axis'] == 'Z'][0]
+            cut_params.append((z_axis_ind, lims[z_axis_ind][0], lims[z_axis_ind][1]))
             rest_axes.remove(z_axis_ind)
-            axes_names.append(self._axes_names[z_axis_ind])
+            axes_names.append(self._axes_units[z_axis_ind])
 
         for axis in rest_axes:
-            if self._section[axis]['min'] > self.get_max_frame_along_axis(axis):
+            if section[axis]['min'] > self.get_max_frame_along_axis(axis):
                 return None
 
-            if self._section[axis]['integration']:
-                if self._section[axis]['max'] > self.get_max_frame_along_axis(axis):
+            if section[axis]['integration']:
+                if section[axis]['max'] > self.get_max_frame_along_axis(axis):
                     return None
 
-                section.append((axis, self._section[axis]['min'], self._section[axis]['max'] + 1))
+                cut_params.append((axis, section[axis]['min'], section[axis]['max'] + 1))
             else:
-                section.append((axis, self._section[axis]['min'], self._section[axis]['min'] + 1))
+                cut_params.append((axis, section[axis]['min'], section[axis]['min'] + 1))
 
-        return self._cut_data(section, True, 3), axes_names
+        return self._cut_data(cut_params, True, 3), axes_names
 
     # ----------------------------------------------------------------------
     def get_histogram(self, mode):
 
-        logger.debug(f"Histogram request {self.my_name}")
+        logger.debug(f"{self.my_name}: Histogram request {self.my_name}")
 
         if self._hist_lin is None:
             self._hist_lin, self._hist_log, self._hist_sqrt, self._levels = self._calculate_hist()
@@ -332,7 +391,7 @@ class BaseDataSet(object):
     # ----------------------------------------------------------------------
     def get_levels(self, mode):
 
-        logger.debug(f"Level request {self.my_name}")
+        logger.debug(f"{self.my_name}: Level request {self.my_name}")
 
         if self._levels is None:
             self._hist_lin, self._hist_log, self._hist_sqrt, self._levels = self._calculate_hist()
@@ -349,7 +408,7 @@ class BaseDataSet(object):
     # ----------------------------------------------------------------------
     def _calculate_hist(self):
 
-        logger.debug(f"Calculating histogram for {self.my_name}")
+        logger.debug(f"{self.my_name}: Calculating histogram for {self.my_name}")
 
         original_data = self._get_data()
 

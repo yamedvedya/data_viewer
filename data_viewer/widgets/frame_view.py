@@ -30,6 +30,8 @@ class FrameView(AbstractWidget):
 
     new_axes = QtCore.pyqtSignal()
 
+    new_units = QtCore.pyqtSignal()
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool):
         """
@@ -48,6 +50,8 @@ class FrameView(AbstractWidget):
 
         settings = configparser.ConfigParser()
         settings.read('./settings.ini')
+
+        self._signals_blocked = False
 
         try:
             self.backend = settings['FRAME_VIEW']['backend']
@@ -129,7 +133,7 @@ class FrameView(AbstractWidget):
                     logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
     # ----------------------------------------------------------------------
-    def add_file(self, file_name, move_from='second'):
+    def add_file(self, file_name, move_from='second', move_action=False):
 
         logger.debug(f"Add file {file_name}, view: {move_from}")
         if move_from == 'second':
@@ -139,7 +143,8 @@ class FrameView(AbstractWidget):
             self._second_view.add_file(file_name)
             self.data_pool.protect_file(file_name, True)
 
-        self.new_main_file()
+        if not move_action:
+            self.new_main_file()
 
     # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
@@ -189,9 +194,10 @@ class FrameView(AbstractWidget):
         self._main_view.new_axes(axes_labels)
         self._second_view.new_axes(axes_labels)
 
-        self.update_image()
+        self.update_images()
 
-        self.new_axes.emit()
+        if not self._signals_blocked:
+            self.new_axes.emit()
 
     # ----------------------------------------------------------------------
     def _new_lookup_table(self):
@@ -218,7 +224,7 @@ class FrameView(AbstractWidget):
             self.hist.item.setLevels(l_min, l_max)
             self._block_hist_signal(False)
 
-            self.update_image()
+            self.update_images()
         else:
             self._change_chk_auto_levels_state(False)
 
@@ -264,18 +270,75 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _new_cut(self, invisible_axis):
-        self.update_image()
+        self.update_images()
         if invisible_axis:
             self.new_axes.emit()
 
     # ----------------------------------------------------------------------
-    def update_image(self):
+    def set_new_units(self, axis, units, axes_labels):
+        self.data_pool.recalculate_rois(axis, units)
+
+        for file in self._main_view.get_files_list() + self._second_view.get_files_list():
+            self.data_pool.set_axis_units(file, axis, units)
+
+        self._main_view.new_axes(axes_labels)
+        self._second_view.new_axes(axes_labels)
+
+        self.update_images()
+
+        self.new_units.emit()
+
+    # ----------------------------------------------------------------------
+    def _set_section_for_second_view(self, file, section):
+        if self.data_pool.get_file_dimension(self._second_view.current_file) != \
+                self.data_pool.get_file_dimension(self._main_view.current_file):
+            return False
+
+        if not self.data_pool.are_axes_valid(self._second_view.current_file):
+            return False
+
+        new_section = []
+
+        for ind, axis_param in enumerate(section):
+
+            v_min = self.data_pool.get_value_for_frame(self._main_view.current_file, ind, axis_param['min'])
+            v_min = self.data_pool.get_frame_for_value(self._second_view.current_file, ind, v_min,
+                                                       axis_param['axis'] not in ['X', 'Y'])
+
+            v_max = self.data_pool.get_value_for_frame(self._main_view.current_file, ind, axis_param['max'])
+            v_max = self.data_pool.get_frame_for_value(self._second_view.current_file, ind, v_max,
+                                                       axis_param['axis'] not in ['X', 'Y'] and axis_param['integration'])
+
+            if v_min is None or v_max is None:
+                return False
+
+            new_params = dict(axis_param)
+            new_params.update({'min': v_min, 'max': v_max})
+            new_section.append(new_params)
+
+        self.data_pool.save_section(file, new_section)
+
+        return True
+
+    # ----------------------------------------------------------------------
+    def update_second_view_image(self):
+        selection = self.data_pool.get_section(self._main_view.current_file)
+
+        second_view_is_valid = True
+        for file in self._second_view.get_files_list():
+            second_view_is_valid = self._set_section_for_second_view(file, selection)
+
+        if second_view_is_valid:
+            self._second_view.update_image()
+        else:
+            self._second_view.clear_view()
+
+    # ----------------------------------------------------------------------
+    def update_images(self):
 
         selection = self._ui.cut_selectors.get_current_selection()
         logger.debug(f"Saving selection {selection} for file {self._main_view.current_file}")
         self.data_pool.save_section(self._main_view.current_file, selection)
-        for file in self._second_view.get_files_list():
-            self.data_pool.save_section(file, selection)
 
         logger.debug(f"Update image with sel {selection}")
 
@@ -283,7 +346,7 @@ class FrameView(AbstractWidget):
             self._block_hist_signal(True)
 
         self._main_view.update_image()
-        self._second_view.update_image()
+        self.update_second_view_image()
 
         if self.backend == 'pyqt':
             self._block_hist_signal(False)
@@ -302,18 +365,6 @@ class FrameView(AbstractWidget):
         self._ui.cut_selectors.set_limits(limits)
 
         self._shape_label.setText(f"Data shape: {limits}")
-
-    # ----------------------------------------------------------------------
-    def get_value_for_frame(self, axis, frame):
-        return self.data_pool.get_value_for_frame(self._main_view.current_file, axis, frame)
-
-    # ----------------------------------------------------------------------
-    def get_max_frame_along_axis(self, axis):
-        return self.data_pool.get_max_frame_along_axis(self._main_view.current_file, axis)
-
-    # ----------------------------------------------------------------------
-    def get_frame_for_value(self, axis, value):
-        return self.data_pool.get_frame_for_value(self._main_view.current_file, axis, value)
 
     # ----------------------------------------------------------------------
     def current_file(self):
@@ -335,7 +386,6 @@ class FrameView(AbstractWidget):
             axes_labels = [name for s, name in zip(sections, axes_names) if s['axis'] == 'X']
             axes_labels += [name for s, name in zip(sections, axes_names) if s['axis'] == 'Y']
             self._update_axes(axes_labels)
-            self.update_image()
 
     # ----------------------------------------------------------------------
     def new_main_file(self):
@@ -345,15 +395,17 @@ class FrameView(AbstractWidget):
         if self._main_view.current_file is None:
             self._fake_image_item.setEmptyFile()
             self._change_chk_auto_levels_state(True)
-            self._ui.cut_selectors.refresh_selectors([])
+            self._ui.cut_selectors.refresh_selectors()
             self.clear_view.emit()
             return
 
-        self._ui.cut_selectors.refresh_selectors(self.data_pool.get_file_axes(self._main_view.current_file))
+        self._ui.cut_selectors.refresh_selectors()
         if self.backend == 'pyqt':
             self._fake_image_item.setNewFile(self._main_view.current_file)
             self._change_chk_auto_levels_state(True)
+        self._signals_blocked = True
         self.update_file(self._main_view.current_file)
+        self._signals_blocked = False
         self.main_file_changed.emit()
 
     # ----------------------------------------------------------------------

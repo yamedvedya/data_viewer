@@ -112,6 +112,12 @@ class RoisView(AbstractWidget):
             widget.update_plots()
 
     # ----------------------------------------------------------------------
+    def units_changed(self):
+
+        for widget in self._roi_widgets.values():
+            widget.roi_changed()
+
+    # ----------------------------------------------------------------------
     def roi_changed(self, roi_id):
 
         self._roi_widgets[roi_id].roi_changed()

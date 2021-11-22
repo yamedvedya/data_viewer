@@ -61,7 +61,7 @@ class ROI(object):
         axes = list(np.arange(self._section_params['dimensions']))
         axes.remove(section_axis)
 
-        self._section_params[f'axis_0'] = section_axis
+        self._section_params['axis_0'] = section_axis
 
         for ind, axis in enumerate(axes):
             self._section_params[f'axis_{ind+1}'] = axis

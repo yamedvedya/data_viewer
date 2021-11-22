@@ -295,14 +295,16 @@ class CubeView(AbstractWidget):
         self.volume_item.scale(self._default_scale[0], self._default_scale[1], self._default_scale[2])
 
         self.view_widget.addItem(self.volume_item)
-        self.volume_item.translate(-data_to_display.shape[0] / 2,
-                                   -data_to_display.shape[1] / 2,
-                                   -data_to_display.shape[2] / 2)
+        self.volume_item.translate(-data_to_display.shape[0] * self._default_scale[0] / 2,
+                                   -data_to_display.shape[1] * self._default_scale[1] / 2,
+                                   -data_to_display.shape[2] * self._default_scale[2] / 2)
 
         self._view_distance = max(data_to_display.shape)*5
         self.view_widget.setCameraPosition(distance=self._view_distance)
 
-        self.axes.setSize(data_to_display.shape[0], data_to_display.shape[1], data_to_display.shape[2])
+        self.axes.setSize(data_to_display.shape[0] * self._default_scale[0],
+                          data_to_display.shape[1] * self._default_scale[1],
+                          data_to_display.shape[2] * self._default_scale[2])
 
         self._ui.x_label.setText(axes_names[0])
         self.axes.set_x_label(axes_names[0])
@@ -335,6 +337,7 @@ class CubeView(AbstractWidget):
         data_to_display[-borders:, -borders:, :] = [255, 0, 0, 255]
 
         return data_to_display
+
     # ----------------------------------------------------------------------
     def _set_background(self, status):
 

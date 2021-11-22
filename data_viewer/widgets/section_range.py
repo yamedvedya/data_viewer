@@ -31,8 +31,8 @@ class SectionRange(QtWidgets.QWidget):
         self._ui.v_layout.insertWidget(4, self.sld, 0)
         self.sld.sliderMoved.connect(self._new_slider_range)
 
-        self._ui.sb_pos.valueChanged.connect(lambda value: self._roi_value_changed('pos', int(value)))
-        self._ui.sb_width.valueChanged.connect(lambda value: self._roi_value_changed('width', int(value)))
+        self._ui.sb_pos.valueChanged.connect(lambda value: self._roi_value_changed('pos', value))
+        self._ui.sb_width.valueChanged.connect(lambda value: self._roi_value_changed('width', value))
 
     # ----------------------------------------------------------------------
     def enable_me(self, flag):

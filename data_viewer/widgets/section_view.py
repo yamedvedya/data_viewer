@@ -128,8 +128,13 @@ class SectionView(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def roi_changed(self):
+        if not self._enabled:
+            return
+
         self._block_signals(True)
 
+        self._ui.cb_section_axis.clear()
+        self._ui.cb_section_axis.addItems(self.data_pool.get_file_axes(self._parent.get_current_file()))
         self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
 
         for widget in self._section_ranger:

@@ -21,8 +21,6 @@ class SardanaScanSetup(Base2DDetectorSetup):
                 'atten_param': 'atten',
                 'inten_correction': 'on',
                 'inten_param': 'eh_c01',
-                'displayed_param': 'point_nb',
-                'all_params': [],
                 }
     """
 
@@ -47,11 +45,6 @@ class SardanaScanSetup(Base2DDetectorSetup):
         refresh_combo_box(self._ui.cmb_intensity, SETTINGS['inten_param'])
         self._ui.rb_inten_on.setChecked(SETTINGS['inten_correction'] == 'on')
         self._ui.rb_inten_off.setChecked(SETTINGS['inten_correction'] == 'off')
-
-        self._ui.cmb_z_axis.addItems(SETTINGS['all_params'])
-        if SETTINGS['displayed_param'] not in SETTINGS['all_params']:
-            self._ui.cmb_z_axis.addItem(SETTINGS['displayed_param'])
-        refresh_combo_box(self._ui.cmb_z_axis, SETTINGS['displayed_param'])
 
         self._ui.bg_intensity.buttonClicked.connect(
             lambda button: self._ui.cmb_intensity.setEnabled(button == self._ui.rb_inten_on))
@@ -86,7 +79,5 @@ class SardanaScanSetup(Base2DDetectorSetup):
             SETTINGS['inten_correction'] = 'on'
         elif self._ui.rb_inten_off.isChecked():
             SETTINGS['inten_correction'] = 'off'
-
-        SETTINGS['displayed_param'] = str(self._ui.cmb_z_axis.currentText())
 
         super(SardanaScanSetup, self).accept()

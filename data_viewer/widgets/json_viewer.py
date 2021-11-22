@@ -171,6 +171,9 @@ class JsonView(QtWidgets.QWidget):
                 frame_sel = range(selection['min'], selection['min'] + 1)
 
             metadata = self.data_pool.get_additional_data(file_key, 'metadata')
+            if metadata is None:
+                return
+
             message_idx = self.data_pool.get_additional_data(file_key, 'already_loaded_ids')
             item_ids = [message_idx.index(frame) for frame in frame_sel]
             data_to_display = {}

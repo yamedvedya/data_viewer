@@ -18,8 +18,6 @@ SETTINGS = {'enable_mask': False,
             'ff_max': 100,
             'enable_fill': False,
             'fill_radius': 7,
-            'displayed_param': 'point_nb',
-            'all_params': [],
             'atten_correction': 'on',
             'atten_param': 'atten',
             'inten_correction': 'on',
@@ -36,9 +34,8 @@ class SardanaDataSet(Base2DDetectorDataSet):
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
         self._original_file = file_name
-        self._axes_names = ['scan point', 'detector X', 'detector Y']
 
-        self._additional_data['scanned_values'] = []
+        self._possible_axes_units = [{}, {}, {}]
 
         # first we load scan data from .fio
         if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
@@ -62,8 +59,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
                 if self._scan_length is None:
                     self._scan_length = len(scan_data[key][...])
                 if len(scan_data[key][...]) == self._scan_length:
-                    self._additional_data['scanned_values'].append(key)
-                self._additional_data[key] = np.array(scan_data[key][...])
+                    self._possible_axes_units[0][key] = np.array(scan_data[key][...])
 
         for key in scan_data.keys():
             # up to now only one type of scans - Lambda scans
@@ -78,24 +74,21 @@ class SardanaDataSet(Base2DDetectorDataSet):
                 else:
                     self._data_shape = self._get_data_shape()
 
-        # point_nb - default axis, had to always be, it not - add it
-        if 'point_nb' not in self._additional_data['scanned_values']:
-            self._additional_data['scanned_values'].append('point_nb')
-            self._additional_data['point_nb'] = np.arange(self._data_shape[0])
+        self._possible_axes_units[0]['point_nb'] = np.arange(self._data_shape[0])
+        self._possible_axes_units[1] = {'detector X': np.arange(self._data_shape[1])}
+        self._possible_axes_units[2] = {'detector Y': np.arange(self._data_shape[2])}
 
+        self._axes_units = ['point_nb', 'detector X', 'detector Y']
+        self._axis_units_is_valid = [True, True, True]
+
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
         self._section = ({'axis': 'Z', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
                           'range_limit': self._data_shape[0]},
                          {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
                           'range_limit': self._data_shape[1]},
                          {'axis': 'X', 'integration': False, 'min': 0, 'max': self._data_shape[2] - 1, 'step': 1,
                           'range_limit': self._data_shape[2]})
-
-    # ----------------------------------------------------------------------
-    def check_file_after_load(self):
-
-        for value in self._additional_data['scanned_values']:
-            if value not in SETTINGS['all_params']:
-                SETTINGS['all_params'].append(value)
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -158,33 +151,12 @@ class SardanaDataSet(Base2DDetectorDataSet):
             return source_file['entry']['instrument']['detector']['data'].shape
 
     # ----------------------------------------------------------------------
-    def get_value_for_frame(self, axis, pos):
-
-        if axis == 0:
-            if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
-                if 0 <= pos < len(self._additional_data[SETTINGS['displayed_param']]):
-                    return self._additional_data[SETTINGS['displayed_param']][pos]
-            return pos
-        else:
-            return pos
-
-    # ----------------------------------------------------------------------
     def get_axis_resolution(self, axis):
+
         if axis == 0:
-            return 3
-        else:
-            return 0
-
-    # ----------------------------------------------------------------------
-    def _get_roi_axis(self, plot_axis):
-
-        if plot_axis == 0:
-            if SETTINGS['displayed_param'] in self._additional_data['scanned_values']:
-                return self._additional_data[SETTINGS['displayed_param']]
-            else:
-                return np.arange(0, self._data_shape[plot_axis])
-        else:
-            return np.arange(0, self._data_shape[plot_axis])
+            if self._axes_units[axis] is not None:
+                return 3
+        return 0
 
     # ----------------------------------------------------------------------
     def _calculate_correction(self, data_shape, frame_ids=None):
@@ -193,23 +165,23 @@ class SardanaDataSet(Base2DDetectorDataSet):
 
         try:
             if SETTINGS['atten_correction'] == 'on':
-                if SETTINGS['atten_param'] in self._additional_data['scanned_values']:
+                if SETTINGS['atten_param'] in self._possible_axes_units[0]:
                     if frame_ids is not None:
-                        self._correction *= np.maximum(self._additional_data[SETTINGS['atten_param']][frame_ids], 1)
+                        self._correction *= np.maximum(self._possible_axes_units[0][SETTINGS['atten_param']][frame_ids], 1)
                     else:
-                        self._correction *= np.maximum(self._additional_data[SETTINGS['atten_param']], 1)
+                        self._correction *= np.maximum(self._possible_axes_units[0][SETTINGS['atten_param']], 1)
         except Exception as err:
             raise RuntimeError("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
         try:
             if SETTINGS['inten_correction'] == 'on':
-                if SETTINGS['inten_param'] in self._additional_data['scanned_values']:
+                if SETTINGS['inten_param'] in self._possible_axes_units[0]:
                     if frame_ids is not None:
-                        self._correction *= np.max((1, self._additional_data[SETTINGS['inten_param']][0])) / \
-                                            np.maximum(self._additional_data[SETTINGS['inten_param']][frame_ids], 1)
+                        self._correction *= np.max((1, self._possible_axes_units[0][SETTINGS['inten_param']][0])) / \
+                                            np.maximum(self._possible_axes_units[0][SETTINGS['inten_param']][frame_ids], 1)
                     else:
-                        self._correction *= np.max((1, self._additional_data[SETTINGS['inten_param']][0])) / \
-                                            np.maximum(self._additional_data[SETTINGS['inten_param']], 1)
+                        self._correction *= np.max((1, self._possible_axes_units[0][SETTINGS['inten_param']][0])) / \
+                                            np.maximum(self._possible_axes_units[0][SETTINGS['inten_param']], 1)
 
         except Exception as err:
             raise RuntimeError("{}: cannot calculate inten correction: {}".format(self.my_name, err))
@@ -224,27 +196,3 @@ class SardanaDataSet(Base2DDetectorDataSet):
         self._hist_sqrt = None
 
         self._levels = None
-
-    # ----------------------------------------------------------------------
-    def get_2d_picture(self):
-
-        if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
-            return None, None, None
-
-        return super(SardanaDataSet, self).get_2d_picture()
-
-    # ----------------------------------------------------------------------
-    def get_roi_cut(self, sect, do_sum=False):
-
-        if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
-            return None, None
-
-        return super(SardanaDataSet, self).get_roi_cut(sect, do_sum)
-
-    # ----------------------------------------------------------------------
-    def get_roi_plot(self, sect):
-
-        if SETTINGS['displayed_param'] not in self._additional_data['scanned_values']:
-            return None, None
-
-        return super(SardanaDataSet, self).get_roi_plot(sect)

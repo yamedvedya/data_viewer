@@ -121,6 +121,27 @@ class ArraySelector(QtWidgets.QWidget):
         self.blockSignals(False)
 
     # ----------------------------------------------------------------------
+    def units_changed(self):
+        self.blockSignals(True)
+
+        decimals = self._data_pool.get_axis_resolution(self._frame_viewer.current_file(), self._my_id)
+
+        self._ui.sp_value_from.setDecimals(decimals)
+        self._ui.sp_value_to.setDecimals(decimals)
+        self._ui.sp_step.setDecimals(decimals)
+
+        self._ui.sp_value_to.setMinimum(self._frame_to_value(0))
+        self._ui.sp_value_to.setMaximum(self._frame_to_value(self._ui.sl_range.maximum()))
+
+        self._ui.sp_value_from.setMinimum(self._frame_to_value(0))
+        self._ui.sp_value_from.setMaximum(self._frame_to_value(self._ui.sl_range.maximum()))
+
+        self._ui.sp_value_from.setValue(self._frame_to_value(self._ui.sl_range.low()))
+        self._ui.sp_value_to.setValue(self._frame_to_value(self._ui.sl_range.high()))
+
+        self.blockSignals(False)
+
+    # ----------------------------------------------------------------------
     def _frame_to_value(self, frame):
         return self._data_pool.get_value_for_frame(self._frame_viewer.current_file(), self._my_id, frame)
 

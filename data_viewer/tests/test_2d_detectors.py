@@ -19,7 +19,7 @@ def test_2d_functionality(change_test_dir, viewer):
     omega = np.linspace(1, 2, 11)
     assert np.all(viewer.data_pool.get_additional_data('test007', 'omega') == omega)
 
-    SETTINGS['displayed_param'] = 'omega'
+    viewer.data_pool.set ('test007', 0, omega[2])
     assert viewer.data_pool.get_frame_for_value('test007', 0, omega[2]) == 2
     assert viewer.data_pool.get_value_for_frame('test007', 0, 2) == ('omega', omega[2])
 

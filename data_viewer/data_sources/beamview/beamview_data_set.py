@@ -19,16 +19,20 @@ class BeamLineView(BaseDataSet):
 
         self._file_name = file_name
 
-        self._axes_names = ['X', 'Y', 'Z']
-
-        self._additional_data['scanned_values'] = ['Z']
-
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
             self._data_shape = self._nD_data_array.shape
         else:
             self._data_shape = self._get_data_shape()
 
+        self._possible_axes_units = [{name: np.arange(axis_len)}
+                                     for name, axis_len in zip(['X', 'Y', 'Z'], self._data_shape)]
+
+        self._axes_units = ['X', 'Y', 'Z']
+        self._axis_units_is_valid = [True, True, True]
+
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
         self._section = ({'axis': 'X', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
                           'range_limit': self._data_shape[0] - 1},
                          {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._data_shape[1] - 1, 'step': 1,
@@ -42,9 +46,9 @@ class BeamLineView(BaseDataSet):
         with h5py.File(self._file_name, 'r') as in_file:
             data = in_file['data_cube'][...]
 
-            self._additional_data['X'] = in_file['x_axis'][...]
-            self._additional_data['Y'] = in_file['y_axis'][...]
-            self._additional_data['Z'] = in_file['z_axis'][...]
+            self._possible_axes_units[0] = {'X': in_file['x_axis'][...]}
+            self._possible_axes_units[1] = {'Y': in_file['y_axis'][...]}
+            self._possible_axes_units[2] = {'Z': in_file['z_axis'][...]}
 
         return data
 
@@ -52,14 +56,6 @@ class BeamLineView(BaseDataSet):
     def get_axis_resolution(self, axis):
 
         return 2
-
-    # ----------------------------------------------------------------------
-    def get_value_for_frame(self, axis, pos):
-        return self._additional_data[self._axes_names[axis]][pos]
-
-    # ----------------------------------------------------------------------
-    def _get_roi_axis(self, plot_axis):
-        return self._additional_data[self._axes_names[plot_axis]]
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):

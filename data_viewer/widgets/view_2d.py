@@ -62,7 +62,7 @@ class View2d(QtWidgets.QWidget):
 
         if action:
             index = self._tb_files.currentIndex()
-            self._frame_viewer.add_file(self._my_files[index], self._type)
+            self._frame_viewer.add_file(self._my_files[index], self._type, self._type == 'main')
             del self._my_files[index]
             self.current_file = None
             self._tb_files.removeTab(index)
@@ -78,6 +78,13 @@ class View2d(QtWidgets.QWidget):
     def add_file(self, file_name):
 
         self.block_signals(True)
+
+        if self._type != 'main' and len(self._my_files) > 0:
+            while len(self._my_files) > 0:
+                self._frame_viewer.add_file(self._my_files[0], self._type)
+                del self._my_files[0]
+                self.current_file = None
+                self._tb_files.removeTab(0)
 
         new_index = self._tb_files.count()
         self._my_files.insert(new_index, file_name)
@@ -154,6 +161,10 @@ class View2d(QtWidgets.QWidget):
 
         if self._type == 'main':
             self._frame_viewer.new_main_file()
+
+    # ----------------------------------------------------------------------
+    def clear_view(self):
+        self.plot_2d.clear()
 
     # ----------------------------------------------------------------------
     def update_image(self):
@@ -329,12 +340,12 @@ class ViewPyQt(View2d):
         pos, size = rect.pos(), rect.size()
 
         x_axis = self.data_pool.get_roi_axis(self._rois[roi_ind][2], current_axes['x'])
-        accepted_x_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], x_axis, 'pos', int(pos.x()))
-        accepted_x_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], x_axis, 'width', int(size.x()))
+        accepted_x_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], x_axis, 'pos', pos.x())
+        accepted_x_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], x_axis, 'width', size.x())
 
         y_axis = self.data_pool.get_roi_axis(self._rois[roi_ind][2], current_axes['y'])
-        accepted_y_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'pos', int(pos.y()))
-        accepted_y_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'width', int(size.y()))
+        accepted_y_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'pos', pos.y())
+        accepted_y_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'width', size.y())
 
         self.update_roi.emit(self._rois[roi_ind][2])
 
@@ -391,6 +402,15 @@ class ViewPyQt(View2d):
                 self._frame_viewer.new_view_box(self._type, self._main_plot.getViewBox().viewRect())
             except:
                 pass
+
+    # ----------------------------------------------------------------------
+    def clear_view(self):
+
+        super(ViewPyQt, self).clear_view()
+
+        for roi in self._rois:
+            roi[0].setVisible(False)
+            roi[1].setVisible(False)
 
     # ----------------------------------------------------------------------
     def update_image(self):

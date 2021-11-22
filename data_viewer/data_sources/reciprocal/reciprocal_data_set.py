@@ -16,9 +16,6 @@ class ReciprocalScan(BaseDataSet):
         super(ReciprocalScan, self).__init__(data_pool)
 
         self._original_file = file_name
-        self._axes_names = ['Qx', 'Qy', 'Qz']
-
-        self._additional_data['scanned_values'] = ['Qz']
 
         if gridder is not None:
             self._x_axis = np.copy(gridder.xaxis)
@@ -33,13 +30,21 @@ class ReciprocalScan(BaseDataSet):
             else:
                 self._data_shape = self._get_data_shape()
 
+        self._possible_axes_units = [{name: np.arange(axis_len)} for name, axis_len in zip(['Qx', 'Qy', 'Qz'], self._data_shape)]
+
+        self._axes_units = ['Qx', 'Qy', 'Qz']
+        self._axis_units_is_valid = [True, True, True]
+
         self._additional_data['Qz'] = np.arange(self._data_shape[0])
 
-        self._section = ({'axis': 0, 'integration': False, 'min': 0, 'max': self._x_axis[-1],
+    # ----------------------------------------------------------------------
+    def _set_default_section(self):
+
+        self._section = ({'axis': 'X', 'integration': False, 'min': 0, 'max': self._x_axis[-1],
                           'step': self._x_axis[1] - self._x_axis[0]},
-                         {'axis': 1, 'integration': False, 'min': 0, 'max': self._y_axis[-1],
+                         {'axis': 'Y', 'integration': False, 'min': 0, 'max': self._y_axis[-1],
                           'step': self._y_axis[1] - self._y_axis[0]},
-                         {'axis': 2, 'integration': False, 'min': 0, 'max': self._z_axis[-1],
+                         {'axis': 'Z', 'integration': False, 'min': 0, 'max': self._z_axis[-1],
                           'step': self._z_axis[1] - self._z_axis[0]})
 
     # ----------------------------------------------------------------------
