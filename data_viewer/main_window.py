@@ -161,11 +161,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer.start(self.STATUS_TICK)
 
     # ----------------------------------------------------------------------
-    def is_widget_visible(self, widget):
-
-        return getattr(self, widget).isVisible()
-
-    # ----------------------------------------------------------------------
     def apply_settings(self, settings=None):
         if settings is None:
             settings = configparser.ConfigParser()

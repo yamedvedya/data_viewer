@@ -79,6 +79,8 @@ class View2d(QtWidgets.QWidget):
 
         self.block_signals(True)
 
+        self.previous_file = self.current_file
+
         if self._type != 'main' and len(self._my_files) > 0:
             while len(self._my_files) > 0:
                 self._frame_viewer.add_file(self._my_files[0], self._type)

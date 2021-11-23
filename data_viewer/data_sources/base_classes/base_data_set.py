@@ -49,6 +49,9 @@ class BaseDataSet(object):
 
     # ----------------------------------------------------------------------
     def save_section(self, section):
+        if self._section is None:
+            self._set_default_section()
+
         for old, new in zip(self._section, section):
             old.update(new)
 

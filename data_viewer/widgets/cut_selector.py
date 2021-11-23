@@ -43,7 +43,7 @@ class CutSelector(QtWidgets.QWidget):
         self._array_selectors = []
         self._integration_boxes = []
 
-        self._units_selectors = []
+        self._units_selectors = {}
 
         self._x_buttons = []
         self._y_buttons = []
@@ -55,6 +55,30 @@ class CutSelector(QtWidgets.QWidget):
         self._ui.cut_selectors.layout().setContentsMargins(0, 0, 0, 0)
 
         self._last_axes = {'X': -1, 'Y': -1, 'Z': -1}
+
+    # ----------------------------------------------------------------------
+    def set_axes(self, axes):
+        main_file = self._frame_viewer.current_file()
+
+        if self._data_pool.get_file_dimension(main_file) != len(axes):
+            return
+
+        compatible = True
+        for ind, axis in enumerate(axes):
+            compatible *= axis in self._data_pool.get_possible_axis_units(self._frame_viewer.current_file(), ind)
+
+        if not compatible:
+            return False
+
+        for ind, axis in enumerate(axes):
+            if self._axes_labels[ind] != axis:
+                if ind in self._units_selectors:
+                    if not refresh_combo_box(self._units_selectors[ind], axis):
+                        return False
+                else:
+                    return False
+
+        return True
 
     # ----------------------------------------------------------------------
     def set_data_pool(self, data_pool):
@@ -109,7 +133,7 @@ class CutSelector(QtWidgets.QWidget):
 
         self._array_selectors = []
         self._integration_boxes = []
-        self._units_selectors = []
+        self._units_selectors = {}
         self._x_buttons = []
         self._y_buttons = []
 
@@ -128,7 +152,7 @@ class CutSelector(QtWidgets.QWidget):
                 refresh_combo_box(widget, self._data_pool.get_axis_units(self._frame_viewer.current_file(), ind))
                 self._axes_labels.append(widget.currentText())
                 widget.currentTextChanged.connect(lambda text, id=ind: self._new_units(id, text))
-                self._units_selectors.append(widget)
+                self._units_selectors[ind] = widget
             else:
                 name = list(possible_units.keys())[0]
                 widget = QtWidgets.QLabel(name, self)
@@ -308,6 +332,6 @@ class CutSelector(QtWidgets.QWidget):
     def block_signals(self, flag):
 
         for widget in self._x_buttons + self._y_buttons + self._z_buttons + \
-                      self._array_selectors + self._integration_boxes + self._units_selectors:
+                      self._array_selectors + self._integration_boxes + list(self._units_selectors.values()):
             widget.blockSignals(flag)
 

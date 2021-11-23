@@ -403,6 +403,10 @@ class FrameView(AbstractWidget):
             self._change_chk_auto_levels_state(True)
         self._signals_blocked = True
         self.update_file(self._main_view.current_file)
+        if self._main_view.previous_file is not None:
+            old_axes = self.data_pool.get_file_axes(self._main_view.previous_file)
+            if not self._ui.cut_selectors.set_axes(old_axes):
+                self._parent.report_error(f'File cannot be displayed in {old_axes} \nsetting {self.data_pool.get_file_axes(self._main_view.current_file)}')
         self._signals_blocked = False
         self.main_file_changed.emit()
 

@@ -80,7 +80,7 @@ def viewer():
 # ----------------------------------------------------------------------
 def _load_file(viewer, file_name="test007.nxs"):
 
-    viewer.data_pool.open_file(file_name)
+    viewer.data_pool.open_file(file_name, 'sardana')
     start_time = time()
     while viewer.data_pool.open_file_in_progress and time() - start_time < TIMEOUT_FOR_FILE_OPEN:
         sleep(0.1)  # sleep for sometime to open stream

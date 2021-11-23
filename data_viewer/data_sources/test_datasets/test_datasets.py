@@ -97,6 +97,7 @@ class SardanaPeak1(__Fake3DSardana):
         super(SardanaPeak1, self).__init__(data_pool)
 
         self._possible_axes_units[0]['omega'] = np.linspace(1, 2, self.dims[0])
+        self._possible_axes_units[0]['delta'] = np.linspace(2, 4, self.dims[0])
 
 # ----------------------------------------------------------------------
 class SardanaPeak2(__Fake3DSardana):
