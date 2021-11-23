@@ -74,6 +74,8 @@ class DataViewer(QtWidgets.QMainWindow):
                                                              QtCore.Qt.LeftDockWidgetArea,
                                                              self, self.data_pool)
 
+        self.cube_view_dock.visibilityChanged.connect(self.cube_view.visibility_changed)
+
         self.rois_view, self.rois_view_dock = self._add_dock(RoisView, "ROIs View",
                                                              QtCore.Qt.LeftDockWidgetArea,
                                                              self, self.data_pool)
@@ -123,8 +125,8 @@ class DataViewer(QtWidgets.QMainWindow):
         self.frame_view.main_file_changed.connect(self.cube_view.main_file_changed)
         self.frame_view.main_file_changed.connect(self.rois_view.main_file_changed)
 
-        self.frame_view.update_roi.connect(self.rois_view.roi_changed)
-        self.frame_view.update_roi.connect(self.cube_view.roi_changed)
+        self.frame_view.roi_moved.connect(self.rois_view.roi_changed)
+        self.frame_view.roi_moved.connect(self.cube_view.roi_changed)
 
         self.frame_view.new_units.connect(self.rois_view.units_changed)
 
@@ -143,10 +145,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.data_pool.close_file.connect(self.frame_view.file_closed_by_pool)
 
-        self.data_pool.roi_changed.connect(self.frame_view.roi_changed)
-        self.data_pool.roi_changed.connect(self.rois_view.roi_changed)
-        self.data_pool.roi_changed.connect(self.cube_view.roi_changed)
-
         self.data_pool.data_updated.connect(self.frame_view.data_updated)
         self.data_pool.data_updated.connect(self.rois_view.update_plots)
         self.data_pool.data_updated.connect(self.cube_view.data_updated)
@@ -162,11 +160,10 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(self.STATUS_TICK)
 
-        if options.def_file is not None:
-            self.data_pool.open_file(options.def_file)
+    # ----------------------------------------------------------------------
+    def is_widget_visible(self, widget):
 
-        if options.def_stream is not None:
-            self.data_pool.open_file(options.def_stream)
+        return getattr(self, widget).isVisible()
 
     # ----------------------------------------------------------------------
     def apply_settings(self, settings=None):
@@ -180,7 +177,6 @@ class DataViewer(QtWidgets.QMainWindow):
             self.asapo_browser.set_settings(settings['ASAPO'])
         if 'DATA_POOL' in settings:
             self.data_pool.set_settings(settings['DATA_POOL'])
-
         if 'FRAME_VIEW' in settings:
             self.frame_view.set_settings(settings['FRAME_VIEW'])
         if 'ROIS_VIEW' in settings:

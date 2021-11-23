@@ -189,7 +189,7 @@ class View2d(QtWidgets.QWidget):
 # ----------------------------------------------------------------------
 class ViewPyQt(View2d):
 
-    update_roi = QtCore.pyqtSignal(int)
+    roi_moved = QtCore.pyqtSignal(int)
 
     def __init__(self, frame_viewer, type, data_pool):
         super(ViewPyQt, self).__init__(frame_viewer, type, data_pool)
@@ -347,7 +347,7 @@ class ViewPyQt(View2d):
         accepted_y_pos = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'pos', pos.y())
         accepted_y_width = self.data_pool.roi_parameter_changed(self._rois[roi_ind][2], y_axis, 'width', size.y())
 
-        self.update_roi.emit(self._rois[roi_ind][2])
+        self.roi_moved.emit(self._rois[roi_ind][2])
 
         self._rois[roi_ind][0].sigRegionChangeFinished.disconnect()
         self._rois[roi_ind][0].setPos([accepted_x_pos, accepted_y_pos])

@@ -29,7 +29,6 @@ class DataPool(QtCore.QObject):
     close_file = QtCore.pyqtSignal(str)
     file_updated = QtCore.pyqtSignal(str)
 
-    roi_changed = QtCore.pyqtSignal(int)
     data_updated = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
@@ -473,7 +472,6 @@ class DataPool(QtCore.QObject):
         """
         logger.debug(f"data_pool.set_section_axis: roi_key {roi_key}, axis: {axis}")
         self._rois[roi_key].set_section_axis(axis)
-        self.roi_changed.emit(roi_key)
 
     # ----------------------------------------------------------------------
     def get_roi_axis(self, roi_key, real_axis):

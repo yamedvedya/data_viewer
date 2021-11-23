@@ -88,7 +88,7 @@ class SectionView(QtWidgets.QWidget):
 
         for ind in range(1, self.my_dims):
             widget = SectionRange(self, self.data_pool, self.my_id, ind)
-            widget.refresh_view()
+            widget.setup_view()
             widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
             self._section_ranger.append(widget)
             self._selector_layout.layout().addWidget(widget)
@@ -132,10 +132,6 @@ class SectionView(QtWidgets.QWidget):
             return
 
         self._block_signals(True)
-
-        self._ui.cb_section_axis.clear()
-        self._ui.cb_section_axis.addItems(self.data_pool.get_file_axes(self._parent.get_current_file()))
-        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
 
         for widget in self._section_ranger:
             widget.refresh_view()
@@ -188,8 +184,28 @@ class SectionView(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _set_new_section_axis(self, axis):
         self.data_pool.set_section_axis(self.my_id, axis)
+        self.update_roi.emit(self.my_id)
         for widget in self._section_ranger:
-            widget.refresh_view()
+            widget.setup_view()
+
+        self.update_plots()
+
+    # ----------------------------------------------------------------------
+    def units_changed(self):
+
+        if not self._enabled:
+            return
+
+        self._block_signals(True)
+
+        self._ui.cb_section_axis.clear()
+        self._ui.cb_section_axis.addItems(self.data_pool.get_file_axes(self._parent.get_current_file()))
+        self._ui.cb_section_axis.setCurrentIndex(self.data_pool.get_roi_param(self.my_id, 'axis_0'))
+
+        for widget in self._section_ranger:
+            widget.setup_view()
+
+        self._block_signals(False)
 
         self.update_plots()
 

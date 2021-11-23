@@ -27,9 +27,9 @@ class ImageSetup(QtWidgets.QDialog):
         self._data_pool = data_pool
 
         self._widgets = []
-        if self._parent.has_sardana:
+        if self._parent.has_sardana or self._parent.has_tests:
             self._widgets.append(SardanaScanSetup(parent, data_pool))
-        if self._parent.has_asapo:
+        if self._parent.has_asapo or self._parent.has_tests:
             self._widgets.append(ASAPOScanSetup(parent, data_pool))
 
         for widget in self._widgets:

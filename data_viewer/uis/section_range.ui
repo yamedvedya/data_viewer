@@ -62,7 +62,7 @@
      <item>
       <widget class="QDoubleSpinBox" name="sb_width">
        <property name="minimum">
-        <double>1.000000000000000</double>
+        <double>0.000000000000000</double>
        </property>
       </widget>
      </item>

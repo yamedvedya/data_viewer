@@ -31,6 +31,9 @@ class CubeView(AbstractWidget):
 
         self._data_pool = data_pool
 
+        self._visible = True
+        self._view_is_actual = True
+
         self._fake_image_item = FakeImageItem(data_pool)
         self._ui.hist.item.setImageItem(self._fake_image_item)
         self._ui.hist.setBackground('w')
@@ -241,7 +244,17 @@ class CubeView(AbstractWidget):
         self._block_signals(False)
 
     # ----------------------------------------------------------------------
+    def visibility_changed(self, state):
+        self._visible = state
+        if state and not self._view_is_actual:
+            self.display_file()
+
+    # ----------------------------------------------------------------------
     def display_file(self):
+
+        if not self._visible:
+            self._view_is_actual = False
+            return
 
         self.clear_view()
 
@@ -316,6 +329,8 @@ class CubeView(AbstractWidget):
             self.axes.set_z_label(axes_names[2])
 
         self._block_signals(False)
+
+        self._view_is_actual = True
 
     @staticmethod
     # ----------------------------------------------------------------------

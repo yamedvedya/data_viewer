@@ -38,7 +38,6 @@ class ROI(object):
             value = max(value, axes_limits[0])
             value = min(value, axes_limits[1] - self._section_params['axis_{}_width'.format(axis)])
         else:
-            value = max(value, 1)
             value = min(value, axes_limits[1] - self._section_params['axis_{}_pos'.format(axis)])
 
         self._section_params['axis_{}_{}'.format(axis, param)] = value

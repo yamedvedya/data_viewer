@@ -19,7 +19,7 @@ class FolderBrowser(AbstractWidget):
     """
     """
 
-    file_selected = QtCore.pyqtSignal(str)
+    file_selected = QtCore.pyqtSignal(str, str)
 
     # ----------------------------------------------------------------------
     def __init__(self, parent):
@@ -76,7 +76,7 @@ class FolderBrowser(AbstractWidget):
                 self.file_browser.setRootPath(name)
         else:
             file_name = str(self.file_browser.filePath(file_index))
-            self.file_selected.emit(file_name)
+            self.file_selected.emit(file_name, 'beam')
 
     # ----------------------------------------------------------------------
     def _apply_filter(self, text):

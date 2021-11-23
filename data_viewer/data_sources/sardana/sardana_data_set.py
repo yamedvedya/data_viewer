@@ -22,6 +22,7 @@ SETTINGS = {'enable_mask': False,
             'atten_param': 'atten',
             'inten_correction': 'on',
             'inten_param': 'eh_c01',
+            'all_params': []
             }
 
 
@@ -60,6 +61,8 @@ class SardanaDataSet(Base2DDetectorDataSet):
                     self._scan_length = len(scan_data[key][...])
                 if len(scan_data[key][...]) == self._scan_length:
                     self._possible_axes_units[0][key] = np.array(scan_data[key][...])
+                    if key not in SETTINGS['all_params']:
+                        SETTINGS['all_params'].append(key)
 
         for key in scan_data.keys():
             # up to now only one type of scans - Lambda scans

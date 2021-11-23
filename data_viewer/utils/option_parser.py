@@ -15,9 +15,6 @@ def get_options(args=None):
 
     parser.add_option("--log", action='store_true', dest='log', help="include ASAPO scan")
 
-    parser.add_option("--def_file", dest="def_file", help="open file after start")
-    parser.add_option("--def_stream", dest="def_stream", help="open file after start")
-
     (options, _) = parser.parse_args(args)
 
     return options

@@ -25,9 +25,7 @@ class FrameView(AbstractWidget):
     main_file_changed = QtCore.pyqtSignal()
 
     clear_view = QtCore.pyqtSignal()
-
-    update_roi = QtCore.pyqtSignal(int)
-
+    roi_moved = QtCore.pyqtSignal(int)
     new_axes = QtCore.pyqtSignal()
 
     new_units = QtCore.pyqtSignal()
@@ -74,11 +72,11 @@ class FrameView(AbstractWidget):
             self.hist.item.sigLevelChangeFinished.connect(lambda: self._toggle_auto_levels(False))
             self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
 
-            self._main_view.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
-            self._main_view.update_roi.connect(lambda roi_id: self._second_view.roi_changed(roi_id))
+            self._main_view.roi_moved.connect(lambda roi_id: self.roi_moved.emit(roi_id))
+            self._main_view.roi_moved.connect(lambda roi_id: self._second_view.roi_changed(roi_id))
 
-            self._second_view.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
-            self._second_view.update_roi.connect(lambda roi_id: self.second_view.roi_changed(roi_id))
+            self._second_view.roi_moved.connect(lambda roi_id: self.roi_moved.emit(roi_id))
+            self._second_view.roi_moved.connect(lambda roi_id: self.second_view.roi_changed(roi_id))
 
             self._setup_actions()
 
