@@ -305,7 +305,7 @@ class DataPool(QtCore.QObject):
             file_name += '.h5'
 
         ReciprocalScan(self, gridder=gridder).save_file(file_name)
-        self.open_file(file_name)
+        self.open_file(file_name, 'reciprocal')
 
     # ----------------------------------------------------------------------
     #       General section
