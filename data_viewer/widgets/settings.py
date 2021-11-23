@@ -182,13 +182,15 @@ class ProgramSetup(QtWidgets.QDialog):
             settings['ASAPO']['max_ff'] = str(self._ui.dsp_asapo_ff_max.value())
 
         for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
-            settings['FRAME_VIEW'][f'display_{setting}'] = str(getattr(self._ui, f'chk_{setting}').isChecked())
+            settings = self._set_or_make_filed(settings, 'FRAME_VIEW',
+                                               [f'display_{setting}'], [str(getattr(self._ui, f'chk_{setting}').isChecked())])
 
         if 'backend' in settings['FRAME_VIEW']:
             settings['FRAME_VIEW']['backend'] = self._ui.cmb_backend.currentText()
 
         for setting in ['slices', 'borders']:
-            settings['CUBE_VIEW'][setting] = str(getattr(self._ui, f'sp_{setting}').value())
+            settings = self._set_or_make_filed(settings, 'CUBE_VIEW',
+                                               [setting], [str(getattr(self._ui, f'sp_{setting}').value())])
 
         for setting in ['smooth', 'white_background']:
             settings['CUBE_VIEW'][setting] = str(getattr(self._ui, f'chk_{setting}').isChecked())

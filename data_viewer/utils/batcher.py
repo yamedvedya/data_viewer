@@ -42,11 +42,11 @@ class Batcher(QtCore.QThread):
                     with h5py.File(file_name, 'r') as f:
                         if 'scan' in f.keys():
                             self.new_file.emit(file_name, ind/total_files)
-                            new_file = SardanaDataSet(self.data_pool, file_name, f)
+                            new_file = SardanaDataSet(self.data_pool, file_name)
                             new_file.apply_settings()
                             for ind, roi in self.data_pool._rois.items():
                                 x_axis, y_axis = new_file.get_roi_plot(roi.get_section_params())
-                                header = [new_file.file_axes_caption()[roi.get_param('axis_0')], 'ROI_value']
+                                header = [new_file.get_file_axes()[roi.get_param('axis_0')], 'ROI_value']
                                 save_name = ''.join(os.path.splitext(os.path.basename(file_name))[:-1]) + \
                                             "_ROI_{}".format(ind) + self.file_type
                                 self.data_pool.save_roi_to_file(self.file_type,
