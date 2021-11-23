@@ -53,11 +53,6 @@ class BeamLineView(BaseDataSet):
         return data
 
     # ----------------------------------------------------------------------
-    def get_axis_resolution(self, axis):
-
-        return 2
-
-    # ----------------------------------------------------------------------
     def _get_data_shape(self):
         with h5py.File(self._file_name, 'r') as in_file:
             return in_file['data_cube'].shape

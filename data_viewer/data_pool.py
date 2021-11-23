@@ -391,15 +391,16 @@ class DataPool(QtCore.QObject):
             if roi_axis is None or roi_axis == 0:
                 continue
 
-            new_pos = self._files_data[main_file].recalculate_value(axis, roi_params['axis_{}_pos'.format(roi_axis)],
+            new_min = self._files_data[main_file].recalculate_value(axis, roi_params['axis_{}_pos'.format(roi_axis)],
                                                                     new_units)
-            new_width = self._files_data[main_file].recalculate_value(axis, roi_params['axis_{}_width'.format(roi_axis)],
+            new_max = self._files_data[main_file].recalculate_value(axis, roi_params['axis_{}_pos'.format(roi_axis)]
+                                                                    + roi_params['axis_{}_width'.format(roi_axis)],
                                                                     new_units)
-            if new_pos is None or new_width is None:
+            if new_min is None or new_max is None:
                 continue
 
-            roi_params['axis_{}_pos'.format(roi_axis)] = new_pos
-            roi_params['axis_{}_width'.format(roi_axis)] = new_width
+            roi_params['axis_{}_pos'.format(roi_axis)] = new_min
+            roi_params['axis_{}_width'.format(roi_axis)] = new_max - new_min
 
     # ----------------------------------------------------------------------
     def add_new_roi(self):

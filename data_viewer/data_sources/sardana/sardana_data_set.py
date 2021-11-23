@@ -151,14 +151,6 @@ class SardanaDataSet(Base2DDetectorDataSet):
             return source_file['entry']['instrument']['detector']['data'].shape
 
     # ----------------------------------------------------------------------
-    def get_axis_resolution(self, axis):
-
-        if axis == 0:
-            if self._axes_units[axis] is not None:
-                return 3
-        return 0
-
-    # ----------------------------------------------------------------------
     def _calculate_correction(self, data_shape, frame_ids=None):
 
         self._correction = np.ones(data_shape[0], dtype=np.float32)

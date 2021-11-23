@@ -1,5 +1,5 @@
 # Created by matveyev at 11.08.2021
-
+import numpy as np
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from data_viewer.utils.range_slider import RangeSlider
@@ -57,12 +57,21 @@ class SectionRange(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _update_limits(self):
         axis_min, axis_max, max_pos, max_width = self._data_pool.get_roi_limits(self._roi_id, self._my_id)
+
+        decimals = self._data_pool.get_axis_resolution(self._parent.get_current_file(), self._my_id)
+
+        self._ui.sb_pos.setDecimals(decimals)
+        self._ui.sb_pos.setSingleStep(np.power(10., -decimals))
+        self._ui.sb_width.setDecimals(decimals)
+        self._ui.sb_width.setSingleStep(np.power(10., -decimals))
+
         self._ui.sb_pos.setMinimum(axis_min)
         self._ui.sb_pos.setMaximum(max_pos)
 
         self._ui.sb_width.setMaximum(max_width)
 
         self._slider_shift = axis_min
+        self.sld.setSingleStep(np.power(10., -decimals))
         self.sld.setMinimum(0)
         self.sld.setMaximum(axis_max-axis_min)
 

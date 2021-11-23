@@ -113,7 +113,12 @@ class BaseDataSet(object):
 
         :return: int, decimals for particular axis
         """
-        return 0
+        axis_values = self._get_axis(axis)
+        min_shift = np.min(np.diff(axis_values))
+        power = 0
+        while np.power(10., -power) > min_shift:
+            power += 1
+        return power
 
     # ----------------------------------------------------------------------
     def get_possible_axis_units(self, axis):
@@ -166,7 +171,7 @@ class BaseDataSet(object):
         :return: frame index
         """
 
-        axis_value = self._get_roi_axis(axis)
+        axis_value = self._get_axis(axis)
 
         if check_range:
             if not np.min(axis_value) - np.diff(axis_value)[0] < pos < np.max(axis_value) + np.diff(axis_value)[-1]:
@@ -206,7 +211,15 @@ class BaseDataSet(object):
         :return: X and Y of ROI plot
         """
         logger.debug(f"{self.my_name}: Request roi plot with section {sect}")
-        return self._get_roi_axis(sect['axis_0']), self.get_roi_cut(sect, True)
+        return self._get_axis(sect['axis_0']), self.get_roi_cut(sect, True)
+
+    # ----------------------------------------------------------------------
+    def recalculate_value(self, axis, value, new_units):
+        if new_units in self._possible_axes_units[axis]:
+            frame = self.get_frame_for_value(axis, value, False)
+            return self._possible_axes_units[axis][new_units][frame]
+        else:
+            return value
 
     # ----------------------------------------------------------------------
     def get_roi_cut(self, sect, do_sum=False):
@@ -314,7 +327,7 @@ class BaseDataSet(object):
         return data
 
     # ----------------------------------------------------------------------
-    def _get_roi_axis(self, plot_axis):
+    def _get_axis(self, plot_axis):
         """
 
         :param plot_axis: axis index
