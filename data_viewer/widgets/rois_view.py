@@ -2,6 +2,14 @@
 
 WIDGET_NAME = 'ROIsView'
 
+import pickle
+
+try:
+    import PyTango
+    has_pytango = True
+except:
+    has_pytango = False
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from data_viewer.widgets.abstract_widget import AbstractWidget
@@ -30,7 +38,7 @@ class RoisView(AbstractWidget):
 
         self.btn_add_active_tab = QtWidgets.QToolButton(self)
         self.btn_add_active_tab.setIcon(QtGui.QIcon(":/icon/plus_small.png"))
-        self.btn_add_active_tab.clicked.connect(self._add_roi)
+        self.btn_add_active_tab.clicked.connect(self.add_roi)
         self._ui.tab_main.setCornerWidget(self.btn_add_active_tab, QtCore.Qt.TopLeftCorner)
         self._ui.tab_main.cornerWidget(QtCore.Qt.TopLeftCorner).setMinimumSize(self.btn_add_active_tab.sizeHint())
 
@@ -40,8 +48,6 @@ class RoisView(AbstractWidget):
         self._opened_files = {}
         self._last_color = -1
         self.settings = {}
-
-        self._add_roi()
 
     # ----------------------------------------------------------------------
     def get_current_file(self):
@@ -53,7 +59,29 @@ class RoisView(AbstractWidget):
         self.settings.update(settings)
 
     # ----------------------------------------------------------------------
-    def _add_roi(self):
+    def fetch_rois(self):
+        if 'macro_server' in self.settings and has_pytango:
+            data = pickle.loads(PyTango.DeviceProxy(self.settings['macro_server']).environment[1])['new']['DetectorROIs']
+            for roi in data.values():
+                last_id = self.add_roi()
+                self._data_pool.set_section_axis(last_id, 0)
+                self._data_pool.roi_parameter_changed(last_id, 1, 'pos',
+                                                      self._data_pool.get_value_for_frame(self.get_current_file(),
+                                                                                          1, roi[0][1]))
+                self._data_pool.roi_parameter_changed(last_id, 1, 'width',
+                                                      self._data_pool.get_value_for_frame(self.get_current_file(),
+                                                                                          1, roi[0][3] - roi[0][1] + 1))
+                self._data_pool.roi_parameter_changed(last_id, 2, 'pos',
+                                                      self._data_pool.get_value_for_frame(self.get_current_file(),
+                                                                                          2, roi[0][0]))
+                self._data_pool.roi_parameter_changed(last_id, 2, 'width',
+                                                      self._data_pool.get_value_for_frame(self.get_current_file(),
+                                                                                          2,  roi[0][2] - roi[0][0] + 1))
+                self._roi_widgets[last_id].roi_changed()
+                self.update_roi.emit(last_id)
+
+    # ----------------------------------------------------------------------
+    def add_roi(self):
         idx, name, roi_dims = self._data_pool.add_new_roi()
         if idx is None:
             return
@@ -69,6 +97,8 @@ class RoisView(AbstractWidget):
             self._roi_widgets[idx].add_file(file_name, color)
 
         self.update_roi.emit(idx)
+
+        return idx
 
     # ----------------------------------------------------------------------
     def _close_tab(self, idx):
