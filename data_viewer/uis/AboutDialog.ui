@@ -52,7 +52,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../../../camera_viewer/src/ui/icons.qrc">:/ico/Desy_logo.jpg</pixmap>
+        <pixmap resource="../../../camera_viewer/ui/icons.qrc">:/ico/Desy_logo.jpg</pixmap>
        </property>
       </widget>
      </item>
@@ -148,8 +148,9 @@ mikhail.karnevskiy@desy.de</string>
  </widget>
  <resources>
   <include location="icons.qrc"/>
-  <include location="../../../camera_viewer/src/ui/icons.qrc"/>
+  <include location="icons.qrc"/>
   <include location="../../../camera_viewer/ui/icons.qrc"/>
+  <include location="../../../camera_viewer/src/ui/icons.qrc"/>
  </resources>
  <connections>
   <connection>

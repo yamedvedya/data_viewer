@@ -11,9 +11,6 @@ except ImportError:
 
 from PyQt5 import QtWidgets
 
-# Add path to icon_rc filecp set
-sys.path.append(f"{os.path.dirname(__file__)}/gui")
-
 from data_viewer.main_window import DataViewer, APP_NAME
 from data_viewer.utils.option_parser import get_options
 from .version import __version__

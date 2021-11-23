@@ -36,6 +36,20 @@ def compile_uis(ui_compiler, rc_compiler, in_dirs, out_dirs):
 
 
 # ----------------------------------------------------------------------
+def update_rc(out_dirs):
+    for out_dir in out_dirs:
+        for f in [f for f in os.listdir(out_dir) if os.path.isfile(os.path.join(out_dir, f)) and os.path.splitext(f)[1] == '.py']:
+            with open(os.path.join(out_dir, f), 'r') as f_open:
+                text = f_open.readlines()
+
+            if 'import icons_rc\n' in text:
+                ind = text.index('import icons_rc\n')
+                text[ind] = f'import {str(out_dir).replace("/", ".")}.icons_rc\n'
+
+                with open(os.path.join(out_dir, f), 'w') as f_out:
+                    f_out.writelines(text)
+
+# ----------------------------------------------------------------------
 if __name__ == "__main__":
 
     print("Removing pyc files...")
@@ -62,5 +76,7 @@ if __name__ == "__main__":
 
     compile_uis(ui_compilers[sys.platform],
                 rc_compilers[sys.platform], in_dirs, out_dirs)
+
+    update_rc(out_dirs)
 
     print("All OK!")
