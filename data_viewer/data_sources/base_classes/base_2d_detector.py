@@ -16,9 +16,43 @@ import logging
 from scipy import ndimage
 
 from data_viewer.main_window import APP_NAME
+from data_viewer.utils.utils import read_mask_file, read_ff_file
 from data_viewer.data_sources.base_classes.base_data_set import BaseDataSet
 
 logger = logging.getLogger(APP_NAME)
+
+
+# ----------------------------------------------------------------------
+def apply_base_settings(settings, SETTINGS):
+
+    SETTINGS['enable_fill'] = False
+    SETTINGS['fill_radius'] = False
+    if 'fill_radius' in settings:
+        try:
+            SETTINGS['fill_radius'] = float(settings['fill_radius'])
+            SETTINGS['enable_fill'] = True
+        except:
+            pass
+
+    for param, default in zip(['min_ff', 'max_ff'], [0, 100]):
+        SETTINGS[param] = default
+        if param in settings:
+            try:
+                SETTINGS[param] = float(settings[param])
+            except:
+                pass
+
+    for mode, funct in zip(['mask', 'ff'], [read_mask_file, read_ff_file]):
+        SETTINGS[f'enable_{mode}'] = False
+        SETTINGS[f'{mode}'] = None
+        SETTINGS[f'{mode}_file'] = ''
+
+        if f'{mode}' in settings:
+            data = funct(settings[f'{mode}'])
+            if data is not None:
+                SETTINGS[f'enable_{mode}'] = True
+                SETTINGS[f'{mode}'] = data
+                SETTINGS[f'{mode}_file'] = settings[f'{mode}']
 
 
 # ----------------------------------------------------------------------

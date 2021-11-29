@@ -1,4 +1,5 @@
 # Created by matveyev at 15.02.2021
+import shutil
 
 APP_NAME = "3D_Data_Viewer"
 
@@ -6,6 +7,7 @@ import os
 import logging
 import psutil
 import configparser
+from pathlib import Path
 
 from PyQt5 import QtWidgets, QtCore
 from data_viewer.gui.main_window_ui import Ui_MainWindow
@@ -14,20 +16,24 @@ from data_viewer.widgets.file_browser import FileBrowser
 try:
     from data_viewer.widgets.asapo_browser import ASAPOBrowser
     from data_viewer.widgets.json_viewer import JsonView
+    from data_viewer.data_sources.asapo.asapo_data_set import apply_settings_asapo
     has_asapo = True
 except:
     has_asapo = False
-from data_viewer.widgets.folder_browser import FolderBrowser
+
+from data_viewer.data_sources.sardana.sardana_data_set import apply_settings_sardana
+
 from data_viewer.widgets.cube_view import CubeView
 from data_viewer.widgets.tests_browser import TestsBrowser
 
 from data_viewer.widgets.frame_view import FrameView
 from data_viewer.widgets.rois_view import RoisView
 from data_viewer.data_pool import DataPool
-from data_viewer.widgets.image_setup import ImageSetup
 from data_viewer.widgets.settings import ProgramSetup
 from data_viewer.widgets.aboutdialog import AboutDialog
 from data_viewer.convertor.convert import Converter
+
+from data_viewer.utils.utils import check_settings
 
 
 logger = logging.getLogger(APP_NAME)
@@ -47,10 +53,7 @@ class DataViewer(QtWidgets.QMainWindow):
         self._ui = Ui_MainWindow()
         self._ui.setupUi(self)
 
-        if options.dir is not None:
-            self.folder = options.dir
-        else:
-            self.folder = os.getcwd()
+        self.configuration = {}
 
         self.parameter_actions = []
         self.parameter_action_group = None
@@ -64,31 +67,57 @@ class DataViewer(QtWidgets.QMainWindow):
                             QtWidgets.QMainWindow.AllowNestedDocks |
                             QtWidgets.QMainWindow.AllowTabbedDocks)
 
+        self.settings = self.get_settings(options)
+
         self._menu_view = QtWidgets.QMenu('Widgets', self)
 
         self.frame_view, self.frame_view_dock = self._add_dock(FrameView, "Frame View",
                                                                QtCore.Qt.LeftDockWidgetArea,
-                                                               self, self.data_pool)
+                                                               self, self.data_pool, self.settings)
 
-        self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube view",
-                                                             QtCore.Qt.LeftDockWidgetArea,
-                                                             self, self.data_pool)
+        try:
+            self.configuration['cube_view'] = 'cube' in self.settings['WIDGETS']['visualization']
+        except:
+            self.configuration['cube_view'] = True
 
-        self.cube_view_dock.visibilityChanged.connect(self.cube_view.visibility_changed)
+        if self.configuration['cube_view']:
+            try:
+                self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube view",
+                                                                     QtCore.Qt.LeftDockWidgetArea,
+                                                                     self, self.data_pool)
 
-        self.rois_view, self.rois_view_dock = self._add_dock(RoisView, "ROIs View",
-                                                             QtCore.Qt.LeftDockWidgetArea,
-                                                             self, self.data_pool)
+                self.cube_view_dock.visibilityChanged.connect(self.cube_view.visibility_changed)
+            except:
+                self.configuration['cube_view'] = False
 
-        if options.sardana:
-            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
+        try:
+            self.configuration['roi'] = 'roi' in self.settings['WIDGETS']['visualization']
+        except:
+            self.configuration['roi'] = True
+
+        if self.configuration['roi']:
+            self.rois_view, self.rois_view_dock = self._add_dock(RoisView, "ROIs View",
+                                                                 QtCore.Qt.LeftDockWidgetArea,
+                                                                 self, self.data_pool)
+
+        try:
+            self.configuration['sardana'] = 'sardana' in self.settings['WIDGETS']['file_types']
+        except:
+            self.configuration['sardana'] = True
+
+        if self.configuration['sardana']:
+            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "Sardana Browser",
                                                                        QtCore.Qt.LeftDockWidgetArea, self, 'sardana')
             self.file_browser.file_selected.connect(self.data_pool.open_file)
-            self.has_sardana = True
-        else:
-            self.has_sardana = False
 
-        if has_asapo and options.asapo:
+        try:
+            self.configuration['asapo'] = 'asapo' in self.settings['WIDGETS']['file_types']
+        except:
+            self.configuration['asapo'] = True
+
+        self.metadata_browser = None
+
+        if has_asapo and self.configuration['asapo']:
             self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
                                                                          QtCore.Qt.LeftDockWidgetArea, self)
             self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
@@ -98,63 +127,64 @@ class DataViewer(QtWidgets.QMainWindow):
                                                                                self, self.data_pool)
             self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
             self.data_pool.file_updated.connect(self.frame_view.update_file)
-            self.has_asapo = True
-        else:
-            self.has_asapo = False
 
-        if options.beam:
-            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "File Browser",
+        try:
+            self.configuration['beamline'] = 'beamline' in self.settings['WIDGETS']['file_types']
+        except:
+            self.configuration['beamline'] = True
+
+        if self.configuration['beamline']:
+            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "Beamline Browser",
                                                                        QtCore.Qt.LeftDockWidgetArea, self, 'beam')
             self.file_browser.file_selected.connect(self.data_pool.open_file)
-            self.has_beam_view = True
-        else:
-            self.has_beam_view = False
 
-        if options.tests:
+        try:
+            self.configuration['tests'] = 'tests' in self.settings['WIDGETS']['file_types']
+        except:
+            self.configuration['tests'] = True
+
+        if self.configuration['tests']:
             self.tests_browser, self.tests_browser_dock = self._add_dock(TestsBrowser, "Test Browser",
                                                                        QtCore.Qt.LeftDockWidgetArea, self)
             self.tests_browser.test_selected.connect(self.data_pool.open_test)
-            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
-                                                                               QtCore.Qt.LeftDockWidgetArea,
-                                                                               self, self.data_pool)
-            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
-            self.has_tests = True
-        else:
-            self.has_tests = False
-
-        self.frame_view.main_file_changed.connect(self.cube_view.main_file_changed)
-        self.frame_view.main_file_changed.connect(self.rois_view.main_file_changed)
-
-        self.frame_view.roi_moved.connect(self.rois_view.roi_changed)
-        self.frame_view.roi_moved.connect(self.cube_view.roi_changed)
-
-        self.frame_view.new_units.connect(self.rois_view.units_changed)
-
-        self.frame_view.clear_view.connect(self.cube_view.clear_view)
-        self.frame_view.clear_view.connect(self.rois_view.main_file_changed)
-
-        self.frame_view.new_axes.connect(self.cube_view.display_file)
-
-        self.rois_view.update_roi.connect(self.frame_view.roi_changed)
-        self.rois_view.update_roi.connect(self.cube_view.roi_changed)
+            if self.metadata_browser is None:
+                self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
+                                                                                   QtCore.Qt.LeftDockWidgetArea,
+                                                                                   self, self.data_pool)
+                self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
 
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
-        self.data_pool.new_file_added.connect(self.rois_view.add_file)
-
-        self.data_pool.file_deleted.connect(self.rois_view.delete_file)
-
         self.data_pool.close_file.connect(self.frame_view.file_closed_by_pool)
-
         self.data_pool.data_updated.connect(self.frame_view.data_updated)
-        self.data_pool.data_updated.connect(self.rois_view.update_plots)
-        self.data_pool.data_updated.connect(self.cube_view.data_updated)
+
+        if self.configuration['cube_view']:
+            self.frame_view.main_file_changed.connect(self.cube_view.main_file_changed)
+            self.frame_view.roi_moved.connect(self.cube_view.roi_changed)
+            self.frame_view.clear_view.connect(self.cube_view.clear_view)
+            self.frame_view.new_axes.connect(self.cube_view.display_file)
+            self.data_pool.data_updated.connect(self.cube_view.data_updated)
+
+        if self.configuration['roi']:
+            self.frame_view.main_file_changed.connect(self.rois_view.main_file_changed)
+            self.frame_view.roi_moved.connect(self.rois_view.roi_changed)
+            self.frame_view.new_units.connect(self.rois_view.units_changed)
+            self.frame_view.clear_view.connect(self.rois_view.main_file_changed)
+
+            self.data_pool.data_updated.connect(self.rois_view.update_plots)
+            self.data_pool.new_file_added.connect(self.rois_view.add_file)
+            self.data_pool.file_deleted.connect(self.rois_view.delete_file)
+
+            self.rois_view.update_roi.connect(self.frame_view.roi_changed)
+
+            if self.configuration['cube_view']:
+                self.rois_view.update_roi.connect(self.cube_view.roi_changed)
 
         self._load_ui_settings()
         self.apply_settings()
 
         self._setup_menu()
 
-        if self.has_sardana:
+        if self.configuration['sardana']:
             action = self.additions_menu.addAction("Fetch ROI from MacroServer...")
             action.triggered.connect(self.rois_view.fetch_rois)
 
@@ -165,23 +195,86 @@ class DataViewer(QtWidgets.QMainWindow):
         self._status_timer.start(self.STATUS_TICK)
 
     # ----------------------------------------------------------------------
-    def apply_settings(self, settings=None):
-        if settings is None:
-            settings = configparser.ConfigParser()
-            settings.read('./settings.ini')
+    def set_settings(self, settings):
 
-        if 'SARDANA_SCANS' in settings and self.has_sardana:
-            self.file_browser.set_settings(settings['SARDANA_SCANS'])
-        if 'ASAPO' in settings and self.has_asapo:
-            self.asapo_browser.set_settings(settings['ASAPO'])
-        if 'DATA_POOL' in settings:
-            self.data_pool.set_settings(settings['DATA_POOL'])
-        if 'FRAME_VIEW' in settings:
-            self.frame_view.set_settings(settings['FRAME_VIEW'])
-        if 'ROIS_VIEW' in settings:
-            self.rois_view.set_settings(settings['ROIS_VIEW'])
-        if 'CUBE_VIEW' in settings:
-            self.cube_view.set_settings(settings['CUBE_VIEW'])
+        self.settings = settings
+        self.apply_settings()
+
+    # ----------------------------------------------------------------------
+    def get_settings(self, options):
+
+        settings = configparser.ConfigParser()
+
+        home = os.path.join(str(Path.home()), '.petra_viewer')
+        file_name = str(options.profile)
+        if not file_name.endswith('.ini'):
+            file_name += '.ini'
+
+        if not os.path.exists(os.path.join(home, file_name)):
+            _finished = False
+            while not _finished:
+                file = QtWidgets.QFileDialog.getOpenFileName(self, 'Cannot find settings file, please locate it',
+                                                             str(Path.home()), 'INI settings (*.ini)')
+                if file[0]:
+                    settings.read(file[0])
+                    _finished = check_settings(settings)
+                else:
+                    break
+            if _finished:
+                return settings
+        else:
+            settings.read(os.path.join(home, file_name))
+            if check_settings(settings):
+                return settings
+
+        if not os.path.exists(home):
+            os.mkdir(home)
+
+        if not os.path.exists(os.path.join(home, file_name)):
+            shutil.copy(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_settings.ini'),
+                        os.path.join(home, 'default.ini'))
+
+        settings.read(os.path.join(home, 'default.ini'))
+
+        if not check_settings(settings):
+            shutil.copy(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_settings.ini'),
+                        os.path.join(home, 'default.ini'))
+            settings.read(os.path.join(home, 'default.ini'))
+
+        return settings
+
+    # -----------------------------------------------------------------
+    def save_settings(self, file_name):
+        if not os.path.exists(os.path.dirname(file_name)):
+            os.mkdir(os.path.dirname(file_name))
+
+        with open(file_name, 'w') as configfile:
+            self.settings.write(configfile)
+
+    # ----------------------------------------------------------------------
+    def apply_settings(self):
+
+        if 'DATA_POOL' in self.settings:
+            self.data_pool.set_settings(self.settings['DATA_POOL'])
+
+        if 'FRAME_VIEW' in self.settings:
+            self.frame_view.set_settings(self.settings['FRAME_VIEW'])
+
+        if 'ROIS_VIEW' in self.settings and self.configuration['roi']:
+            self.rois_view.set_settings(self.settings['ROIS_VIEW'])
+
+        if 'CUBE_VIEW' in self.settings and self.configuration['cube_view']:
+            self.cube_view.set_settings(self.settings['CUBE_VIEW'])
+
+        if 'SARDANA' in self.settings and self.configuration['sardana']:
+            apply_settings_sardana(self.settings['SARDANA'])
+
+        if 'ASAPO' in self.settings and self.configuration['asapo']:
+            apply_settings_asapo(self.settings['ASAPO'])
+
+        self.data_pool.apply_settings()
+
+        self.save_settings(os.path.join(os.path.join(str(Path.home()), '.petra_viewer'), 'default.ini'))
 
     # ----------------------------------------------------------------------
     def get_current_file(self):
@@ -189,7 +282,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):
-        if self.has_sardana or self.has_beam_view:
+        if self.configuration['sardana'] or self.configuration['beamline']:
             return self.file_browser.current_folder()
         else:
             return os.getcwd()
@@ -230,7 +323,7 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def _setup_menu(self):
-        if self.has_sardana:
+        if self.configuration['sardana']:
             batch_menu = QtWidgets.QMenu('Batch process', self)
 
             action = batch_menu.addAction("Process files...")
@@ -247,13 +340,8 @@ class DataViewer(QtWidgets.QMainWindow):
             self.menuBar().addMenu(space_menu)
             self.menuBar().addSeparator()
 
-        image_setup = QtWidgets.QAction('Image setup', self)
-        image_setup.triggered.connect(self._setup_image)
-
         menu_settings = QtWidgets.QAction('Program settings', self)
         menu_settings.triggered.connect(self._show_settings)
-
-        self.menuBar().addAction(image_setup)
         self.menuBar().addAction(menu_settings)
 
         self.menuBar().addSeparator()
@@ -270,10 +358,6 @@ class DataViewer(QtWidgets.QMainWindow):
         self.menuBar().addMenu(self._menu_view)
         self.menuBar().addAction(about_action)
         self.menuBar().addAction(menu_exit)
-
-    # ----------------------------------------------------------------------
-    def _setup_image(self):
-        ImageSetup(self, self.data_pool).exec_()
 
     # ----------------------------------------------------------------------
     def _add_dock(self, WidgetClass, label, location, *args, **kwargs):
@@ -310,8 +394,9 @@ class DataViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _close_me(self):
         logger.info("Closing the app...")
-        if self.has_sardana:
+        if self.configuration['sardana']:
             self.file_browser.safe_close()
+        self.save_settings(os.path.join(os.path.join(str(Path.home()), '.petra_viewer'), 'default.ini'))
         self._save_ui_settings()
 
     # ----------------------------------------------------------------------
@@ -332,10 +417,10 @@ class DataViewer(QtWidgets.QMainWindow):
         """
         settings = QtCore.QSettings(APP_NAME)
 
-        if self.has_sardana:
+        if self.configuration['sardana']:
             self.file_browser.save_ui_settings(settings)
 
-        if self.has_asapo:
+        if self.configuration['asapo']:
             self.asapo_browser.save_ui_settings(settings)
 
         self.rois_view.save_ui_settings(settings)
@@ -343,8 +428,6 @@ class DataViewer(QtWidgets.QMainWindow):
 
         settings.setValue("MainWindow/geometry", self.saveGeometry())
         settings.setValue("MainWindow/state", self.saveState())
-
-        settings.setValue("StartFolder", self.folder)
 
     # ----------------------------------------------------------------------
     def _load_ui_settings(self):
@@ -362,10 +445,10 @@ class DataViewer(QtWidgets.QMainWindow):
         except:
             pass
 
-        if self.has_sardana:
+        if self.configuration['sardana']:
             self.file_browser.load_ui_settings(settings)
 
-        if self.has_asapo:
+        if self.configuration['asapo']:
             self.asapo_browser.load_ui_settings(settings)
 
         self.rois_view.load_ui_settings(settings)

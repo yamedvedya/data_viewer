@@ -90,6 +90,7 @@ def read_ff_file(file_name):
 
     return ff
 
+
 # ----------------------------------------------------------------------
 def info_dialog(text):
     msg = QtWidgets.QMessageBox()
@@ -99,3 +100,14 @@ def info_dialog(text):
     msg.setWindowTitle("Info")
     msg.show()
     return msg
+
+
+# ----------------------------------------------------------------------
+def check_settings(new_settings):
+    for entry, sub_entries in zip(['WIDGETS'], [['file_types', 'visualization']]):
+        if entry not in new_settings:
+            return False
+        for sub_entry in sub_entries:
+            if sub_entry not in new_settings[entry]:
+                return False
+    return True

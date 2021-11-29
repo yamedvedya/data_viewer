@@ -97,21 +97,12 @@ def test_load_file(change_test_dir, viewer):
     assert 'test007' in viewer.data_pool._files_data
     assert viewer.data_pool._files_data['test007']._data_shape == (z_dim, y_dim, x_dim)
     assert viewer.data_pool._files_data['test007']._scan_length == z_dim
-    assert 'point_nb' in viewer.data_pool._files_data['test007']._additional_data['scanned_values'] and \
-           'omega' in viewer.data_pool._files_data['test007']._additional_data['scanned_values']
-    assert np.all(viewer.data_pool._files_data['test007']._additional_data['point_nb'] == np.arange(11))
-    assert np.all(viewer.data_pool._files_data['test007']._additional_data['omega'] == np.linspace(1, 2, 11))
+    possible_axes = viewer.data_pool._files_data['test007'].get_possible_axis_units(0)
+    assert 'point_nb' in possible_axes and 'omega' in possible_axes
+    assert np.all(viewer.data_pool._files_data['test007']._get_axis(0) == np.arange(11))
+    viewer.data_pool._files_data['test007'].set_axis_units(0, 'omega')
+    assert np.all(viewer.data_pool._files_data['test007']._get_axis(0) == np.linspace(1, 2, 11))
     assert viewer.data_pool._files_data['test007']._detector_folder == 'test/lmbd'
     assert viewer.data_pool._files_data['test007']._detector == 'lmbd'
-
-
-# # ----------------------------------------------------------------------
-# def test_roi_functionality(change_test_dir, viewer):
-#
-#     _load_file(viewer)
-#
-#     ind, roi_key = viewer.data_pool.add_new_roi()
-
-
 
 

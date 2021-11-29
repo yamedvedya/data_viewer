@@ -138,4 +138,3 @@ dmypy.json
 !/data_viewer/gui/__init__.py
 /logs
 /temp
-settings.ini

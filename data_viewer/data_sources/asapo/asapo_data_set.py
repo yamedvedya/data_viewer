@@ -19,10 +19,8 @@ try:
 except:
     pass
 
-import configparser
-
 from data_viewer.main_window import APP_NAME
-from data_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
+from data_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings
 
 try:
     from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
@@ -30,7 +28,13 @@ try:
 except:
     pass
 
-SETTINGS = {'enable_mask': False,
+SETTINGS = {'host': '',
+            'path': '',
+            'has_filesystem': False,
+            'beamtime': '',
+            'token': '',
+            'max_messages': 100,
+            'enable_mask': False,
             'mask': None,
             'mask_file': '',
             'enable_ff': False,
@@ -45,6 +49,34 @@ SETTINGS = {'enable_mask': False,
 logger = logging.getLogger(APP_NAME)
 
 
+# ----------------------------------------------------------------------
+def apply_settings_asapo(settings):
+
+    for param in ['host', 'path', 'beamtime', 'token']:
+        if param in settings:
+            SETTINGS[param] = settings[param]
+        else:
+            SETTINGS[param] = ''
+
+    SETTINGS['has_filesystem'] = False
+    if 'has_filesystem' in settings:
+        try:
+            SETTINGS['has_filesystem'] = strtobool(settings['has_filesystem'])
+        except:
+            pass
+
+    if 'max_messages' in settings:
+        SETTINGS['max_messages'] = 100
+        if param in settings:
+            try:
+                SETTINGS[param] = int(settings[param])
+            except:
+                pass
+
+    apply_base_settings(settings, SETTINGS)
+
+
+# ----------------------------------------------------------------------
 class ASAPODataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
@@ -55,22 +87,14 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self.my_name = stream_name
 
-        # read the current settings
-        settings = configparser.ConfigParser()
-        settings.read('./settings.ini')
-
-        host = settings['ASAPO']['host']
-        path = settings['ASAPO']['path']
-        has_filesystem = strtobool(settings['ASAPO']['has_filesystem'])
-        beamtime = settings['ASAPO']['beamtime']
-        token = settings['ASAPO']['token']
-        self.max_messages = int(settings['ASAPO']['max_messages'])
-
-        consumer = asapo_consumer.create_consumer(host, path, has_filesystem, beamtime, detector_name, token, 1000)
+        consumer = asapo_consumer.create_consumer(SETTINGS['host'], SETTINGS['path'],
+                                                  SETTINGS['has_filesystem'], SETTINGS['beamtime'],
+                                                  detector_name, SETTINGS['token'], 1000)
         logger.debug(
             "Create new consumer (host=%s, path=%s, has_filesystem=%s, "
             "beamtime=%s, data_source=%s, token=%s, timeout=%i).",
-            host, path, has_filesystem, beamtime, detector_name, token, 1000)
+            SETTINGS['host'], SETTINGS['path'], SETTINGS['has_filesystem'], SETTINGS['beamtime'],
+            detector_name, SETTINGS['token'], 1000)
 
         self._setup_receiver(consumer, stream_name, detector_name)
         self._additional_data['metadata'] = []
@@ -106,7 +130,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         for i, axis in enumerate(axis):
             if i == 0:
-                range_limit = self.max_messages
+                range_limit = SETTINGS['max_messages']
             else:
                 range_limit = 0
             self._section.append({'axis': axis, 'integration': False, 'min': 0, 'max': self._data_shape[i] - 1,
@@ -197,7 +221,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             frame_ids = np.arange(self.receiver.get_current_size())
         for frame in frame_ids:
             if frame not in self._additional_data['already_loaded_ids']:
-                if len(self._additional_data['already_loaded_ids']) == self.max_messages:
+                if len(self._additional_data['already_loaded_ids']) == SETTINGS['max_messages']:
                     self._additional_data['already_loaded_ids'].pop(0)
                     self._additional_data['metadata'].pop(0)
                 self.receiver.set_start_id(frame + 1)

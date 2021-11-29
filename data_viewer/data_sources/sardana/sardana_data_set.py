@@ -6,9 +6,10 @@ import os
 import numpy as np
 
 from data_viewer.utils.fio_reader import fioReader
-from data_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
+from data_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings
 
-SETTINGS = {'enable_mask': False,
+SETTINGS = {'door_address': None,
+            'enable_mask': False,
             'mask': None,
             'mask_file': '',
             'enable_ff': False,
@@ -18,14 +19,35 @@ SETTINGS = {'enable_mask': False,
             'ff_max': 100,
             'enable_fill': False,
             'fill_radius': 7,
-            'atten_correction': 'on',
+            'atten_correction': True,
             'atten_param': 'atten',
-            'inten_correction': 'on',
+            'inten_correction': True,
             'inten_param': 'eh_c01',
             'all_params': []
             }
 
 
+# ----------------------------------------------------------------------
+def apply_settings_sardana(settings):
+    if 'door_address' in settings:
+        SETTINGS['door_address'] = settings['door_address']
+    else:
+        SETTINGS['door_address'] = None
+
+    for param, param2, default in zip(['atten_param', 'inten_param'],
+                                      ['atten_correction', 'inten_correction'],
+                                      ['atten', 'eh_c01']):
+        if param in settings:
+            SETTINGS[param] = settings[param]
+            SETTINGS[param2] = True
+        else:
+            SETTINGS[param] = default
+            SETTINGS[param2] = False
+
+    apply_base_settings(settings, SETTINGS)
+
+
+# ----------------------------------------------------------------------
 class SardanaDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
@@ -159,7 +181,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
         self._correction = np.ones(data_shape[0], dtype=np.float32)
 
         try:
-            if SETTINGS['atten_correction'] == 'on':
+            if SETTINGS['atten_correction']:
                 if SETTINGS['atten_param'] in self._possible_axes_units[0]:
                     if frame_ids is not None:
                         self._correction *= np.maximum(self._possible_axes_units[0][SETTINGS['atten_param']][frame_ids], 1)
@@ -169,7 +191,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
             raise RuntimeError("{}: cannot calculate atten correction: {}".format(self.my_name, err))
 
         try:
-            if SETTINGS['inten_correction'] == 'on':
+            if SETTINGS['inten_correction']:
                 if SETTINGS['inten_param'] in self._possible_axes_units[0]:
                     if frame_ids is not None:
                         self._correction *= np.max((1, self._possible_axes_units[0][SETTINGS['inten_param']][0])) / \

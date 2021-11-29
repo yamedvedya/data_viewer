@@ -419,7 +419,11 @@ class ViewPyQt(View2d):
 
         data_to_display, pos = super(ViewPyQt, self).update_image()
         if data_to_display is not None:
-            self.plot_2d.setImage(data_to_display, levels=self._frame_viewer.get_levels())
+            if self._frame_viewer.hist_mode == 'selected' and self._frame_viewer.auto_levels:
+                self.plot_2d.setImage(data_to_display, autoLevels=True)
+            else:
+                self.plot_2d.setImage(data_to_display, levels=self._frame_viewer.get_levels())
+
             self.plot_2d.setRect(pos)
             for ind in range(len(self._rois)):
                 self.roi_changed(ind)

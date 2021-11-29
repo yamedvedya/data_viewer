@@ -7,7 +7,7 @@ class FakeImageItem(QtCore.QObject):
 
     sigImageChanged = QtCore.pyqtSignal()
 
-    levels = None, None
+    _levels = None, None
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, image_item=None):
@@ -19,25 +19,36 @@ class FakeImageItem(QtCore.QObject):
         self._image_item = image_item
 
     # ----------------------------------------------------------------------
+    @property
+    def levels(self):
+        if self._current_file is None:
+            return None, None
+
+        if self._levels[0] is None:
+            self._levels = self._data_pool.get_levels(self._current_file, self._mode)
+
+        return self._levels
+
+    # ----------------------------------------------------------------------
     def setAutoLevels(self):
-        self.levels = self._data_pool.get_levels(self._current_file, self._mode)
+        self._levels = self._data_pool.get_levels(self._current_file, self._mode)
 
     # ----------------------------------------------------------------------
     def setMode(self, mode):
         self._mode = mode
-        self.levels = self._data_pool.get_levels(self._current_file, self._mode)
+        self._levels = self._data_pool.get_levels(self._current_file, self._mode)
         self.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
     def setNewFile(self, file):
         self._current_file = file
-        self.levels = self._data_pool.get_levels(self._current_file, self._mode)
+        self._levels = None, None
         self.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
     def setEmptyFile(self):
         self._current_file = None
-        self.levels = (0, 1)
+        self._levels = (0, 1)
         self.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
@@ -47,7 +58,7 @@ class FakeImageItem(QtCore.QObject):
 
     # ----------------------------------------------------------------------
     def setLevels(self, levels):
-        self.levels = levels
+        self._levels = levels
         if self._image_item is not None:
             self._image_item.setLevels(levels)
 

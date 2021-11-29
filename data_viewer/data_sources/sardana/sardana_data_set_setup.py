@@ -1,7 +1,7 @@
 # Created by matveyev at 13.08.2021
 from data_viewer.data_sources.sardana.sardana_data_set import SETTINGS
 from data_viewer.data_sources.base_classes.base_2d_detector_setup import Base2DDetectorSetup
-from data_viewer.gui.lambda_setup_ui import Ui_LambdaSetup
+from data_viewer.gui.datasource_setup_sardana_ui import Ui_SardanaSetup
 from data_viewer.utils.utils import refresh_combo_box
 
 WIDGET_NAME = 'SardanaScanSetup'
@@ -25,26 +25,26 @@ class SardanaScanSetup(Base2DDetectorSetup):
     """
 
     # ----------------------------------------------------------------------
-    def __init__(self, main_window, data_pool):
+    def __init__(self, main_window):
         """
         """
-        super(SardanaScanSetup, self).__init__(main_window, data_pool)
+        super(SardanaScanSetup, self).__init__(main_window)
 
         self._ui.cmb_attenuator.addItems(SETTINGS['all_params'])
-        self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'] == 'on')
+        self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'])
         if SETTINGS['atten_param'] not in SETTINGS['all_params']:
             self._ui.cmb_attenuator.addItem(SETTINGS['atten_param'])
         refresh_combo_box(self._ui.cmb_attenuator, SETTINGS['atten_param'])
-        self._ui.rb_atten_on.setChecked(SETTINGS['atten_correction'] == 'on')
-        self._ui.rb_atten_off.setChecked(SETTINGS['atten_correction'] == 'off')
+        self._ui.rb_atten_on.setChecked(SETTINGS['atten_correction'])
+        self._ui.rb_atten_off.setChecked(not SETTINGS['atten_correction'])
 
         self._ui.cmb_intensity.addItems(SETTINGS['all_params'])
-        self._ui.cmb_intensity.setEnabled(SETTINGS['inten_correction'] == 'on')
+        self._ui.cmb_intensity.setEnabled(SETTINGS['inten_correction'])
         if SETTINGS['inten_param'] not in SETTINGS['all_params']:
             self._ui.cmb_intensity.addItem(SETTINGS['inten_param'])
         refresh_combo_box(self._ui.cmb_intensity, SETTINGS['inten_param'])
-        self._ui.rb_inten_on.setChecked(SETTINGS['inten_correction'] == 'on')
-        self._ui.rb_inten_off.setChecked(SETTINGS['inten_correction'] == 'off')
+        self._ui.rb_inten_on.setChecked(SETTINGS['inten_correction'])
+        self._ui.rb_inten_off.setChecked(not SETTINGS['inten_correction'])
 
         self._ui.bg_intensity.buttonClicked.connect(
             lambda button: self._ui.cmb_intensity.setEnabled(button == self._ui.rb_inten_on))
@@ -52,32 +52,28 @@ class SardanaScanSetup(Base2DDetectorSetup):
             lambda button: self._ui.cmb_attenuator.setEnabled(button == self._ui.rb_atten_on))
 
     # ----------------------------------------------------------------------
-    def _get_ui(self):
+    def _my_ui(self):
 
-        return Ui_LambdaSetup()
-
-    # ----------------------------------------------------------------------
-    def get_name(self):
-        return 'Lambda Scan Setup'
+        return Ui_SardanaSetup()
 
     # ----------------------------------------------------------------------
-    def get_settings(self):
+    def _my_settings(self):
 
         return SETTINGS
 
     # ----------------------------------------------------------------------
-    def accept(self):
+    def get_settings(self):
 
-        SETTINGS['atten_param'] = str(self._ui.cmb_attenuator.currentText())
+        settings = super(SardanaScanSetup, self).get_settings()
+
+        if self._ui.le_door_address.text() != '':
+            settings['door_address'] = str(self._ui.le_door_address.currentText())
+
         if self._ui.rb_atten_on.isChecked():
-            SETTINGS['atten_correction'] = 'on'
-        elif self._ui.rb_atten_off.isChecked():
-            SETTINGS['atten_correction'] = 'off'
+            settings['atten_param'] = str(self._ui.cmb_attenuator.currentText())
 
-        SETTINGS['inten_param'] = str(self._ui.cmb_intensity.currentText())
-        if self._ui.rb_inten_on.isChecked():
-            SETTINGS['inten_correction'] = 'on'
-        elif self._ui.rb_inten_off.isChecked():
-            SETTINGS['inten_correction'] = 'off'
+        if self._ui.rb_atten_on.isChecked():
+            settings['inten_param'] = str(self._ui.cmb_intensity.currentText())
 
-        super(SardanaScanSetup, self).accept()
+        return {'SARDANA': settings}
+

@@ -121,10 +121,6 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
 
         super(ASAPODataSet, self).__init__(data_pool)
 
-        settings = configparser.ConfigParser()
-        settings.read('./settings.ini')
-        self.max_messages = int(settings['ASAPO']['max_messages'])
-
         self._original_data = self._generate_fake_data()
 
         if self._data_pool.memory_mode == 'ram':
@@ -159,8 +155,6 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
 
         for i, axis in enumerate(axis):
             if i == 0:
-                range_limit = self.max_messages
-            else:
                 range_limit = 0
             self._section.append({'axis': axis, 'integration': False, 'min': 0, 'max': self._data_shape[i] - 1,
                                   'step': 1, 'range_limit': range_limit})

@@ -9,6 +9,7 @@ try:
 except ImportError:
     from io import StringIO
 
+from pathlib import Path
 from PyQt5 import QtWidgets
 
 from data_viewer.main_window import DataViewer, APP_NAME
@@ -61,7 +62,10 @@ def setup_logger(args):
         "%(asctime)s %(filename)s:%(lineno)d "
         "%(levelname)-8s %(message)s")
 
-    filename = f"{os.path.expanduser('~')}/data_viewer.log"
+    if not os.path.exists(f"{str(Path.home())}/.petra_viewer"):
+        os.mkdir(f"{str(Path.home())}/.petra_viewer")
+
+    filename = f"{str(Path.home())}/.petra_viewer/viewer.log"
     print(f"Logs to file: {filename}")
     logging.basicConfig(level=log_level, format=format, filename=filename)
     logging.info("Log level set to %s", log_level)

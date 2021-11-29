@@ -64,6 +64,10 @@ class DataPool(QtCore.QObject):
         self.open_file_in_progress = False
 
     # ----------------------------------------------------------------------
+    def get_settings(self):
+        return self.main_window.setting()
+
+    # ----------------------------------------------------------------------
     def set_settings(self, settings):
         """
             this function is called during startup and everytime user changes settings

@@ -1,6 +1,5 @@
 # Created by matveyev at 13.08.2021
 import logging
-import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore
 from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
@@ -12,6 +11,7 @@ WIDGET_NAME = ''
 logger = logging.getLogger(APP_NAME)
 
 
+# ----------------------------------------------------------------------
 class Base2DDetectorSetup(QtWidgets.QWidget):
     """
     General class, which provides GUI interface to setup parameters
@@ -32,16 +32,15 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
     """
 
     # ----------------------------------------------------------------------
-    def __init__(self, main_window, data_pool):
+    def __init__(self, main_window):
         """
         """
         super(Base2DDetectorSetup, self).__init__()
 
-        self._ui = self._get_ui()
+        self._ui = self._my_ui()
         self._ui.setupUi(self)
 
         self._main_window = main_window
-        self._data_pool = data_pool
 
         # pyqtgraph instance to display pixel mask
         self._main_plot = pg.PlotItem()
@@ -63,25 +62,23 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
         self._main_plot.addItem(self._plot_2d)
 
         # display current setting
-        _settings = self.get_settings()
-
-        self._old_settings = dict(_settings)
+        self._settings = self._my_settings()
 
         for param in ['mask', 'ff']:
-            if _settings[f'enable_{param}']:
+            if self._settings[f'enable_{param}']:
                 getattr(self._ui, f'rb_{param}_on').setChecked(True)
                 getattr(self._ui, f'but_load_{param}').setChecked(True)
-                getattr(self._ui, f'lb_{param}_file').setText(_settings[f'{param}_file'])
+                getattr(self._ui, f'lb_{param}_file').setText(self._settings[f'{param}_file'])
             else:
                 getattr(self._ui, f'rb_{param}_off').setChecked(True)
 
-        self._ui.dsb_ff_from.setValue(_settings['ff_min'])
-        self._ui.dsb_ff_to.setValue(_settings['ff_max'])
+        self._ui.dsb_ff_from.setValue(self._settings['ff_min'])
+        self._ui.dsb_ff_to.setValue(self._settings['ff_max'])
 
-        if _settings['enable_fill']:
+        if self._settings['enable_fill']:
             self._ui.rb_fill_on.setChecked(True)
             self._ui.sb_fill.setEnabled(True)
-            self._ui.sb_fill.setValue(_settings['fill_radius'])
+            self._ui.sb_fill.setValue(self._settings['fill_radius'])
         else:
             self._ui.rb_fill_off.setChecked(True)
 
@@ -95,8 +92,8 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
         self._ui.but_load_mask.clicked.connect(lambda: self.load_from_file('mask'))
         self._ui.but_load_ff.clicked.connect(lambda: self.load_from_file('ff'))
 
-        self._ui.dsb_ff_from.valueChanged.connect(lambda value, mode='min': self._new_ff_limit(value, mode))
-        self._ui.dsb_ff_to.valueChanged.connect(lambda value, mode='max': self._new_ff_limit(value, mode))
+        self._ui.dsb_ff_from.valueChanged.connect(self._new_ff_limit)
+        self._ui.dsb_ff_to.valueChanged.connect(self._new_ff_limit)
 
         self._main_plot.scene().sigMouseClicked.connect(self._mouse_clicked)
 
@@ -106,46 +103,28 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
             logger.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
 
     # ----------------------------------------------------------------------
-    def _get_ui(self):
+    def _my_ui(self):
         raise RuntimeError('Non implemented')
 
     # ----------------------------------------------------------------------
-    def get_name(self):
-        raise RuntimeError('Non implemented')
-
-    # ----------------------------------------------------------------------
-    def get_settings(self):
+    def _my_settings(self):
         raise RuntimeError('Non implemented')
 
     # ----------------------------------------------------------------------
     def change_fill(self, button):
-        _settings = self.get_settings()
-
         if button == self._ui.rb_fill_off:
-            _settings['enable_fill'] = False
             self._ui.sb_fill.setEnabled(False)
         else:
-            _settings['enable_fill'] = True
             self._ui.sb_fill.setEnabled(True)
 
     # ----------------------------------------------------------------------
     def change_mode(self, button, mode):
-        _settings = self.get_settings()
 
         if button == getattr(self._ui, f'rb_{mode}_off'):
-            _settings[f'enable_{mode}'] = False
             getattr(self._ui, f'but_load_{mode}').setEnabled(False)
         else:
-            if _settings[f'{mode}'] is None:
-                if not self.load_from_file(mode):
-                    _settings[f'enable_{mode}'] = False
-                    getattr(self._ui, f'but_load_{mode}').setEnabled(False)
-                    return
-            _settings[f'enable_{mode}'] = True
-
-
             getattr(self._ui, f'but_load_{mode}').setEnabled(True)
-            self._ui.lb_mask_file.setText(_settings[f'{mode}_file'])
+            getattr(self._ui, f'lb_{mode}_file').setText(self._settings[f'{mode}_file'])
 
         self._display_mask()
 
@@ -167,19 +146,12 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
                 data = read_ff_file(file_name)
 
             if data is not None:
-                _settings = self.get_settings()
-                _settings[f'{mode}'] = data
-                _settings[f'{mode}_file'] = file_name
                 getattr(self._ui, f'lb_{mode}_file').setText(file_name)
 
-                return True
-
-        return False
+        self._display_mask()
 
     # ----------------------------------------------------------------------
-    def _new_ff_limit(self, value, lim):
-        _settings = self.get_settings()
-        _settings[f'ff_{lim}'] = value
+    def _new_ff_limit(self):
         self._display_mask()
 
     # ----------------------------------------------------------------------
@@ -205,35 +177,57 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
 
         _mask = None
 
-        _settings = self.get_settings()
+        if self._ui.rb_mask_on.isChecked():
+            _mask = read_mask_file(self._ui.lb_mask_file.text())
+            if _mask is not None:
+                _mask = _mask > 0
 
-        if _settings['enable_mask']:
-            _mask = np.copy(_settings['mask'])
-            _mask = _mask > 0
-
-        if _settings['enable_ff']:
-            _ff = np.copy(_settings['ff'])
-            if _mask is None:
-                _mask = (_ff < _settings['ff_min']) + (_ff > _settings['ff_max'])
-            else:
-                _mask += (_ff < _settings['ff_min']) + (_ff > _settings['ff_max'])
+        if self._ui.rb_ff_on.isChecked():
+            _ff = read_ff_file(self._ui.lb_ff_file.text())
+            if _ff is not None:
+                _ff = (_ff < self._ui.dsb_ff_from.value()) + (_ff > self._ui.dsb_ff_to.value())
+                if _mask is None:
+                    _mask = _ff
+                else:
+                    _mask += _ff
 
         return _mask
+
+    # ----------------------------------------------------------------------
+    def get_settings(self):
+
+        settings = {}
+        if self._ui.rb_mask_on.isChecked():
+            settings['mask'] = self._ui.lb_mask_file.text()
+        else:
+            settings['mask'] = ''
+
+        if self._ui.rb_ff_on.isChecked():
+            settings['ff'] = self._ui.lb_ff_file.text()
+        else:
+            settings['ff'] = ''
+
+        settings['min_ff'] = str(self._ui.dsb_ff_from.value())
+        settings['max_ff'] = str(self._ui.dsb_ff_to.value())
+
+        if self._ui.rb_fill_on.isChecked():
+            settings['fill_radius'] = str(self._ui.sb_fill.value())
+
+        return settings
 
     # ----------------------------------------------------------------------
     def accept(self):
 
         QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
 
+        super(Base2DDetectorSetup, self).accept()
+
     # ----------------------------------------------------------------------
     def reject(self):
 
-        _settings = self.get_settings()
-
-        for key in _settings.keys():
-            _settings[key] = self._old_settings[key]
-
         QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
+
+        super(Base2DDetectorSetup, self).reject()
 
     # ----------------------------------------------------------------------
     def _mouse_clicked(self, event):

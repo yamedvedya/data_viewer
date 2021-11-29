@@ -422,9 +422,9 @@ class BaseDataSet(object):
             raise RuntimeError('Unknown hist mode')
 
     # ----------------------------------------------------------------------
-    def _calculate_hist(self):
+    def _calculate_hist(self, selection=None):
 
-        logger.debug(f"{self.my_name}: Calculating histogram for {self.my_name}")
+        logger.debug(f"{self.my_name}: Calculating histogram for {self.my_name}, selection: {selection}")
 
         original_data = self._get_data()
 

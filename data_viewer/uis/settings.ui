@@ -17,13 +17,96 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
        <string>General</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Widget configuration</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_12">
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="chk_asapo">
+            <property name="text">
+             <string>ASAPO</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>File types</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="chk_beamline">
+            <property name="text">
+             <string>Beamline view</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="chk_sardana">
+            <property name="text">
+             <string>Sardana</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>Visualization widgets</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QCheckBox" name="chk_roi">
+            <property name="text">
+             <string>ROI</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QCheckBox" name="chk_cube">
+            <property name="text">
+             <string>Cube view</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="chk_tests">
+            <property name="text">
+             <string>Tests</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
        <item>
         <widget class="QGroupBox" name="gb_max_files_4">
          <property name="title">
@@ -50,35 +133,6 @@
              </property>
             </item>
            </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="gb_max_files_3">
-         <property name="title">
-          <string>File export settings:</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_4">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>Separator:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_11">
-            <property name="text">
-             <string>Format:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="le_separator"/>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="le_format"/>
           </item>
          </layout>
         </widget>
@@ -134,6 +188,43 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="gb_max_files_3">
+         <property name="title">
+          <string>File export settings:</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Separator:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Format:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="le_separator">
+            <property name="text">
+             <string>semicolumn</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="le_format">
+            <property name="text">
+             <string>.6e</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -146,6 +237,45 @@
          </property>
         </spacer>
        </item>
+       <item>
+        <widget class="QFrame" name="frame">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <spacer name="horizontalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>556</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="cmd_load_profile">
+            <property name="text">
+             <string>Load profile</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="cmd_sav_profile">
+            <property name="text">
+             <string>Save profile</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="tab_6">
@@ -156,330 +286,8 @@
        <item>
         <widget class="QTabWidget" name="tb_sources">
          <property name="currentIndex">
-          <number>0</number>
+          <number>-1</number>
          </property>
-         <widget class="QWidget" name="tab_7">
-          <attribute name="title">
-           <string>Sardana scan</string>
-          </attribute>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <widget class="QGroupBox" name="gb_door">
-             <property name="title">
-              <string>Monitor door</string>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_2">
-              <item row="0" column="0">
-               <widget class="QLabel" name="lb_door_address">
-                <property name="text">
-                 <string>Door address:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="le_door_address"/>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="gb_sardana_default_mask">
-             <property name="title">
-              <string>Load default mask</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_8">
-              <item row="0" column="0">
-               <widget class="QLabel" name="lb_door_address_2">
-                <property name="text">
-                 <string>Mask file:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="le_sardana_mask_file"/>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="gb_sardana_default_ff">
-             <property name="title">
-              <string>Load default flat field</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_9">
-              <item row="1" column="0">
-               <widget class="QDoubleSpinBox" name="dsp_sardana_ff_min"/>
-              </item>
-              <item row="1" column="2">
-               <widget class="QDoubleSpinBox" name="dsp_sardana_ff_max"/>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="label_18">
-                <property name="text">
-                 <string>&lt;= valid values &lt;=</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="lb_door_address_3">
-                <property name="text">
-                 <string>FF file:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="3">
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="0" column="1" colspan="3">
-               <widget class="QLineEdit" name="le_sardana_ff_file"/>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>375</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-          <zorder>gb_sardana_default_ff</zorder>
-          <zorder>gb_door</zorder>
-          <zorder>verticalSpacer_4</zorder>
-          <zorder>gb_sardana_default_mask</zorder>
-         </widget>
-         <widget class="QWidget" name="tab_8">
-          <attribute name="title">
-           <string>ASAPO</string>
-          </attribute>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
-           <item>
-            <widget class="QGroupBox" name="groupBox">
-             <property name="title">
-              <string>ASAPO consumer settings</string>
-             </property>
-             <property name="checkable">
-              <bool>false</bool>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_7">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_5">
-                <property name="text">
-                 <string>Host:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="le_host"/>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_13">
-                <property name="frameShape">
-                 <enum>QFrame::NoFrame</enum>
-                </property>
-                <property name="text">
-                 <string>Path:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="le_path"/>
-              </item>
-              <item row="2" column="0">
-               <widget class="QCheckBox" name="chk_filesystem">
-                <property name="text">
-                 <string>Has filesystem</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QLabel" name="label_6">
-                <property name="text">
-                 <string>Beamtime:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QLineEdit" name="le_beamtime"/>
-              </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_7">
-                <property name="text">
-                 <string>Token:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="QLineEdit" name="le_token"/>
-              </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="label_8">
-                <property name="text">
-                 <string>Detectors:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
-               <widget class="QLineEdit" name="le_detectors"/>
-              </item>
-              <item row="6" column="1">
-               <widget class="QLabel" name="label_9">
-                <property name="text">
-                 <string>* separate with semicolomn</string>
-                </property>
-               </widget>
-              </item>
-              <item row="7" column="0">
-               <widget class="QLabel" name="label_12">
-                <property name="text">
-                 <string>Max displayed streams:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="7" column="1">
-               <widget class="QSpinBox" name="sp_max_streams">
-                <property name="maximum">
-                 <number>100000</number>
-                </property>
-                <property name="value">
-                 <number>100</number>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="0">
-               <widget class="QLabel" name="label_15">
-                <property name="text">
-                 <string>Max messages</string>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="1">
-               <widget class="QSpinBox" name="sp_max_messages">
-                <property name="maximum">
-                 <number>100000</number>
-                </property>
-                <property name="value">
-                 <number>1000</number>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="gb_asapo_default_mask">
-             <property name="title">
-              <string>Load default mask</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_10">
-              <item row="0" column="0">
-               <widget class="QLabel" name="lb_door_address_4">
-                <property name="text">
-                 <string>Mask file:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="le_asapo_mask_file"/>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="gb_asapo_default_ff">
-             <property name="title">
-              <string>Load default flat field</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_11">
-              <item row="1" column="0">
-               <widget class="QDoubleSpinBox" name="dsp_asapo_ff_min"/>
-              </item>
-              <item row="1" column="2">
-               <widget class="QDoubleSpinBox" name="dsp_asapo_ff_max"/>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="label_19">
-                <property name="text">
-                 <string>&lt;= valid values &lt;=</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="lb_door_address_5">
-                <property name="text">
-                 <string>FF file:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="3">
-               <spacer name="horizontalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="0" column="1" colspan="3">
-               <widget class="QLineEdit" name="le_asapo_ff_file"/>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
         </widget>
        </item>
       </layout>
@@ -510,14 +318,14 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
+       <item row="6" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>Backend</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="1">
+       <item row="6" column="1">
         <widget class="QComboBox" name="cmb_backend">
          <item>
           <property name="text">
@@ -531,7 +339,7 @@
          </item>
         </widget>
        </item>
-       <item row="6" column="0">
+       <item row="7" column="0">
         <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -558,7 +366,7 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="2">
+       <item row="6" column="2">
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -570,6 +378,27 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_20">
+         <property name="text">
+          <string>Default histogram</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QComboBox" name="cmd_default_hist">
+         <item>
+          <property name="text">
+           <string>selection</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>all frames</string>
+          </property>
+         </item>
+        </widget>
        </item>
       </layout>
      </widget>

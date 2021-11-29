@@ -31,7 +31,7 @@ class FrameView(AbstractWidget):
     new_units = QtCore.pyqtSignal()
 
     # ----------------------------------------------------------------------
-    def __init__(self, parent, data_pool):
+    def __init__(self, parent, data_pool, settings):
         """
         """
         super(FrameView, self).__init__(parent)
@@ -46,9 +46,6 @@ class FrameView(AbstractWidget):
         self._ui.cut_selectors.new_cut.connect(self._new_cut)
         self._ui.cut_selectors.new_axis.connect(self._update_axes)
 
-        settings = configparser.ConfigParser()
-        settings.read('./settings.ini')
-
         self._signals_blocked = False
 
         try:
@@ -56,18 +53,35 @@ class FrameView(AbstractWidget):
         except:
             self.backend = 'pyqt'
 
+        self.hist_mode = 'selected'
+        self.auto_levels = True
+
+        try:
+            if settings['FRAME_VIEW']['levels'] == 'selection':
+                self._ui.rb_hist_selected.setChecked(True)
+                self.hist_mode = 'selected'
+            else:
+                self._ui.rb_hist_all.setChecked(True)
+                self.hist_mode = 'all'
+        except:
+            self._ui.rb_hist_selected.setChecked(True)
+
         if self.backend == 'pyqt':
             self._main_view = ViewPyQt(self, 'main', data_pool)
             self._second_view = ViewPyQt(self, 'second', data_pool)
 
             self._fake_image_item = FakeImageItem(data_pool, self._main_view.plot_2d)
 
-            self.hist.item.setImageItem(self._fake_image_item)
+            if self.hist_mode == 'all':
+                self.hist.item.setImageItem(self._fake_image_item)
+            else:
+                self.hist.item.setImageItem(self._main_view.plot_2d)
 
             self.level_mode = 'lin'
 
             self._ui.chk_auto_levels.clicked.connect(self._toggle_auto_levels)
             self._ui.bg_lev_mode.buttonClicked.connect(self._change_level_mode)
+            self._ui.bg_hist_selection.buttonClicked.connect(self._change_hist_mode)
             self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
             self.hist.item.sigLevelChangeFinished.connect(lambda: self._toggle_auto_levels(False))
             self.hist.item.sigLookupTableChanged.connect(self._new_lookup_table)
@@ -112,9 +126,14 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _block_hist_signal(self, state):
         if state:
-            self.hist.scene().sigMouseClicked.disconnect()
-            self.hist.item.sigLevelChangeFinished.disconnect()
-            self.hist.item.sigLookupTableChanged.disconnect()
+            for signal in [self.hist.scene().sigMouseClicked,
+                           self.hist.item.sigLevelChangeFinished,
+                           self.hist.item.sigLookupTableChanged]:
+                try:
+                    signal.disconnect()
+                except:
+                    pass
+
         else:
             self.hist.scene().sigMouseClicked.connect(self._hist_mouse_clicked)
             self.hist.item.sigLevelChangeFinished.connect(lambda: self._toggle_auto_levels(False))
@@ -204,7 +223,10 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def get_levels(self):
-        return self._fake_image_item.levels
+        if self.hist_mode == 'selected':
+            return self._main_view.plot_2d.levels
+        else:
+            return self._fake_image_item.levels
 
     # ----------------------------------------------------------------------
     def _change_chk_auto_levels_state(self, state):
@@ -215,11 +237,16 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def _toggle_auto_levels(self, state):
 
+        self.auto_levels = state
+
         if state:
             self._block_hist_signal(True)
-            self._fake_image_item.setAutoLevels()
-            l_min, l_max = self._fake_image_item.levels
-            self.hist.item.setLevels(l_min, l_max)
+            if self.hist_mode == 'all':
+                self._fake_image_item.setAutoLevels()
+                l_min, l_max = self._fake_image_item.levels
+                self.hist.item.setLevels(l_min, l_max)
+            else:
+                self.hist.item.autoHistogramRange()
             self._block_hist_signal(False)
 
             self.update_images()
@@ -227,6 +254,18 @@ class FrameView(AbstractWidget):
             self._change_chk_auto_levels_state(False)
 
         self._second_view.new_levels()
+
+    # ----------------------------------------------------------------------
+    def _change_hist_mode(self, button):
+
+        if button == self._ui.rb_hist_selected:
+            self.hist_mode = 'selected'
+            self.hist.item.setImageItem(self._main_view.plot_2d)
+        else:
+            self.hist_mode = 'all'
+            self.hist.item.setImageItem(self._fake_image_item)
+
+        self._change_chk_auto_levels_state(True)
 
     # ----------------------------------------------------------------------
     def _change_level_mode(self, button):
@@ -238,7 +277,8 @@ class FrameView(AbstractWidget):
         else:
             self.level_mode = 'log'
 
-        self._fake_image_item.setMode(self.level_mode)
+        if self.hist_mode == 'all':
+            self._fake_image_item.setMode(self.level_mode)
 
         self._toggle_auto_levels(True)
         self._change_chk_auto_levels_state(True)
@@ -264,7 +304,8 @@ class FrameView(AbstractWidget):
         if self._main_view.current_file is not None:
             self._toggle_auto_levels(True)
             self._change_chk_auto_levels_state(True)
-            self._fake_image_item.sigImageChanged.emit()
+            if self.hist_mode == 'all':
+                self._fake_image_item.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
     def _new_cut(self, invisible_axis):
@@ -401,6 +442,7 @@ class FrameView(AbstractWidget):
         if self.backend == 'pyqt':
             self._fake_image_item.setNewFile(self._main_view.current_file)
             self._change_chk_auto_levels_state(True)
+
         self._signals_blocked = True
         self.update_file(self._main_view.current_file)
         if self._main_view.previous_file is not None:
