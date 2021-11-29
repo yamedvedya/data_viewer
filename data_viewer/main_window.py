@@ -268,9 +268,11 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if 'SARDANA' in self.settings and self.configuration['sardana']:
             apply_settings_sardana(self.settings['SARDANA'])
+            self.file_browser.apply_settigs()
 
         if 'ASAPO' in self.settings and self.configuration['asapo']:
             apply_settings_asapo(self.settings['ASAPO'])
+            self.asapo_browser.apply_settigs()
 
         self.data_pool.apply_settings()
 

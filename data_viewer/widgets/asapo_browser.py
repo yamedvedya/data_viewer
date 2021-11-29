@@ -13,7 +13,6 @@ from data_viewer.asapo_tree_view.asapo_entries_class import StreamNode, Detector
 from data_viewer.asapo_tree_view.asapo_table_headers import headers
 from AsapoWorker.asapo_receiver import AsapoMetadataReceiver
 
-from data_viewer.utils.utils import read_mask_file, read_ff_file
 from data_viewer.data_sources.asapo.asapo_data_set import SETTINGS
 
 from data_viewer.gui.asapo_browser_ui import Ui_ASAPOBrowser
@@ -70,15 +69,6 @@ class ASAPOBrowser(AbstractWidget):
         self._ui.dte_from.editingFinished.connect(self._new_time_range)
         self._ui.dte_to.editingFinished.connect(self._new_time_range)
 
-        self.settings = {'host': '',
-                         'path': '',
-                         'has_filesystem': '',
-                         'beamtime': '',
-                         'token': '',
-                         'detectors': '',
-                         'max_depth': 100,
-                         'max_messages': 1000}
-
         self._auto_open = False
 
         self._refresh_timer = QtCore.QTimer(self)
@@ -117,30 +107,10 @@ class ASAPOBrowser(AbstractWidget):
         self.asapo_proxy.invalidate()
 
     # ----------------------------------------------------------------------
-    def set_settings(self, settings):
+    def apply_settings(self):
         try:
-            self.settings.update(settings)
-
-            self.settings['max_depth'] = int(self.settings['max_depth'])
-            self.settings['max_messages'] = int(self.settings['max_messages'])
-
-            self.reset_detectors([detector.strip() for detector in self.settings['detectors'].split(';')])
+            self.reset_detectors([detector.strip() for detector in SETTINGS['detectors'].split(';')])
             self.refresh_view()
-
-            if 'default_mask' in settings:
-                SETTINGS['enable_mask'] = True
-                SETTINGS['mask'] = read_mask_file(settings['default_mask'])
-                SETTINGS['mask_file'] = settings['default_mask']
-
-            if 'default_ff' in settings:
-                SETTINGS['enable_ff'] = True
-                SETTINGS['ff'] = read_ff_file(settings['default_ff'])
-                SETTINGS['ff_file'] = settings['default_ff']
-                if 'min_ff' in settings:
-                    SETTINGS['ff_min'] = settings['min_ff']
-                if 'max_ff' in settings:
-                    SETTINGS['ff_max'] = settings['max_ff']
-
         except Exception as err:
             logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)
 
@@ -176,15 +146,15 @@ class ASAPOBrowser(AbstractWidget):
             model_streams_names = [child.my_name() for child in detector_node.all_child()]
 
             # then we get all streams from asapo
-            meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(self.settings['host'],
-                                                                                      self.settings['path'],
-                                                                                      strtobool(self.settings['has_filesystem']),
-                                                                                      self.settings['beamtime'],
+            meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(SETTINGS['host'],
+                                                                                      SETTINGS['path'],
+                                                                                      strtobool(SETTINGS['has_filesystem']),
+                                                                                      SETTINGS['beamtime'],
                                                                                       detector,
-                                                                                      self.settings['token'], 1000))
+                                                                                      SETTINGS['token'], 1000))
 
             # Note, that to speed up, user can ask to show only N last streams
-            asapo_streams = meta_data_receiver.get_stream_list()[-int(self.settings['max_streams']):]
+            asapo_streams = meta_data_receiver.get_stream_list()[-int(SETTINGS['max_streams']):]
 
             asapo_streams_names = []
             asapo_streams_indexes = []

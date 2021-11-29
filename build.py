@@ -17,6 +17,7 @@ rc_compilers = {"linux2": "pyrcc5",
                 "linux": "pyrcc5",
                 "win32":  "C://Users//matveyev//AppData//Local//Programs//Python//Python37-32//Scripts//pyrcc5.exe"}
 
+
 # ----------------------------------------------------------------------
 def compile_uis(ui_compiler, rc_compiler, in_dirs, out_dirs):
     """
@@ -48,6 +49,7 @@ def update_rc(out_dirs):
 
                 with open(os.path.join(out_dir, f), 'w') as f_out:
                     f_out.writelines(text)
+
 
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
