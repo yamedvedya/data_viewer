@@ -35,11 +35,11 @@ def message_data():
 @pytest.fixture
 def viewer(message_data):
 
-    app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--asapo'])
+    app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--tests'])
     if app is None:
-        app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--asapo'])
+        app = QtWidgets.QApplication([os.getcwd() + 'data_viewer.py', '--tests'])
 
-    main = DataViewer(get_options(['--asapo']))
+    main = DataViewer(get_options(['--tests']))
 
     ASAPODataSet._setup_receiver = MagicMock(return_value=True)
     ASAPODataSet.receiver = create_autospec(AsapoWorker.asapo_receiver.SerialAsapoReceiver)

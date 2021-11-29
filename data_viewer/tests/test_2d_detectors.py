@@ -42,7 +42,7 @@ def test_2d_functionality(change_test_dir, viewer):
         assert int(q_rect.y()) == 0
 
         section[section_axis]['integration'] = True
-        section[section_axis]['max'] = 5
+        section[section_axis]['max'] = 4
         viewer.data_pool.save_section('test007', section)
 
         cut_data = np.sum(fake_data_cube.take(indices=range(0, 5), axis=section_axis), axis=section_axis)
@@ -52,7 +52,7 @@ def test_2d_functionality(change_test_dir, viewer):
         assert np.all(np.isclose(data, cut_data))
 
         for axis in range(3):
-            section[axis]['max'] = 5
+            section[axis]['max'] = 4
         viewer.data_pool.save_section('test007', section)
 
         cut_data = np.sum(fake_data_cube[:5, :5, :5], axis=section_axis)

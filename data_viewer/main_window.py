@@ -204,6 +204,9 @@ class DataViewer(QtWidgets.QMainWindow):
     def get_settings(self, options):
 
         settings = configparser.ConfigParser()
+        if options.test:
+            settings.read(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_settings.ini'))
+            return settings
 
         home = os.path.join(str(Path.home()), '.petra_viewer')
         file_name = str(options.profile)
@@ -268,11 +271,11 @@ class DataViewer(QtWidgets.QMainWindow):
 
         if 'SARDANA' in self.settings and self.configuration['sardana']:
             apply_settings_sardana(self.settings['SARDANA'])
-            self.file_browser.apply_settigs()
+            self.file_browser.apply_settings()
 
         if 'ASAPO' in self.settings and self.configuration['asapo']:
             apply_settings_asapo(self.settings['ASAPO'])
-            self.asapo_browser.apply_settigs()
+            self.asapo_browser.apply_settings()
 
         self.data_pool.apply_settings()
 
