@@ -132,10 +132,9 @@ dmypy.json
 
 # Project related ignores
 /.idea
-/test
-/src/gui/*
-!/src/gui/__init__.py
+/data_viewer/tests/logs
+/data_viewer/tests/.pytest_cache
+/data_viewer/gui/*
+!/data_viewer/gui/__init__.py
 /logs
 /temp
-icons_rc.py
-settings.ini

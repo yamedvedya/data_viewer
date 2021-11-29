@@ -4,4 +4,4 @@ cd $BASEDIR ||exit
 
 export VIEWERPATH=$PWD/
 export PYTHONPATH=$PYTHONPATH:$VIEWERPATH
-./venv/bin/python ./main.py $1 $2 $3
+./venv/bin/python ./data_viewer.py --log

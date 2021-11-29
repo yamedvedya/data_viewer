@@ -23,20 +23,16 @@ $HOME/.local/bin/virtualenv  -p python3 --system-site-packages venv
 
 pip3 install --upgrade pip
 
-wget http://nims.desy.de/extra/asapo/linux_packages/debian10.7/asapo_consumer-21.03.0.tar.gz
-pip3 install asapo_consumer-21.03.0.tar.gz
-rm ./asapo_consumer-21.03.0.tar.gz
+wget http://nims.desy.de/extra/asapo/linux_packages/debian10.7/asapo_consumer-21.09.0.tar.gz
+pip3 install asapo_consumer-21.09.0.tar.gz
+rm ./asapo_consumer-21.09.0.tar.gz
 
-wget http://nims.desy.de/extra/asapo/linux_packages/debian10.7/asapo_producer-21.03.0.tar.gz
-pip3 install asapo_producer-21.03.0.tar.gz
-rm ./asapo_producer-21.03.0.tar.gz
-
-pip3 install hdf5plugin
-pip3 install scikit-image
-pip3 install attrs
-pip3 install pyqtgraph
-pip3 install psutil
-pip3 install xrayutilities
+pip3 install -U hdf5plugin
+pip3 install -U scikit-image
+pip3 install -U attrs
+#pip3 install -U pyqtgraph
+pip3 install -U psutil
+pip3 install -U xrayutilities
 pip3 install -U numpy
 pip3 install -U scipy
 pip3 install -U h5py
