@@ -161,7 +161,7 @@
   <customwidget>
    <class>CutSelector</class>
    <extends>QWidget</extends>
-   <header>data_viewer.widgets.cut_selector</header>
+   <header>petra_viewer.widgets.cut_selector</header>
    <container>1</container>
   </customwidget>
   <customwidget>

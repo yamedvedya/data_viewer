@@ -6,7 +6,7 @@ import os
 import sys
 
 # ----------------------------------------------------------------------
-in_dirs = ["petra_viewer/uis"]
+in_dirs = ["uis"]
 out_dirs = ["petra_viewer/gui"]
 
 ui_compilers = {"linux2": "python3 -m PyQt5.uic.pyuic",

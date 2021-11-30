@@ -133,7 +133,7 @@
   <customwidget>
    <class>RangeSlider</class>
    <extends>QSlider</extends>
-   <header>data_viewer.utils.range_slider</header>
+   <header>petra_viewer.utils.range_slider</header>
   </customwidget>
  </customwidgets>
  <resources>

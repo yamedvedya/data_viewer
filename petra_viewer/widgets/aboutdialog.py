@@ -14,7 +14,7 @@ import os
 
 from PyQt5 import QtWidgets
 
-from petra_viewer.gui.AboutDialog_ui import Ui_AboutDialog
+from petra_viewer.gui.about_dialog_ui import Ui_AboutDialog
 from petra_viewer.version import __version__
 
 

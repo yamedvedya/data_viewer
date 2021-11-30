@@ -13,9 +13,9 @@ from PyQt5 import QtWidgets, QtCore
 from petra_viewer.gui.main_window_ui import Ui_MainWindow
 
 from petra_viewer.widgets.file_browser import FileBrowser
+from petra_viewer.widgets.json_viewer import JsonView
 try:
     from petra_viewer.widgets.asapo_browser import ASAPOBrowser
-    from petra_viewer.widgets.json_viewer import JsonView
     from petra_viewer.data_sources.asapo.asapo_data_set import apply_settings_asapo
     has_asapo = True
 except:
