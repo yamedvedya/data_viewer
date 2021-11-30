@@ -106,12 +106,13 @@ class FileBrowser(AbstractWidget):
                         _need_to_reset = True
                     else:
                         _need_to_reset = False
-                    try:
-                        self._door_server = PyTango.DeviceProxy(SETTINGS['door_address'])
-                        if _need_to_reset:
-                            self._toggle_watch_door(True)
-                    except:
-                        self._parent.report_error('Cannot connect to {}'.format(SETTINGS['door_address']))
+                    if SETTINGS['door_address'] is not None:
+                        try:
+                            self._door_server = PyTango.DeviceProxy(SETTINGS['door_address'])
+                            if _need_to_reset:
+                                self._toggle_watch_door(True)
+                        except:
+                            self._parent.report_error('Cannot connect to {}'.format(SETTINGS['door_address']))
 
         except Exception as err:
             logger.error("{} : cannot apply settings: {}".format(WIDGET_NAME, err), exc_info=True)

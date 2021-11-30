@@ -12,18 +12,20 @@ from data_viewer.gui.converter_ui import Ui_Converter
 
 class Converter(QtWidgets.QMainWindow):
 
-    def __init__(self, data_pool):
+    def __init__(self, main_window):
         super(Converter, self).__init__()
         self._ui = Ui_Converter()
         self._ui.setupUi(self)
 
-        self._data_pool = data_pool
+        self._main_window = main_window
+        self._data_pool = main_window.data_pool
 
         self._file_name = None
         self._gridder = None
 
         plots = ['xy', 'xz', 'yz']
         self._plots = dict.fromkeys(plots)
+        self._limits = dict.fromkeys(plots)
         self._color_meshes = dict.fromkeys(plots)
 
         for plot in plots:
@@ -48,7 +50,7 @@ class Converter(QtWidgets.QMainWindow):
     def _mouse_clicked(self, event, source):
         if event.double():
             try:
-                self._plots[source].autoRange()
+                self._plots[source].setRange(**self._limits[source])
             except:
                 pass
 
@@ -62,12 +64,22 @@ class Converter(QtWidgets.QMainWindow):
         self._ui.sb_cen_x.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 0))
         self._ui.sb_cen_y.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 1))
 
+        self._ui.sb_energy.setValue(int(self._data_pool.get_additional_data(self._file_name, 'mnchrmtr')))
+
         super(Converter, self).show()
 
     # ----------------------------------------------------------------------
     def _preview(self):
 
-        self._convert()
+        try:
+            self._convert()
+        except Exception as err:
+            if 'size of given datasets (x, y, z, data) is not equal' in repr(err):
+                self._main_window.report_error('Cannot convert. \n Try to change ROI size by +- 1 pixel')
+            else:
+                self._main_window.report_error('Cannot convert', repr(err))
+            return
+
         if self._gridder is not None:
             for sect, coor in (('xy', 2),
                                ('xz', 1),
@@ -78,10 +90,14 @@ class Converter(QtWidgets.QMainWindow):
                     if self._color_meshes[sect] is None:
                         self._color_meshes[sect] = pg.PColorMeshItem(axis1, axis2, np.log(self._gridder.data.sum(coor) + 1))
                         self._plots[sect].addItem(self._color_meshes[sect])
+                        self._limits[sect] = {'xRange': (axis1.min(), axis1.max()),
+                                              'yRange': (axis2.min(), axis2.max())}
                     else:
                         self._color_meshes[sect].setData(axis1, axis2, np.log(self._gridder.data.sum(coor) + 1))
+                        self._limits[sect]['xRange'] = (axis1.min(), axis1.max())
+                        self._limits[sect]['yRange'] = (axis2.min(), axis2.max())
                     try:
-                        self._plots[sect].autoRange()
+                        self._plots[sect].setRange(**self._limits[sect])
                     except:
                         pass
                 except:
@@ -90,7 +106,14 @@ class Converter(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _save(self):
         if self._gridder is None:
-            self._convert()
+            try:
+                self._convert()
+            except Exception as err:
+                if 'size of given datasets (x, y, z, data) is not equal' in repr(err):
+                    self._main_window.report_error('Cannot convert. \n Try to change ROI size by +- 1 pixel')
+                else:
+                    self._main_window.report_error('Cannot convert', repr(err))
+                return
 
         self._data_pool.save_converted(self._file_name, self._gridder)
 
@@ -119,8 +142,8 @@ class Converter(QtWidgets.QMainWindow):
                              'z-',
                              cch1=int(self._ui.sb_cen_x.value()),
                              cch2=int(self._ui.sb_cen_y.value()),
-                             Nch1=int(self._data_pool.get_roi_param(roi_index, 'axis_2_width')),
-                             Nch2=int(self._data_pool.get_roi_param(roi_index, 'axis_1_width')),
+                             Nch1=int(self._data_pool.get_roi_param(roi_index, 'axis_1_width')),
+                             Nch2=int(self._data_pool.get_roi_param(roi_index, 'axis_2_width')),
                              pwidth1=self._ui.dsb_size_x.value()*1e-6,
                              pwidth2=self._ui.dsb_size_y.value()*1e-6,
                              distance=self._ui.dsb_det_d.value(),
@@ -130,12 +153,16 @@ class Converter(QtWidgets.QMainWindow):
 
         angles_set = ['omega', 'chi', 'phi', 'gamma', 'delta']
         scan_angles = dict.fromkeys(angles_set)
+        scanned_angles = self._data_pool.get_possible_axis_units(self._file_name, 0)
         for angle in angles_set:
-            try:
-                scan_angles[angle] = self._data_pool.get_additional_data(self._file_name, angle) - getattr(self._ui, f'dsb_shift_{angle}').value()
-            except KeyError:
-                scan_angles[angle] = - getattr(self._ui, f'dsb_shift_{angle}').value()
-
+            if angle in scanned_angles:
+                scan_angles[angle] = scanned_angles[angle]
+            else:
+                try:
+                    scan_angles[angle] = self._data_pool.get_additional_data(self._file_name, angle)
+                except KeyError:
+                        scan_angles[angle] = 0
+            scan_angles[angle] -= getattr(self._ui, f'dsb_shift_{angle}').value()
 
         qx, qy, qz = hxrd.Ang2Q.area(scan_angles['omega'],
                                      scan_angles['chi'],
@@ -147,7 +174,9 @@ class Converter(QtWidgets.QMainWindow):
 
         bins = int(self._ui.sb_bin_x.value()), int(self._ui.sb_bin_y.value()), int(self._ui.sb_bin_z.value())
         self._gridder = xu.FuzzyGridder3D(*bins)
-        self._gridder(qx, qy, qz, self._data_pool.get_roi_cut(self._file_name, roi_index))
+        data_cut = self._data_pool.get_roi_cut(self._file_name, roi_index)
+        print(qx.shape, data_cut.shape)
+        self._gridder(qx, qy, qz, data_cut)
 
 
 # ----------------------------------------------------------------------

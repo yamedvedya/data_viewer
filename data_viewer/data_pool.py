@@ -295,13 +295,13 @@ class DataPool(QtCore.QObject):
 
         file_name, ok = QtWidgets.QFileDialog.getSaveFileName(self.main_window, 'Select file name',
                                                               self.main_window.get_current_folder() + "/" + entry_name,
-                                                              'HDF5 format {.h5};;')
+                                                              'HDF5 format (*.h5)')
         if ok:
             # since we automatically open saved file, file name has to be unique
             while file_name in self._files_data:
                 file_name, ok = QtWidgets.QFileDialog.getSaveFileName(self.main_window, 'Select file name',
                                                                       self.main_window.get_current_folder() + "/" + entry_name,
-                                                                      'HDF5 format {.h5};;')
+                                                                      'HDF5 format (*.h5)')
             if not ok:
                 return
 

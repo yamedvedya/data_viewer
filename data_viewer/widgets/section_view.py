@@ -338,14 +338,14 @@ class SectionView(QtWidgets.QWidget):
         default_name = self._parent.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
         if type == 'image':
             file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
-                 'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*ppm); X11 Bitmap (*xbm);; X11 Pixmap (*xpm)')
+                 'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*.jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*.ppm); X11 Bitmap (*.xbm);; X11 Pixmap (*.xpm)')
             if file_name:
                 pix = QtGui.QPixmap(self._ui.gv_main.size())
                 self._ui.gv_main.render(pix)
                 pix.save(file_name)
         else:
             save_name, file_type = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
-                                                                         'Text file (*.txt);;')
+                                                                         'Text file (*.txt)')
 
             file_type = re.compile("\((.+)\)").search(file_type).group(1).strip('*')
             if save_name:

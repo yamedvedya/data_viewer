@@ -55,11 +55,13 @@ class DataViewer(QtWidgets.QMainWindow):
 
         self.configuration = {}
 
+        self._test_mode = options.test
+
         self.parameter_actions = []
         self.parameter_action_group = None
 
         self.data_pool = DataPool(self)
-        self.converter = Converter(self.data_pool)
+        self.converter = Converter(self)
 
         self.setCentralWidget(None)
 
@@ -204,7 +206,7 @@ class DataViewer(QtWidgets.QMainWindow):
     def get_settings(self, options):
 
         settings = configparser.ConfigParser()
-        if options.test:
+        if self._test_mode:
             settings.read(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_settings.ini'))
             return settings
 
@@ -248,6 +250,9 @@ class DataViewer(QtWidgets.QMainWindow):
 
     # -----------------------------------------------------------------
     def save_settings(self, file_name):
+        if self._test_mode:
+            return
+
         if not os.path.exists(os.path.dirname(file_name)):
             os.mkdir(os.path.dirname(file_name))
 
@@ -295,12 +300,14 @@ class DataViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
         self.frame_view.add_roi(idx)
-        self.cube_view.fill_roi()
+        if self.configuration['cube_view']:
+            self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
         self.frame_view.delete_roi(idx)
-        self.cube_view.fill_roi()
+        if self.configuration['cube_view']:
+            self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------
     def _batch_process(self, mode):

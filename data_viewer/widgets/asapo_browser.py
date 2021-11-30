@@ -148,7 +148,7 @@ class ASAPOBrowser(AbstractWidget):
             # then we get all streams from asapo
             meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(SETTINGS['host'],
                                                                                       SETTINGS['path'],
-                                                                                      strtobool(SETTINGS['has_filesystem']),
+                                                                                      SETTINGS['has_filesystem'],
                                                                                       SETTINGS['beamtime'],
                                                                                       detector,
                                                                                       SETTINGS['token'], 1000))
