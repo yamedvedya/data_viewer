@@ -88,6 +88,10 @@ class ProgramSetup(QtWidgets.QDialog):
                 if setting in self.settings['CUBE_VIEW']:
                     getattr(self._ui, f'chk_{setting}').setChecked(strtobool(self.settings['CUBE_VIEW'][setting]))
 
+        if 'ROIS_VIEW' in self.settings:
+            if 'macro_server' in self.settings['ROIS_VIEW']:
+                self._ui.le_macro_server.setText(self.settings['ROIS_VIEW']['macro_server'])
+
         if self._main_window.configuration['sardana'] or self._main_window.configuration['tests']:
             widget = SardanaScanSetup(self._main_window)
             self._data_sources.append(widget)
@@ -124,6 +128,8 @@ class ProgramSetup(QtWidgets.QDialog):
 
         settings['FRAME_VIEW'] = {'backend': self._ui.cmb_backend.currentText(),
                                   'levels': self._ui.cmd_default_hist.currentText()}
+
+        settings['ROIS_VIEW'] = {'macro_server': self._ui.le_macro_server.text()}
 
         for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
             settings['FRAME_VIEW'][f'display_{setting}'] = str(getattr(self._ui, f'chk_{setting}').isChecked())

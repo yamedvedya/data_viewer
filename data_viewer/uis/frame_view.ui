@@ -17,7 +17,7 @@
    <item>
     <layout class="QVBoxLayout" name="v_layout" stretch="1,0">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0">
+      <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
        <item>
         <widget class="QWidget" name="view_widget" native="true">
          <layout class="QHBoxLayout" name="view_layout"/>
@@ -27,13 +27,13 @@
         <widget class="QFrame" name="fr_hist">
          <property name="minimumSize">
           <size>
-           <width>125</width>
+           <width>150</width>
            <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>125</width>
+           <width>200</width>
            <height>16777215</height>
           </size>
          </property>

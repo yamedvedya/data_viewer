@@ -30,6 +30,8 @@ class SardanaScanSetup(Base2DDetectorSetup):
         """
         super(SardanaScanSetup, self).__init__(main_window)
 
+        self._ui.le_door_address.setText(SETTINGS['door_address'])
+
         self._ui.cmb_attenuator.addItems(SETTINGS['all_params'])
         self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'])
         if SETTINGS['atten_param'] not in SETTINGS['all_params']:
@@ -67,7 +69,7 @@ class SardanaScanSetup(Base2DDetectorSetup):
         settings = super(SardanaScanSetup, self).get_settings()
 
         if self._ui.le_door_address.text() != '':
-            settings['door_address'] = str(self._ui.le_door_address.currentText())
+            settings['door_address'] = str(self._ui.le_door_address.text())
 
         if self._ui.rb_atten_on.isChecked():
             settings['atten_param'] = str(self._ui.cmb_attenuator.currentText())
