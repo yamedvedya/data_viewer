@@ -22,6 +22,8 @@ class SectionView(QtWidgets.QWidget):
 
     update_roi = QtCore.pyqtSignal(int)
 
+    delete_me = QtCore.pyqtSignal(int)
+
     # ----------------------------------------------------------------------
     def __init__(self, parent, data_pool, my_id, my_dims):
         """
@@ -105,6 +107,8 @@ class SectionView(QtWidgets.QWidget):
         self._ui.dsp_cut_to.valueChanged.connect(lambda value, x='to': self._check_cut(x, value))
         self._ui.bg_cut_range.buttonClicked.connect(lambda selection: self._cut_range(selection))
         self._main_plot.sigXRangeChanged.connect(self._new_range)
+
+        self._ui.cmd_delete_me.clicked.connect(lambda state, idx=my_id: self.delete_me.emit(idx))
 
     # ----------------------------------------------------------------------
     def main_file_changed(self):

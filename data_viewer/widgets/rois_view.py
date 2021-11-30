@@ -2,6 +2,7 @@
 
 WIDGET_NAME = 'ROIsView'
 
+import logging
 import pickle
 
 try:
@@ -16,9 +17,13 @@ from data_viewer.widgets.abstract_widget import AbstractWidget
 from data_viewer.gui.rois_view_ui import Ui_RoisView
 from data_viewer.widgets.section_view import SectionView
 
+from data_viewer.main_window import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
+
 
 # ----------------------------------------------------------------------
-class RoisView(AbstractWidget):
+class RoisView(QtWidgets.QMainWindow):
     """
     """
     PEN_COUNTER = 0
@@ -29,22 +34,37 @@ class RoisView(AbstractWidget):
     def __init__(self, parent, data_pool):
         """
         """
-        super(RoisView, self).__init__(parent)
+        super(RoisView, self).__init__()
         self._ui = Ui_RoisView()
         self._ui.setupUi(self)
+
+        self.setCentralWidget(None)
+
+        self.setDockOptions(QtWidgets.QMainWindow.AnimatedDocks |
+                            QtWidgets.QMainWindow.AllowNestedDocks |
+                            QtWidgets.QMainWindow.AllowTabbedDocks)
+
+        self.setTabPosition(QtCore.Qt.LeftDockWidgetArea, QtWidgets.QTabWidget.North)
+
+        self._parent = parent
 
         self._data_pool = data_pool
         self._parent = parent
 
-        self.btn_add_active_tab = QtWidgets.QToolButton(self)
-        self.btn_add_active_tab.setIcon(QtGui.QIcon(":/icon/plus_small.png"))
-        self.btn_add_active_tab.clicked.connect(self.add_roi)
-        self._ui.tab_main.setCornerWidget(self.btn_add_active_tab, QtCore.Qt.TopLeftCorner)
-        self._ui.tab_main.cornerWidget(QtCore.Qt.TopLeftCorner).setMinimumSize(self.btn_add_active_tab.sizeHint())
+        menu_add_roi = QtWidgets.QAction('Add ROI', self)
+        menu_add_roi.triggered.connect(self.add_roi)
+        self.menuBar().addAction(menu_add_roi)
 
-        self._ui.tab_main.tabCloseRequested.connect(self._close_tab)
+        menu_fetch_roi = QtWidgets.QAction('Fetch ROIs', self)
+        menu_fetch_roi.triggered.connect(self.fetch_rois)
+        self.menuBar().addAction(menu_fetch_roi)
+
+        self._menu_rois = QtWidgets.QMenu('Show ROI', self)
+        self.menuBar().addMenu(self._menu_rois)
 
         self._roi_widgets = {}
+        self._docks = {}
+
         self._opened_files = {}
         self._last_color = -1
         self.settings = {}
@@ -87,11 +107,15 @@ class RoisView(AbstractWidget):
             return
 
         self._parent.add_roi(idx)
-        widget = SectionView(self, self._data_pool, idx, roi_dims)
+        widget, dock = self._add_dock(SectionView, f'ROI {name}', QtCore.Qt.LeftDockWidgetArea,
+                                      self, self._data_pool, idx, roi_dims)
+
+        dock.setStyleSheet("""QDockWidget {font-size: 12pt; font-weight: bold;}""")
+
         widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
+        widget.delete_me.connect(self._close_tab)
         self._roi_widgets[idx] = widget
-        self._ui.tab_main.insertTab(self._ui.tab_main.count(), self._roi_widgets[idx], 'ROI_{}'.format(name))
-        self._ui.tab_main.setCurrentWidget(self._roi_widgets[idx])
+        self._docks[idx] = dock
 
         for file_name, color in self._opened_files.items():
             self._roi_widgets[idx].add_file(file_name, color)
@@ -101,18 +125,39 @@ class RoisView(AbstractWidget):
         return idx
 
     # ----------------------------------------------------------------------
-    def _close_tab(self, idx):
-        widget = self._ui.tab_main.widget(idx)
+    def _add_dock(self, WidgetClass, label, location, *args, **kwargs):
+        """
+        """
+        widget = WidgetClass(*args, **kwargs)
 
-        roi_id = widget.my_id
+        dock = QtWidgets.QDockWidget(label)
+        dock.setFocusPolicy(QtCore.Qt.StrongFocus)
+        dock.setObjectName(f"{label}Dock")
+        dock.setWidget(widget)
+
+        children = [child for child in self.findChildren(QtWidgets.QDockWidget)
+                    if isinstance(child.widget(), SectionView)]
+        if children:
+            self.tabifyDockWidget(children[-1], dock)
+        else:
+            self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+
+        self._menu_rois.addAction(dock.toggleViewAction())
+
+        return widget, dock
+
+    # ----------------------------------------------------------------------
+    def _close_tab(self, roi_id):
         self._data_pool.delete_roi(roi_id)
         self._parent.delete_roi(roi_id)
 
-        self._ui.tab_main.removeTab(idx)
+        self.removeDockWidget(self._docks[roi_id])
+
+        del self._docks[roi_id]
         del self._roi_widgets[roi_id]
 
-        for idx in range(self._ui.tab_main.count()):
-            self._ui.tab_main.setTabText(idx, 'ROI_{}'.format(self._ui.tab_main.widget(idx).refresh_name()))
+        for idx, dock in enumerate(list(self._docks.values())):
+            dock.setWindowTitle(f'ROI {idx}')
 
     # ----------------------------------------------------------------------
     def current_folder(self):
@@ -154,3 +199,14 @@ class RoisView(AbstractWidget):
     def main_file_changed(self):
         for widget in self._roi_widgets.values():
             widget.main_file_changed()
+
+    # ----------------------------------------------------------------------
+    def load_ui_settings(self, settings):
+        try:
+            self.restoreGeometry(settings.value("{}/geometry".format(WIDGET_NAME)))
+        except Exception as err:
+            logger.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
+
+    # ----------------------------------------------------------------------
+    def save_ui_settings(self, settings):
+        settings.setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())

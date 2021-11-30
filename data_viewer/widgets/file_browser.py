@@ -21,13 +21,15 @@ from data_viewer.gui.file_browser_ui import Ui_FileBrowser
 
 from data_viewer.utils.utils import FileFilter
 from data_viewer.data_sources.sardana.sardana_data_set import SETTINGS
+from data_viewer.main_window import APP_NAME
 
 WIDGET_NAME = 'DataBrowser'
 
 file_formats = ["*.nxs", "*.h5"]
 
 FILE_REFRESH_PERIOD = 1
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(APP_NAME)
 
 
 # ----------------------------------------------------------------------

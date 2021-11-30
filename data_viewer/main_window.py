@@ -69,6 +69,8 @@ class DataViewer(QtWidgets.QMainWindow):
                             QtWidgets.QMainWindow.AllowNestedDocks |
                             QtWidgets.QMainWindow.AllowTabbedDocks)
 
+        self.setTabPosition(QtCore.Qt.LeftDockWidgetArea, QtWidgets.QTabWidget.North)
+
         self.settings = self.get_settings(options)
 
         self._menu_view = QtWidgets.QMenu('Widgets', self)
@@ -381,6 +383,8 @@ class DataViewer(QtWidgets.QMainWindow):
         dock.setFocusPolicy(QtCore.Qt.StrongFocus)
         dock.setObjectName("{0}Dock".format("".join(label.split())))
         dock.setWidget(widget)
+
+        dock.setStyleSheet("""QDockWidget {font-size: 14pt; font-weight: bold;}""")
 
         self.addDockWidget(location, dock)
         self._menu_view.addAction(dock.toggleViewAction())

@@ -4,7 +4,9 @@ import logging
 from PyQt5 import QtWidgets
 
 WIDGET_NAME = None
-logger = logging.getLogger(__name__)
+from data_viewer.main_window import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
 
 
 # ----------------------------------------------------------------------
