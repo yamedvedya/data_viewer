@@ -132,9 +132,9 @@ dmypy.json
 
 # Project related ignores
 /.idea
-/data_viewer/tests/logs
-/data_viewer/tests/.pytest_cache
-/data_viewer/gui/*
-!/data_viewer/gui/__init__.py
+/petra_viewer/tests/logs
+/petra_viewer/tests/.pytest_cache
+/petra_viewer/gui/*
+!/petra_viewer/gui/__init__.py
 /logs
 /temp

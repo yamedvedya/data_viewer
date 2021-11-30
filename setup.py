@@ -15,19 +15,19 @@ class PostInstallCommand(install):
         cmd = "git log -1 --format='%at' | xargs -I{} date -d @{} +'%Y/%m/%d %H:%M:%S'"
         version = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
         version = version.replace("\n", "")
-        file = open('data_viewer/version.py', 'w')
+        file = open('petra_viewer/version.py', 'w')
         file.write('__version__="{}"'.format(version))
         file.close()
 
         # build qt gui
-        cmd = "python build.py"
+        cmd = "python petra_viewer/build.py"
         output = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
         print(output)
         install.run(self)
 
 
 # Package meta-data.
-NAME = 'data_viewer'
+NAME = 'petra_viewer'
 DESCRIPTION = 'Simple viewer to data, acquired by xray-detectors at PETRA3'
 EMAIL = 'yury.matveev@desy.de'
 AUTHOR = 'Yury Matveyev'
@@ -64,11 +64,11 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     packages=find_packages(),
-    package_dir={'data_viewer': 'data_viewer',
+    package_dir={'petra_viewer': 'petra_viewer',
                  },
     package_data={
-        'data_viewer': ['uis/*',
-                        'data_viewer/*.py'],
+        'petra_viewer': ['uis/*',
+                        'petra_viewer/*.py'],
     },
     cmdclass={
         'install': PostInstallCommand,
@@ -78,7 +78,7 @@ setup(
     license='GPLv3',
     entry_points={
         'console_scripts': [
-            'data_viewer = data_viewer:main',
+            'petra_viewer = petra_viewer:main',
         ],
     },
     classifiers=[
