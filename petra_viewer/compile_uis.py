@@ -9,8 +9,8 @@ import sys
 in_dirs = ["petra_viewer/uis"]
 out_dirs = ["petra_viewer/gui"]
 
-ui_compilers = {"linux2": "python -m PyQt5.uic.pyuic",
-                "linux": "python -m PyQt5.uic.pyuic",
+ui_compilers = {"linux2": "python3 -m PyQt5.uic.pyuic",
+                "linux": "python3 -m PyQt5.uic.pyuic",
                 "win32": "C://Users//matveyev//AppData//Local//Programs//Python//Python37-32//Scripts//pyuic5.exe"}
 
 rc_compilers = {"linux2": "pyrcc5",

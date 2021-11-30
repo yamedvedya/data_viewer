@@ -20,9 +20,9 @@ class PostInstallCommand(install):
         file.close()
 
         # build qt gui
-        cmd = "python petra_viewer/build.py"
-        output = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
-        print(output)
+        # cmd = "python3 .petra_viewer/compile_uis.py"
+        # output = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
+        # print(output)
         install.run(self)
 
 
@@ -37,7 +37,7 @@ VERSION = '0.0.1'
 # What packages are required for this module to be executed?
 REQUIRED = [
     'hdf5plugin', 'attrs', 'pyqtgraph', 'psutil', 'xrayutilities',
-    'numpy', 'scipy', 'h5py', 'PyQt5', 'PyOpenGL', 'silx', 'python-dateutil'
+    'numpy', 'scipy', 'h5py', 'PyOpenGL', 'silx', 'python-dateutil'
 ]
 
 # Import the README and use it as the long-description.
@@ -67,8 +67,7 @@ setup(
     package_dir={'petra_viewer': 'petra_viewer',
                  },
     package_data={
-        'petra_viewer': ['uis/*',
-                        'petra_viewer/*.py'],
+        'petra_viewer': ['petra_viewer/*.py'],
     },
     cmdclass={
         'install': PostInstallCommand,
