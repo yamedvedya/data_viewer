@@ -14,7 +14,7 @@ if 'asapo_consumer' in sys.modules:
     from petra_viewer.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
 
 from petra_viewer.gui.settings_ui import Ui_Settings
-from petra_viewer.main_window import APP_NAME
+from petra_viewer.main_window import APP_NAME, has_asapo
 
 WIDGET_NAME = 'ProgramSetup'
 
@@ -97,7 +97,8 @@ class ProgramSetup(QtWidgets.QDialog):
             self._data_sources.append(widget)
             self._ui.tb_sources.addTab(widget, 'Sardana')
 
-        if self._main_window.configuration['asapo'] or self._main_window.configuration['tests']:
+        if self._main_window.configuration['asapo'] or self._main_window.configuration['tests'] \
+                and has_asapo:
             widget = ASAPOScanSetup(self._main_window)
             self._data_sources.append(widget)
             self._ui.tb_sources.addTab(widget, 'ASAPO')
