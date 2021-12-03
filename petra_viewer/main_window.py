@@ -1,9 +1,8 @@
 # Created by matveyev at 15.02.2021
-import shutil
-
-APP_NAME = "3D_Data_Viewer"
+APP_NAME = "PETRA_Viewer"
 
 import os
+import shutil
 import logging
 import psutil
 import configparser

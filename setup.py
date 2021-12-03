@@ -28,11 +28,11 @@ class PostInstallCommand(install):
 
 # Package meta-data.
 NAME = 'petra_viewer'
-DESCRIPTION = 'Simple viewer to data, acquired by xray-detectors at PETRA3'
+DESCRIPTION = 'Simple viewer of data, acquired by xray-detectors at PETRA3'
 EMAIL = 'yury.matveev@desy.de'
 AUTHOR = 'Yury Matveyev'
 REQUIRES_PYTHON = '>=3.6'
-VERSION = '0.9.0'
+VERSION = '0.9.2'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -67,7 +67,7 @@ setup(
     package_dir={'petra_viewer': 'petra_viewer',
                  },
     package_data={
-        'petra_viewer': ['petra_viewer/*.py'],
+        'petra_viewer': ['petra_viewer/*.py', 'petra_viewer/*.ini'],
     },
     cmdclass={
         'install': PostInstallCommand,
@@ -86,7 +86,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Development Status :: 3 - Alpha'
     ],
