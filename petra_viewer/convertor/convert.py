@@ -61,8 +61,8 @@ class Converter(QtWidgets.QMainWindow):
             self._ui.cmd_roi.addItem(f'ROI_{ind}')
 
         self._file_name = file_name
-        self._ui.sb_cen_x.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 0))
-        self._ui.sb_cen_y.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 1))
+        # self._ui.sb_cen_x.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 0))
+        # self._ui.sb_cen_y.setMaximum(self._data_pool.get_max_frame_along_axis(self._file_name, 1))
 
         self._ui.sb_energy.setValue(int(self._data_pool.get_additional_data(self._file_name, 'mnchrmtr')))
 
