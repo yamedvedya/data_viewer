@@ -4,6 +4,7 @@ import sys
 import os
 from pathlib import Path
 import configparser
+import logging
 
 from PyQt5 import QtWidgets, QtCore
 from distutils.util import strtobool
@@ -17,6 +18,8 @@ from petra_viewer.gui.settings_ui import Ui_Settings
 from petra_viewer.main_window import APP_NAME, has_asapo
 
 WIDGET_NAME = 'ProgramSetup'
+
+logger = logging.getLogger(APP_NAME)
 
 
 class ProgramSetup(QtWidgets.QDialog):
@@ -43,65 +46,88 @@ class ProgramSetup(QtWidgets.QDialog):
         self._data_sources = []
 
         for widget in ['cube', 'roi']:
-            getattr(self._ui, f'chk_{widget}').setChecked(widget in self.settings['WIDGETS']['visualization'])
+            try:
+                getattr(self._ui, f'chk_{widget}').setChecked(widget in self.settings['WIDGETS']['visualization'])
+            except Exception as err:
+                logger.error(f'Cannot display {widget} state: {repr(err)}')
 
         for ftype in ['asapo', 'sardana', 'beamline', 'tests']:
-            getattr(self._ui, f'chk_{ftype}').setChecked(ftype in self.settings['WIDGETS']['file_types'])
+            try:
+                getattr(self._ui, f'chk_{ftype}').setChecked(ftype in self.settings['WIDGETS']['file_types'])
+            except Exception as err:
+                logger.error(f'Cannot display {ftype} state: {repr(err)}')
 
-        if 'DATA_POOL' in self.settings:
-            if 'memory_mode' in self.settings['DATA_POOL']:
-                if self.settings['DATA_POOL']['memory_mode'] == 'ram':
-                    refresh_combo_box(self._ui.cmb_memory_mode, 'RAM')
-                else:
-                    refresh_combo_box(self._ui.cmb_memory_mode, 'DRIVE/ASAPO')
+        try:
+            if 'DATA_POOL' in self.settings:
+                if 'memory_mode' in self.settings['DATA_POOL']:
+                    if self.settings['DATA_POOL']['memory_mode'] == 'ram':
+                        refresh_combo_box(self._ui.cmb_memory_mode, 'RAM')
+                    else:
+                        refresh_combo_box(self._ui.cmb_memory_mode, 'DRIVE/ASAPO')
 
-            if 'max_open_files' in self.settings['DATA_POOL']:
-                self._ui.sp_lim_num.setValue(int(self.settings['DATA_POOL']['max_open_files']))
+                if 'max_open_files' in self.settings['DATA_POOL']:
+                    self._ui.sp_lim_num.setValue(int(self.settings['DATA_POOL']['max_open_files']))
 
-            if 'max_memory_usage' in self.settings['DATA_POOL']:
-                self._ui.sb_lim_mem.setValue(int(self.settings['DATA_POOL']['max_memory_usage']))
+                if 'max_memory_usage' in self.settings['DATA_POOL']:
+                    self._ui.sb_lim_mem.setValue(int(self.settings['DATA_POOL']['max_memory_usage']))
 
-            if 'export_file_delimiter' in self.settings['DATA_POOL']:
-                self._ui.le_separator.setText(self.settings['DATA_POOL']['export_file_delimiter'])
+                if 'export_file_delimiter' in self.settings['DATA_POOL']:
+                    self._ui.le_separator.setText(self.settings['DATA_POOL']['export_file_delimiter'])
 
-            if 'export_file_format' in self.settings['DATA_POOL']:
-                self._ui.le_format.setText(self.settings['DATA_POOL']['export_file_format'])
+                if 'export_file_format' in self.settings['DATA_POOL']:
+                    self._ui.le_format.setText(self.settings['DATA_POOL']['export_file_format'])
+        except Exception as err:
+            logger.error(f'Cannot display DATA POOL settings: {repr(err)}')
 
-        if 'FRAME_VIEW' in self.settings:
+        try:
+            if 'FRAME_VIEW' in self.settings:
+                for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
+                    if f'display_{setting}' in self.settings['FRAME_VIEW']:
+                        getattr(self._ui, f'chk_{setting}').setChecked(strtobool(self.settings['FRAME_VIEW'][f'display_{setting}']))
 
-            for setting in ['axes', 'axes_titles', 'grid', 'cross', 'aspect']:
-                if f'display_{setting}' in self.settings['FRAME_VIEW']:
-                    getattr(self._ui, f'chk_{setting}').setChecked(strtobool(self.settings['FRAME_VIEW'][f'display_{setting}']))
+                if 'backend' in self.settings['FRAME_VIEW']:
+                    refresh_combo_box(self._ui.cmb_backend, str(self.settings['FRAME_VIEW']['backend']))
 
-            if 'backend' in self.settings['FRAME_VIEW']:
-                refresh_combo_box(self._ui.cmb_backend, str(self.settings['FRAME_VIEW']['backend']))
+                if 'levels' in self.settings['FRAME_VIEW']:
+                    refresh_combo_box(self._ui.cmd_default_hist, str(self.settings['FRAME_VIEW']['levels']))
+        except Exception as err:
+            logger.error(f'Cannot display FRAME settings: {repr(err)}')
 
-            if 'levels' in self.settings['FRAME_VIEW']:
-                refresh_combo_box(self._ui.cmd_default_hist, str(self.settings['FRAME_VIEW']['levels']))
+        try:
+            if 'CUBE_VIEW' in self.settings:
+                for setting in ['slices', 'borders']:
+                    if setting in self.settings['CUBE_VIEW']:
+                        getattr(self._ui, f'sp_{setting}').setValue(int(self.settings['CUBE_VIEW'][setting]))
 
-        if 'CUBE_VIEW' in self.settings:
-            for setting in ['slices', 'borders']:
-                if setting in self.settings['CUBE_VIEW']:
-                    getattr(self._ui, f'sp_{setting}').setValue(int(self.settings['CUBE_VIEW'][setting]))
+                for setting in ['smooth', 'white_background']:
+                    if setting in self.settings['CUBE_VIEW']:
+                        getattr(self._ui, f'chk_{setting}').setChecked(strtobool(self.settings['CUBE_VIEW'][setting]))
+        except Exception as err:
+            logger.error(f'Cannot display CUBE settings: {repr(err)}')
 
-            for setting in ['smooth', 'white_background']:
-                if setting in self.settings['CUBE_VIEW']:
-                    getattr(self._ui, f'chk_{setting}').setChecked(strtobool(self.settings['CUBE_VIEW'][setting]))
+        try:
+            if 'ROIS_VIEW' in self.settings:
+                if 'macro_server' in self.settings['ROIS_VIEW']:
+                    self._ui.le_macro_server.setText(self.settings['ROIS_VIEW']['macro_server'])
+        except Exception as err:
+            logger.error(f'Cannot display ROIS settings: {repr(err)}')
 
-        if 'ROIS_VIEW' in self.settings:
-            if 'macro_server' in self.settings['ROIS_VIEW']:
-                self._ui.le_macro_server.setText(self.settings['ROIS_VIEW']['macro_server'])
+        try:
+            if self._main_window.configuration['sardana'] or self._main_window.configuration['tests']:
+                widget = SardanaScanSetup(self._main_window)
+                self._data_sources.append(widget)
+                self._ui.tb_sources.addTab(widget, 'Sardana')
+        except Exception as err:
+            logger.error(f'Cannot display SARDANA settings: {repr(err)}')
 
-        if self._main_window.configuration['sardana'] or self._main_window.configuration['tests']:
-            widget = SardanaScanSetup(self._main_window)
-            self._data_sources.append(widget)
-            self._ui.tb_sources.addTab(widget, 'Sardana')
-
-        if self._main_window.configuration['asapo'] or self._main_window.configuration['tests'] \
-                and has_asapo:
-            widget = ASAPOScanSetup(self._main_window)
-            self._data_sources.append(widget)
-            self._ui.tb_sources.addTab(widget, 'ASAPO')
+        try:
+            if self._main_window.configuration['asapo'] or self._main_window.configuration['tests'] \
+                    and has_asapo:
+                widget = ASAPOScanSetup(self._main_window)
+                self._data_sources.append(widget)
+                self._ui.tb_sources.addTab(widget, 'ASAPO')
+        except Exception as err:
+            logger.error(f'Cannot display ASAPO settings: {repr(err)}')
 
     # ----------------------------------------------------------------------
     def _get_settings(self):

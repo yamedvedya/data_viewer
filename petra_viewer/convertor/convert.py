@@ -140,8 +140,13 @@ class Converter(QtWidgets.QMainWindow):
 
         frame_shape = self._data_pool.get_file_axis_limits(self._file_name)[1:]
 
-        hxrd.Ang2Q.init_area('y+',
-                             'z-',
+        if self._ui.cmb_detector_rotation.currentText() == 'Horizontal':
+            x, y = 'y+', 'z-'
+        else:
+            x, y = 'y+', 'z-'
+
+        hxrd.Ang2Q.init_area(x,
+                             y,
                              cch1=int(self._ui.sb_cen_x.value()),
                              cch2=int(self._ui.sb_cen_y.value()),
                              Nch1=int(frame_shape[0]),
