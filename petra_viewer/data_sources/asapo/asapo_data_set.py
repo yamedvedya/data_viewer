@@ -157,23 +157,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 sel['min'] = sel['max'] - sel['range_limit'] - 1
 
     # ----------------------------------------------------------------------
-    def _corrections_required(self):
-        """
-        Check if any correction foreseen for the data
-        """
-        settings = self._get_settings()
-        if settings['enable_mask'] and settings['mask'] is not None:
-            return True
-
-        if settings['enable_ff'] and settings['ff'] is not None:
-            return True
-
-        # here we calculate pixel mask gap filling
-        if settings['enable_fill']:
-            return True
-        return False
-
-    # ----------------------------------------------------------------------
     def _setup_receiver(self, consumer, stream_name, data_source):
         """
         Create and set parameters for receiver, which will be used to retrieve data from ASAPO.
@@ -274,13 +257,3 @@ class ASAPODataSet(Base2DDetectorDataSet):
         """
         frame = self._reload_data([0])
         return [self.receiver.get_current_size()] + list(frame.shape[1:])
-
-    # ----------------------------------------------------------------------
-    def apply_settings(self):
-        self._need_apply_mask = self._corrections_required()
-
-        self._hist_lin = None
-        self._hist_log = None
-        self._hist_sqrt = None
-
-        self._levels = None

@@ -43,7 +43,6 @@ class Opener(QtCore.QThread):
                 while not finished:
                     try:
                         new_file = SardanaDataSet(self.data_pool, self.params['file_name'])
-                        new_file.apply_settings()
                         self.data_pool.add_new_entry(self.params['entry_name'], new_file)
                         finished = True
 
@@ -59,18 +58,15 @@ class Opener(QtCore.QThread):
 
             elif self.mode == 'stream':
                 new_file = ASAPODataSet(self.params['detector_name'], self.params['stream_name'], self.data_pool)
-                new_file.apply_settings()
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'reciprocal':
                 with h5py.File(self.params['file_name'], 'r') as f:
                     new_file = ReciprocalScan(self.data_pool, self.params['file_name'], f)
-                    new_file.apply_settings()
                     self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'beamline':
                 new_file = BeamLineView(self.data_pool, self.params['file_name'])
-                new_file.apply_settings()
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'test':
@@ -89,7 +85,6 @@ class Opener(QtCore.QThread):
                 else:
                     raise RuntimeError('Unknown test')
 
-                new_file.apply_settings()
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
         except Exception as err:

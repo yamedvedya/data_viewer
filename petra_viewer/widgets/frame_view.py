@@ -164,6 +164,10 @@ class FrameView(AbstractWidget):
             self.new_main_file()
 
     # ----------------------------------------------------------------------
+    def get_current_rect(self):
+        return self._main_view.get_current_rect()
+
+    # ----------------------------------------------------------------------
     def roi_changed(self, roi_ind):
 
         self._main_view.roi_changed(roi_ind)

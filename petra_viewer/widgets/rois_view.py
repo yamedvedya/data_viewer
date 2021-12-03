@@ -110,6 +110,9 @@ class RoisView(QtWidgets.QMainWindow):
         widget, dock = self._add_dock(SectionView, f'ROI {name}', QtCore.Qt.LeftDockWidgetArea,
                                       self, self._data_pool, idx, roi_dims)
 
+        current_rect = self._parent.get_current_rect()
+        # self._data_pool.roi_parameter_changed(idx, 'axis_{}_pos', current_rect[])
+
         dock.setStyleSheet("""QDockWidget {font-size: 12pt; font-weight: bold;}""")
 
         widget.update_roi.connect(lambda roi_id: self.update_roi.emit(roi_id))
@@ -119,6 +122,8 @@ class RoisView(QtWidgets.QMainWindow):
 
         for file_name, color in self._opened_files.items():
             self._roi_widgets[idx].add_file(file_name, color)
+
+        # widget.roi_changed()
 
         self.update_roi.emit(idx)
 

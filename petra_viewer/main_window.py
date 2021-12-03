@@ -306,6 +306,10 @@ class PETRAViewer(QtWidgets.QMainWindow):
             return os.getcwd()
 
     # ----------------------------------------------------------------------
+    def get_current_rect(self):
+        return self.frame_view.get_current_rect()
+
+    # ----------------------------------------------------------------------
     def add_roi(self, idx):
         self.frame_view.add_roi(idx)
         if self.configuration['cube_view']:

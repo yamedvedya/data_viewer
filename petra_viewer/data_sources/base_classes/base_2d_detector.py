@@ -212,3 +212,31 @@ class Base2DDetectorDataSet(BaseDataSet):
 
         logger.debug(f"Data after cut {data.shape} ")
         return data
+
+    # ----------------------------------------------------------------------
+    def _corrections_required(self):
+        """
+        Check if any correction foreseen for the data
+        """
+        settings = self._get_settings()
+        if settings['enable_mask'] and settings['mask'] is not None:
+            return True
+
+        if settings['enable_ff'] and settings['ff'] is not None:
+            return True
+
+        # here we calculate pixel mask gap filling
+        if settings['enable_fill']:
+            return True
+
+        return False
+
+    # ----------------------------------------------------------------------
+    def apply_settings(self):
+        self._need_apply_mask = self._corrections_required()
+
+        self._hist_lin = None
+        self._hist_log = None
+        self._hist_sqrt = None
+
+        self._levels = None

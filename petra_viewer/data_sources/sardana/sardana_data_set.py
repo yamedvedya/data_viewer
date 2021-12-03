@@ -210,12 +210,15 @@ class SardanaDataSet(Base2DDetectorDataSet):
             raise RuntimeError("{}: cannot calculate inten correction: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
-    def apply_settings(self):
+    def _corrections_required(self):
+        if super(SardanaDataSet, self)._corrections_required():
+            return True
 
-        self._need_apply_mask = True
+        if SETTINGS['atten_correction']:
+            return True
 
-        self._hist_lin = None
-        self._hist_log = None
-        self._hist_sqrt = None
+        if SETTINGS['inten_correction']:
+            return True
 
-        self._levels = None
+        return False
+

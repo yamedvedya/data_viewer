@@ -148,6 +148,10 @@ class View2d(QtWidgets.QWidget):
         pass
 
     # ----------------------------------------------------------------------
+    def get_current_rect(self):
+        return [0, 0, 10, 10]
+
+    # ----------------------------------------------------------------------
     def get_files_list(self):
         return self._my_files
 
@@ -244,6 +248,12 @@ class ViewPyQt(View2d):
     # ----------------------------------------------------------------------
     def _range_changed(self):
         self._frame_viewer.new_view_box(self._type, self._main_plot.getViewBox().viewRect())
+
+    # ----------------------------------------------------------------------
+    def get_current_rect(self):
+        rect = self._main_plot.getViewBox().viewRect()
+
+        return [rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height()]
 
     # ----------------------------------------------------------------------
     def new_view_box(self, view_rect):
