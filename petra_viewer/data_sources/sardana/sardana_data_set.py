@@ -132,15 +132,18 @@ class SardanaDataSet(Base2DDetectorDataSet):
 
         if len(file_lists) > 0:
             if frame_ids is not None:
-                files_to_load = [file_lists[frame_ids[0]]]
-                for frame in frame_ids[1:]:
-                    try:
-                        files_to_load.append(file_lists[frame_ids[frame]])
-                    except:
-                        pass
                 _need_cut = False
+                if len(file_lists) > 1:
+                    _select_frames = False
+                    files_to_load = [file_lists[frame_ids[0]]]
+                    for frame in frame_ids[1:]:
+                        files_to_load.append(file_lists[frame_ids[frame]])
+                else:
+                    _select_frames = True
+                    files_to_load = file_lists
             else:
                 files_to_load = file_lists
+                _select_frames = False
                 _need_cut = True
 
             source_file = h5py.File(os.path.join(self._detector_folder, files_to_load[0]), 'r')
@@ -153,6 +156,9 @@ class SardanaDataSet(Base2DDetectorDataSet):
 
             if _need_cut:
                 cube = cube[:self._scan_length, :, :]
+
+            if _select_frames:
+                cube = cube[frame_ids, :, :]
 
             return np.array(cube, dtype=np.float32)
         else:
@@ -176,7 +182,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
             return source_file['entry']['instrument']['detector']['data'].shape
 
     # ----------------------------------------------------------------------
-    def _calculate_correction(self, data_shape, frame_ids=None):
+    def _calculate_correction(self, data_shape, frame_ids):
 
         self._correction = np.ones(data_shape[0], dtype=np.float32)
 

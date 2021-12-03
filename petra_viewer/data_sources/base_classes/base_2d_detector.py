@@ -76,7 +76,7 @@ class Base2DDetectorDataSet(BaseDataSet):
         raise RuntimeError('Non implemented')
 
     # ----------------------------------------------------------------------
-    def _calculate_correction(self, data_shape, frame_ids=None):
+    def _calculate_correction(self, data_shape, frame_ids):
         """
         some files can require correction for individual frames (e.g. for incoming beam intensity)
 
@@ -106,11 +106,11 @@ class Base2DDetectorDataSet(BaseDataSet):
             else:
                 self._nD_data_array = None
                 _data = self._reload_data()
+                self.apply_corrections(_data)
         else:
             self._nD_data_array = None
             _data = self._reload_data(frame_id)
-
-        self.apply_corrections(_data, frame_id)
+            self.apply_corrections(_data, frame_id)
 
         if self._data_pool.memory_mode == 'ram':
             self._need_apply_mask = False
@@ -122,7 +122,7 @@ class Base2DDetectorDataSet(BaseDataSet):
         return _data
 
     # ----------------------------------------------------------------------
-    def apply_corrections(self, data, frame_id):
+    def apply_corrections(self, data, frame_id=None):
         """
         Apply several corrections to the data value.
         """
