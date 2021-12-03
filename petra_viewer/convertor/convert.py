@@ -145,6 +145,25 @@ class Converter(QtWidgets.QMainWindow):
         else:
             x, y = 'y+', 'z-'
 
+        if self._data_pool.get_roi_param(roi_index, 'axis_1') == 1:
+            x_axis = 1
+            y_axis = 2
+        else:
+            x_axis = 2
+            y_axis = 1
+
+        x_min = self._data_pool.get_frame_for_value(self._file_name, 1,
+                                                    self._data_pool.get_roi_param(roi_index, f'axis_{x_axis}_pos'))
+        x_max = self._data_pool.get_frame_for_value(self._file_name, 1,
+                                                    self._data_pool.get_roi_param(roi_index, f'axis_{x_axis}_pos') +
+                                                    self._data_pool.get_roi_param(roi_index, f'axis_{x_axis}_width'))
+
+        y_min = self._data_pool.get_frame_for_value(self._file_name, 2,
+                                                    self._data_pool.get_roi_param(roi_index, f'axis_{y_axis}_pos'))
+        y_max = self._data_pool.get_frame_for_value(self._file_name, 2,
+                                                    self._data_pool.get_roi_param(roi_index, f'axis_{y_axis}_pos') +
+                                                    self._data_pool.get_roi_param(roi_index, f'axis_{y_axis}_width'))
+
         hxrd.Ang2Q.init_area(x,
                              y,
                              cch1=int(self._ui.sb_cen_x.value()),
@@ -157,12 +176,7 @@ class Converter(QtWidgets.QMainWindow):
                              detrot=self._ui.dsb_det_r.value(),
                              tiltazimuth=self._ui.dsb_det_rt.value(),
                              tilt=self._ui.dsb_det_t.value(),
-                             roi=[self._data_pool.get_roi_param(roi_index, 'axis_1_pos'),
-                                  self._data_pool.get_roi_param(roi_index, 'axis_1_pos') +
-                                  self._data_pool.get_roi_param(roi_index, 'axis_1_width'),
-                                  self._data_pool.get_roi_param(roi_index, 'axis_2_pos'),
-                                  self._data_pool.get_roi_param(roi_index, 'axis_2_pos') +
-                                  self._data_pool.get_roi_param(roi_index, 'axis_2_width')])
+                             roi=[x_min, x_max, y_min, y_max])
 
         angles_set = ['omega', 'chi', 'phi', 'gamma', 'delta']
         scan_angles = dict.fromkeys(angles_set)
