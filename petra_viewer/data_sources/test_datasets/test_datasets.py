@@ -16,6 +16,8 @@ class BaseTestDataSet(object):
 
     my_name = ''
 
+    max_int = None
+
     # ----------------------------------------------------------------------
     def get_info(self):
         return self.my_name, f'{len(self.dims)}D', 'x'.join([str(dim) for dim in self.dims])
@@ -44,7 +46,6 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
         else:
             self._data_shape = self._get_data_shape()
 
-
     # ----------------------------------------------------------------------
     def _set_default_section(self):
         self._section = ({'axis': 'Z', 'integration': False, 'min': 0, 'max': self._data_shape[0] - 1, 'step': 1,
@@ -61,7 +62,7 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
                            np.linspace(-self.dims[1]/2, self.dims[1]/2, self.dims[1]))
 
         mean, sigma = 1, 4
-        frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * 100
+        frame = np.exp(-((np.sqrt(x * x + y * y * 4) - mean) ** 2 / (2.0 * sigma ** 2))) * self.max_int
 
         data_cube = np.zeros(self.dims)
         for ind, scale in enumerate(np.power(np.sin(np.linspace(0, np.pi, self.dims[0])), 4)):
@@ -91,6 +92,8 @@ class SardanaPeak1(__Fake3DSardana):
 
     my_name = 'SardanaPeak1'
 
+    max_int = 50
+
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
 
@@ -105,6 +108,8 @@ class SardanaPeak2(__Fake3DSardana):
     dims = [21, 151, 101]
 
     my_name = 'SardanaPeak2'
+
+    max_int = 150
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):

@@ -30,7 +30,11 @@ from petra_viewer.widgets.rois_view import RoisView
 from petra_viewer.data_pool import DataPool
 from petra_viewer.widgets.settings import ProgramSetup
 from petra_viewer.widgets.aboutdialog import AboutDialog
-from petra_viewer.convertor.convert import Converter
+try:
+    from petra_viewer.convertor.convert import Converter
+    has_converter = True
+except:
+    has_converter = False
 
 from petra_viewer.utils.utils import check_settings
 
@@ -60,7 +64,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self.parameter_action_group = None
 
         self.data_pool = DataPool(self)
-        self.converter = Converter(self)
+        if has_converter:
+            self.converter = Converter(self)
 
         self.setCentralWidget(None)
 
@@ -130,6 +135,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
                                                                                self, self.data_pool)
             self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
             self.data_pool.file_updated.connect(self.frame_view.update_file)
+        else:
+            self.configuration['asapo'] = False
 
         try:
             self.configuration['beamline'] = 'beamline' in self.settings['WIDGETS']['file_types']
@@ -345,12 +352,14 @@ class PETRAViewer(QtWidgets.QMainWindow):
             action = batch_menu.addAction("Process folder...")
             action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
 
-            space_menu = QtWidgets.QMenu('Space', self)
-            action = space_menu.addAction('Convert current file')
-            action.triggered.connect(self._convert)
-
             self.menuBar().addMenu(batch_menu)
-            self.menuBar().addMenu(space_menu)
+
+            if has_converter:
+                space_menu = QtWidgets.QMenu('Space', self)
+                action = space_menu.addAction('Convert current file')
+                action.triggered.connect(self._convert)
+                self.menuBar().addMenu(space_menu)
+
             self.menuBar().addSeparator()
 
         menu_settings = QtWidgets.QAction('Program settings', self)
