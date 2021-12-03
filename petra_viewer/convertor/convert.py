@@ -138,18 +138,26 @@ class Converter(QtWidgets.QMainWindow):
                        en=int(self._data_pool.get_additional_data(self._file_name, 'mnchrmtr')),
                        sampleor="y-")
 
+        frame_shape = self._data_pool.get_file_axis_limits(self._file_name)[1:]
+
         hxrd.Ang2Q.init_area('y+',
                              'z-',
                              cch1=int(self._ui.sb_cen_x.value()),
                              cch2=int(self._ui.sb_cen_y.value()),
-                             Nch1=int(self._data_pool.get_roi_param(roi_index, 'axis_1_width')),
-                             Nch2=int(self._data_pool.get_roi_param(roi_index, 'axis_2_width')),
+                             Nch1=int(frame_shape[0]),
+                             Nch2=int(frame_shape[1]),
                              pwidth1=self._ui.dsb_size_x.value()*1e-6,
                              pwidth2=self._ui.dsb_size_y.value()*1e-6,
                              distance=self._ui.dsb_det_d.value(),
                              detrot=self._ui.dsb_det_r.value(),
                              tiltazimuth=self._ui.dsb_det_rt.value(),
-                             tilt=self._ui.dsb_det_t.value())
+                             tilt=self._ui.dsb_det_t.value(),
+                             roi=[self._data_pool.get_roi_param(roi_index, 'axis_1_pos'),
+                                  self._data_pool.get_roi_param(roi_index, 'axis_1_pos') +
+                                  self._data_pool.get_roi_param(roi_index, 'axis_1_width'),
+                                  self._data_pool.get_roi_param(roi_index, 'axis_2_pos'),
+                                  self._data_pool.get_roi_param(roi_index, 'axis_2_pos') +
+                                  self._data_pool.get_roi_param(roi_index, 'axis_2_width')])
 
         angles_set = ['omega', 'chi', 'phi', 'gamma', 'delta']
         scan_angles = dict.fromkeys(angles_set)
