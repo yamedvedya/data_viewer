@@ -35,8 +35,10 @@ class ArraySelector(QtWidgets.QWidget):
         self._ui.but_next.clicked.connect(lambda: self._update_from_navigation_buttons('next'))
         self._ui.but_last.clicked.connect(lambda: self._update_from_navigation_buttons('last'))
 
-        self._ui.sp_value_from.valueChanged.connect(self._update_from_sp)
-        self._ui.sp_value_to.valueChanged.connect(self._update_from_sp)
+        self._ui.sp_value_from.editingFinished.connect(self._update_from_sp)
+        self._ui.sp_value_to.editingFinished.connect(self._update_from_sp)
+
+        self._ui.cmd_show_all.clicked.connect(self._show_all)
 
     # ----------------------------------------------------------------------
     def switch_integration_mode(self, state):
@@ -45,6 +47,13 @@ class ArraySelector(QtWidgets.QWidget):
         self._ui.sl_range.setVisible(state)
         self._ui.sp_value_to.setVisible(state)
         self._ui.lb_to.setVisible(state)
+
+    # ----------------------------------------------------------------------
+    def _show_all(self):
+        self._set_spin_boxes(0, self._max_frame)
+        self._set_slider_value(0, self._max_frame)
+
+        self.new_cut.emit()
 
     # ----------------------------------------------------------------------
     def _update_from_frame_slider(self, value):

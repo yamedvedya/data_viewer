@@ -309,9 +309,10 @@ class BaseDataSet(object):
         axes_order = list(range(len(data.shape)))
         for ind, (axis, _, _) in enumerate(section):
             move_from = axes_order.index(axis)
-            data = np.moveaxis(data, move_from, ind)
-            del axes_order[move_from]
-            axes_order.insert(ind, move_from)
+            if move_from != ind:
+                data = np.moveaxis(data, move_from, ind)
+                del axes_order[move_from]
+                axes_order.insert(ind, axis)
 
         logger.debug(f"{self.my_name}: Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
 

@@ -194,10 +194,6 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         self._setup_menu()
 
-        if self.configuration['sardana']:
-            action = self.additions_menu.addAction("Fetch ROI from MacroServer...")
-            action.triggered.connect(self.rois_view.fetch_rois)
-
         self._init_status_bar()
 
         self._status_timer = QtCore.QTimer(self)
@@ -375,9 +371,6 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self.menuBar().addAction(menu_settings)
 
         self.menuBar().addSeparator()
-
-        self.additions_menu = QtWidgets.QMenu('Additional features', self)
-        self.menuBar().addMenu(self.additions_menu)
 
         about_action = QtWidgets.QAction('About', self)
         about_action.triggered.connect(lambda: AboutDialog(self).exec_())

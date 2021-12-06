@@ -100,10 +100,10 @@ class SardanaDataSet(Base2DDetectorDataSet):
                     self._data_shape = self._get_data_shape()
 
         self._possible_axes_units[0]['point_nb'] = np.arange(self._data_shape[0])
-        self._possible_axes_units[1] = {'detector X': np.arange(self._data_shape[1])}
-        self._possible_axes_units[2] = {'detector Y': np.arange(self._data_shape[2])}
+        self._possible_axes_units[1] = {'detector Y': np.arange(self._data_shape[1])}
+        self._possible_axes_units[2] = {'detector X': np.arange(self._data_shape[2])}
 
-        self._axes_units = ['point_nb', 'detector X', 'detector Y']
+        self._axes_units = ['point_nb', 'detector Y', 'detector X']
         self._axis_units_is_valid = [True, True, True]
 
     # ----------------------------------------------------------------------
