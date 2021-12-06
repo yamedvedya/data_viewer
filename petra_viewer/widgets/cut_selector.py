@@ -14,9 +14,6 @@ logger = logging.getLogger(APP_NAME)
 
 class CutSelector(QtWidgets.QWidget):
 
-    new_cut = QtCore.pyqtSignal(bool)
-    new_axis = QtCore.pyqtSignal(list)
-
     new_units = QtCore.pyqtSignal(list)
 
     def __init__(self, parent):
@@ -178,8 +175,7 @@ class CutSelector(QtWidgets.QWidget):
             self._z_buttons_group.addButton(rb)
             self._z_buttons.append(rb)
 
-            selector = ArraySelector(ind, self._data_pool, self._frame_viewer)
-            selector.new_cut.connect(lambda id=ind: self._new_range(id))
+            selector = ArraySelector(ind, self, self._data_pool, self._frame_viewer)
             layout.addWidget(selector, ind + 1, 4)
             self._array_selectors.append(selector)
 
@@ -196,13 +192,13 @@ class CutSelector(QtWidgets.QWidget):
         self._array_selectors[axis].units_changed()
 
     # ----------------------------------------------------------------------
-    def _new_range(self, ind):
-        self.new_cut.emit(ind not in [self._last_axes['X'], self._last_axes['Y'], self._last_axes['Z']])
+    def new_range(self, ind):
+        self._frame_viewer.new_cut(ind not in [self._last_axes['X'], self._last_axes['Y'], self._last_axes['Z']])
 
     # ----------------------------------------------------------------------
     def _integration_changed(self, state, ind):
         self._array_selectors[ind].switch_integration_mode(state)
-        self._new_range(ind)
+        self.new_range(ind)
 
     # ----------------------------------------------------------------------
     def _new_axes(self, axis, ind):
@@ -255,7 +251,7 @@ class CutSelector(QtWidgets.QWidget):
 
         self.block_signals(False)
 
-        self.new_axis.emit(labels)
+        self._frame_viewer.update_axes(labels)
 
     # ----------------------------------------------------------------------
     def set_limits(self, limits):

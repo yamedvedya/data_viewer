@@ -43,9 +43,6 @@ class FrameView(AbstractWidget):
         self.hist = self._ui.hist
         self.hist.setBackground('w')
 
-        self._ui.cut_selectors.new_cut.connect(self._new_cut)
-        self._ui.cut_selectors.new_axis.connect(self._update_axes)
-
         self._signals_blocked = False
 
         try:
@@ -210,7 +207,7 @@ class FrameView(AbstractWidget):
         self._second_view.delete_roi(idx)
 
     # ----------------------------------------------------------------------
-    def _update_axes(self, axes_labels):
+    def update_axes(self, axes_labels):
 
         self._main_view.new_axes(axes_labels)
         self._second_view.new_axes(axes_labels)
@@ -312,7 +309,7 @@ class FrameView(AbstractWidget):
                 self._fake_image_item.sigImageChanged.emit()
 
     # ----------------------------------------------------------------------
-    def _new_cut(self, invisible_axis):
+    def new_cut(self, invisible_axis):
         self.update_images()
         if invisible_axis:
             self.new_axes.emit()
@@ -428,7 +425,7 @@ class FrameView(AbstractWidget):
 
             axes_labels = [name for s, name in zip(sections, axes_names) if s['axis'] == 'X']
             axes_labels += [name for s, name in zip(sections, axes_names) if s['axis'] == 'Y']
-            self._update_axes(axes_labels)
+            self.update_axes(axes_labels)
 
     # ----------------------------------------------------------------------
     def new_main_file(self):

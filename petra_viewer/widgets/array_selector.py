@@ -11,9 +11,7 @@ logger = logging.getLogger(APP_NAME)
 
 class ArraySelector(QtWidgets.QWidget):
 
-    new_cut = QtCore.pyqtSignal()
-
-    def __init__(self, my_id, data_pool, frame_viewer):
+    def __init__(self, my_id, cut_selector, data_pool, frame_viewer):
         """
         """
         super(ArraySelector, self).__init__()
@@ -26,6 +24,7 @@ class ArraySelector(QtWidgets.QWidget):
 
         self._data_pool = data_pool
         self._frame_viewer = frame_viewer
+        self._cut_selector = cut_selector
 
         self._ui.sl_frame.valueChanged.connect(self._update_from_frame_slider)
         self._ui.sl_range.sliderMoved.connect(self._update_from_range_slider)
@@ -53,7 +52,7 @@ class ArraySelector(QtWidgets.QWidget):
         self._set_spin_boxes(0, self._max_frame)
         self._set_slider_value(0, self._max_frame)
 
-        self.new_cut.emit()
+        self._cut_selector.new_range(self._my_id)
 
     # ----------------------------------------------------------------------
     def _update_from_frame_slider(self, value):
@@ -62,7 +61,7 @@ class ArraySelector(QtWidgets.QWidget):
         """
         self._set_spin_boxes(value, value)
         self._set_slider_value(value, value)
-        self.new_cut.emit()
+        self._cut_selector.new_range(self._my_id)
 
     # ----------------------------------------------------------------------
     def _update_from_range_slider(self, z_min, z_max):
@@ -72,7 +71,7 @@ class ArraySelector(QtWidgets.QWidget):
         z_min, z_max = self._apply_range_limit(z_min, z_max)
         self._set_spin_boxes(z_min, z_max)
         self._set_slider_value(z_min, z_max)
-        self.new_cut.emit()
+        self._cut_selector.new_range(self._my_id)
 
     # ----------------------------------------------------------------------
     def _update_from_navigation_buttons(self, mode):
@@ -104,7 +103,7 @@ class ArraySelector(QtWidgets.QWidget):
 
         self._set_spin_boxes(new_min, new_max)
         self._set_slider_value(new_min, new_max)
-        self.new_cut.emit()
+        self._cut_selector.new_range(self._my_id)
 
     # ----------------------------------------------------------------------
     def _update_from_sp(self):
@@ -116,7 +115,7 @@ class ArraySelector(QtWidgets.QWidget):
         z_min, z_max = self._apply_range_limit(z_min, z_max)
         self._set_slider_value(z_min, z_max)
         self._set_spin_boxes(z_min, z_max)
-        self.new_cut.emit()
+        self._cut_selector.new_range(self._my_id)
 
     # ----------------------------------------------------------------------
     def _set_slider_value(self, z_min, z_max):
