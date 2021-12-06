@@ -52,6 +52,12 @@ class SectionPlot(QtCore.QObject):
         return self.plot.getData()
 
     # ----------------------------------------------------------------------
+    def get_range(self):
+        x_data, y_data = self.plot.getData()
+
+        return np.min(x_data), np.max(x_data), np.min(y_data), np.max(y_data)
+
+    # ----------------------------------------------------------------------
     def get_data_to_save(self):
         data = np.transpose(self.plot.getData())
         header = ['x', 'ROI value']

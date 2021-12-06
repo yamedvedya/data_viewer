@@ -298,7 +298,8 @@ class ViewPyQt(View2d):
             self._rois[roi_ind][1].setVisible(False)
             return
 
-        if self.data_pool.get_roi_param(roi_ind, 'dimensions') != self.data_pool.get_file_dimension(self.current_file):
+        if self.data_pool.get_roi_param(self._rois[roi_ind][2], 'dimensions') != \
+                self.data_pool.get_file_dimension(self.current_file):
             self._rois[roi_ind][0].setVisible(False)
             self._rois[roi_ind][1].setVisible(False)
             return

@@ -365,6 +365,16 @@ class DataPool(QtCore.QObject):
         return self._files_data[file_name].get_file_dimension()
 
     # ----------------------------------------------------------------------
+    def get_metadata(self, file_name):
+        """
+            :param: file_name
+            :return: metadata to be displayed
+        """
+        logger.debug(f"Metadata requested for file {file_name}")
+
+        return self._files_data[file_name].get_metadata()
+
+    # ----------------------------------------------------------------------
     #       ROIs plots section
     # ----------------------------------------------------------------------
     def roi_counts(self):

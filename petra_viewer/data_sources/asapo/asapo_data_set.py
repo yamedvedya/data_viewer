@@ -192,6 +192,24 @@ class ASAPODataSet(Base2DDetectorDataSet):
         return SETTINGS
 
     # -------------------------------------------------------------------
+    def get_metadata(self):
+
+        if 'metadata' not in self._additional_data:
+            return None
+
+        if self._section[0]['integration']:
+            frame_sel = range(self._section[0]['min'], self._section[0]['max'])
+        else:
+            frame_sel = range(self._section[0]['min'], self._section[0]['min'] + 1)
+
+        item_ids = [self._additional_data['already_loaded_ids'].index(frame) for frame in frame_sel]
+        data_to_display = {}
+        for item_id in item_ids:
+            data_to_display[str(item_id)] = self._additional_data['metadata'][item_id]
+
+        return data_to_display
+
+    # -------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
         """
         reloads stream

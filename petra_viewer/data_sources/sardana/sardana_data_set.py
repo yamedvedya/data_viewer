@@ -120,6 +120,11 @@ class SardanaDataSet(Base2DDetectorDataSet):
         return SETTINGS
 
     # ----------------------------------------------------------------------
+    def get_metadata(self):
+
+        return self._additional_data
+
+    # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
         """
         reloads sardana data

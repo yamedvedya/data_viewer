@@ -157,29 +157,9 @@ class JsonView(QtWidgets.QWidget):
             if file_key is None or file_key == '':
                 return
 
-            selection = self.data_pool.get_section(file_key)
-            logger.debug(f"Update metadata with selection: {selection} for stream {file_key}")
-
-            if len(selection) == 0:
-                return
-            else:
-                selection = selection[0]
-
-            if selection['integration']:
-                frame_sel = range(selection['min'], selection['max'])
-            else:
-                frame_sel = range(selection['min'], selection['min'] + 1)
-
-            metadata = self.data_pool.get_additional_data(file_key, 'metadata')
-            if metadata is None:
-                return
-
-            message_idx = self.data_pool.get_additional_data(file_key, 'already_loaded_ids')
-            item_ids = [message_idx.index(frame) for frame in frame_sel]
-            data_to_display = {}
-            for item_id in item_ids:
-                data_to_display[str(item_id)] = metadata[item_id]
-            self.update_view(data_to_display)
+            data_to_display = self.data_pool.get_metadata(file_key)
+            if data_to_display is not None:
+                self.update_view(data_to_display)
         except Exception as err:
             logger.error(f'Cannot update meta: {err}', exc_info=True)
 

@@ -12,7 +12,7 @@ from PyQt5 import QtWidgets, QtCore
 from petra_viewer.gui.main_window_ui import Ui_MainWindow
 
 from petra_viewer.widgets.file_browser import FileBrowser
-from petra_viewer.widgets.json_viewer import JsonView
+from petra_viewer.widgets.metadata_viewer import JsonView
 try:
     from petra_viewer.widgets.asapo_browser import ASAPOBrowser
     from petra_viewer.data_sources.asapo.asapo_data_set import apply_settings_asapo
@@ -109,6 +109,17 @@ class PETRAViewer(QtWidgets.QMainWindow):
                                                                  self, self.data_pool)
 
         try:
+            self.configuration['metadata'] = 'metadata' in self.settings['WIDGETS']['visualization']
+        except:
+            self.configuration['metadata'] = True
+
+        if self.configuration['metadata']:
+            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
+                                                                               QtCore.Qt.LeftDockWidgetArea,
+                                                                               self, self.data_pool)
+            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
+
+        try:
             self.configuration['sardana'] = 'sardana' in self.settings['WIDGETS']['file_types']
         except:
             self.configuration['sardana'] = True
@@ -123,17 +134,11 @@ class PETRAViewer(QtWidgets.QMainWindow):
         except:
             self.configuration['asapo'] = True
 
-        self.metadata_browser = None
-
         if has_asapo and self.configuration['asapo']:
             self.asapo_browser, self.asapo_browser_dock = self._add_dock(ASAPOBrowser, "ASAPO View",
                                                                          QtCore.Qt.LeftDockWidgetArea, self)
             self.asapo_browser.stream_selected.connect(self.data_pool.open_stream)
             self.asapo_browser.stream_updated.connect(self.data_pool.update_stream)
-            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
-                                                                               QtCore.Qt.LeftDockWidgetArea,
-                                                                               self, self.data_pool)
-            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
             self.data_pool.file_updated.connect(self.frame_view.update_file)
         else:
             self.configuration['asapo'] = False
@@ -157,11 +162,6 @@ class PETRAViewer(QtWidgets.QMainWindow):
             self.tests_browser, self.tests_browser_dock = self._add_dock(TestsBrowser, "Test Browser",
                                                                        QtCore.Qt.LeftDockWidgetArea, self)
             self.tests_browser.test_selected.connect(self.data_pool.open_test)
-            if self.metadata_browser is None:
-                self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
-                                                                                   QtCore.Qt.LeftDockWidgetArea,
-                                                                                   self, self.data_pool)
-                self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
 
         self.data_pool.new_file_added.connect(self.frame_view.add_file)
         self.data_pool.close_file.connect(self.frame_view.file_closed_by_pool)
@@ -308,6 +308,10 @@ class PETRAViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def get_current_rect(self):
         return self.frame_view.get_current_rect()
+
+    # ----------------------------------------------------------------------
+    def get_current_axes(self):
+        return self.frame_view.get_current_axes()
 
     # ----------------------------------------------------------------------
     def add_roi(self, idx):

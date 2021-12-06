@@ -45,7 +45,7 @@ class ProgramSetup(QtWidgets.QDialog):
 
         self._data_sources = []
 
-        for widget in ['cube', 'roi']:
+        for widget in ['cube', 'roi', 'metadata']:
             try:
                 getattr(self._ui, f'chk_{widget}').setChecked(widget in self.settings['WIDGETS']['visualization'])
             except Exception as err:
@@ -134,7 +134,7 @@ class ProgramSetup(QtWidgets.QDialog):
 
         settings = {'WIDGETS': {'visualization': '', 'file_types': ''}}
         cmd = []
-        for widget in ['cube', 'roi']:
+        for widget in ['cube', 'roi', 'metadata']:
             if getattr(self._ui, f'chk_{widget}').isChecked():
                 cmd.append(widget)
 

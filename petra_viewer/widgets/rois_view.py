@@ -111,7 +111,21 @@ class RoisView(QtWidgets.QMainWindow):
                                       self, self._data_pool, idx, roi_dims)
 
         current_rect = self._parent.get_current_rect()
-        # self._data_pool.roi_parameter_changed(idx, 'axis_{}_pos', current_rect[])
+        width = (current_rect[2] - current_rect[0])/10
+        x = (current_rect[0] + current_rect[2])/2 - width/2
+
+        height = (current_rect[3] - current_rect[1])/10
+        y = (current_rect[1] + current_rect[3])/2 - height/2
+
+        current_axes = self._parent.get_current_axes()
+
+        for axis in range(1, 100):
+            if self._data_pool.get_roi_param(idx, f'axis_{axis}') == current_axes['x']:
+                self._data_pool.roi_parameter_changed(idx, axis, 'pos', x)
+                self._data_pool.roi_parameter_changed(idx, axis, 'width', width)
+            elif self._data_pool.get_roi_param(idx, f'axis_{axis}') == current_axes['y']:
+                self._data_pool.roi_parameter_changed(idx, axis, 'pos', y)
+                self._data_pool.roi_parameter_changed(idx, axis, 'width', height)
 
         dock.setStyleSheet("""QDockWidget {font-size: 12pt; font-weight: bold;}""")
 
@@ -123,7 +137,7 @@ class RoisView(QtWidgets.QMainWindow):
         for file_name, color in self._opened_files.items():
             self._roi_widgets[idx].add_file(file_name, color)
 
-        # widget.roi_changed()
+        widget.roi_changed()
 
         self.update_roi.emit(idx)
 

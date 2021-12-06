@@ -207,6 +207,11 @@ class BaseDataSet(object):
         return self._data_shape[axis] - 1
 
     # ----------------------------------------------------------------------
+    def get_metadata(self):
+
+        return None
+
+    # ----------------------------------------------------------------------
     def get_roi_plot(self, sect):
         """
 

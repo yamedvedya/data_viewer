@@ -1,4 +1,5 @@
 # Created by matveyev at 15.02.2021
+import numpy as np
 
 WIDGET_NAME = 'SectionView'
 
@@ -338,6 +339,28 @@ class SectionView(QtWidgets.QWidget):
             plot.delete_fits()
 
     # ----------------------------------------------------------------------
+    def _axis_scale(self):
+        self._main_plot.setLogMode(self._log_x.isChecked(), self._log_y.isChecked())
+
+    # ----------------------------------------------------------------------
+    def _show_all(self):
+        minimum_x, maximum_x = +np.Inf, -np.Inf
+        minimum_y, maximum_y = +np.Inf, -np.Inf
+
+        for plot in self._section_plots.values():
+            x_min, x_max, y_min, y_max = plot.get_range()
+            minimum_x = min(minimum_x, x_min)
+            maximum_x = max(maximum_x, x_max)
+            minimum_y = min(minimum_y, y_min)
+            maximum_y = max(maximum_y, y_max)
+
+        try:
+            self._main_plot.getViewBox().setRange(QtCore.QRectF(minimum_x, minimum_y,
+                                                                maximum_x - minimum_x, maximum_y - minimum_y))
+        except:
+            pass
+
+    # ----------------------------------------------------------------------
     def _save(self, type):
         default_name = self._parent.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
         if type == 'image':
@@ -392,10 +415,10 @@ class SectionView(QtWidgets.QWidget):
         print_action.triggered.connect(self._print_plot)
 
         action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/copy.png")), "Copy to Clipboard")
-        action.triggered.connect(lambda checked, x='image': self._copy_to_clipboard(x))
+        action.triggered.connect(lambda: self._copy_to_clipboard('image'))
 
         action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/save.png")), "Save")
-        action.triggered.connect(lambda checked, x='image': self._save(x))
+        action.triggered.connect(lambda: self._save('image'))
 
         toolbar.addSeparator()
 
@@ -403,27 +426,91 @@ class SectionView(QtWidgets.QWidget):
         toolbar.addWidget(label)
 
         action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/copy.png")), "Copy to Clipboard")
-        action.triggered.connect(lambda checked, x='data': self._copy_to_clipboard(x))
+        action.triggered.connect(lambda: self._copy_to_clipboard('data'))
 
         action = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/save.png")), "Save")
-        action.triggered.connect(lambda checked, x='data': self._save(x))
+        action.triggered.connect(lambda: self._save('data'))
 
         toolbar.addSeparator()
 
         action_grid = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/grid.png")), "Grid")
         action_grid.setCheckable(True)
         action_grid.setChecked(True)
-        action_grid.toggled.connect(lambda flag: self._main_plot.showGrid(flag, flag, alpha=0.25))
+        action_grid.triggered.connect(lambda flag: self._main_plot.showGrid(flag, flag, alpha=0.25))
 
         action_cross = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/crosshair.png")), "Crosshair Cursor")
         action_cross.setCheckable(True)
         action_cross.setChecked(False)
-        action_cross.toggled.connect(lambda state: self._cross.setVisible(state))
+        action_cross.triggered.connect(lambda state: self._cross.setVisible(state))
 
         action_ruler = toolbar.addAction(QtGui.QIcon(QtGui.QPixmap(":/icon/ruler.png")), "Distance Measurement")
         action_ruler.setCheckable(True)
         action_ruler.setChecked(False)
-        action_ruler.toggled.connect(lambda state: self._ruler.setEnabled(state))
+        action_ruler.triggered.connect(lambda state: self._ruler.setEnabled(state))
+
+        toolbar.addSeparator()
+
+        label = QtWidgets.QLabel("Axes: ", self)
+        toolbar.addWidget(label)
+
+        button = QtWidgets.QToolButton(self)
+        button.setText("Y")
+
+        menu = QtWidgets.QMenu(button)
+
+        normalize = QtWidgets.QAction("Normalize", self)
+        normalize.setCheckable(True)
+        normalize.setChecked(False)
+        normalize.triggered.connect(lambda state: self._normalize_plots(state))
+        menu.addAction(normalize)
+
+        group = QtWidgets.QActionGroup(self)
+        group.setExclusive(True)
+
+        self._lin_y = QtWidgets.QAction("Linear", self)
+        self._lin_y.setCheckable(True)
+        self._lin_y.setChecked(True)
+        self._lin_y.triggered.connect(self._axis_scale)
+        group.addAction(self._lin_y)
+        menu.addAction(self._lin_y)
+
+        self._log_y = QtWidgets.QAction("Log", self)
+        self._log_y.setCheckable(True)
+        self._log_y.triggered.connect(self._axis_scale)
+        group.addAction(self._log_y)
+        menu.addAction(self._log_y)
+
+        button.setMenu(menu)
+        button.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        toolbar.addWidget(button)
+
+        button = QtWidgets.QToolButton(self)
+        button.setText("X")
+
+        menu = QtWidgets.QMenu(button)
+
+        group = QtWidgets.QActionGroup(self)
+        group.setExclusive(True)
+
+        self._lin_x = QtWidgets.QAction("Linear", self)
+        self._lin_x.setCheckable(True)
+        self._lin_x.setChecked(True)
+        self._lin_x.triggered.connect(self._axis_scale)
+        group.addAction(self._lin_x)
+        menu.addAction(self._lin_x)
+
+        self._log_x = QtWidgets.QAction("Log", self)
+        self._log_x.setCheckable(True)
+        self._log_x.triggered.connect(self._axis_scale)
+        group.addAction(self._log_x)
+        menu.addAction(self._log_x)
+
+        button.setMenu(menu)
+        button.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        toolbar.addWidget(button)
+
+        auto_zoom = toolbar.addAction("Auto zoom")
+        auto_zoom.triggered.connect(self._show_all)
 
         toolbar.addSeparator()
 
@@ -431,13 +518,6 @@ class SectionView(QtWidgets.QWidget):
         button.setText("Fit")
         self._make_fit_menu(button)
         toolbar.addWidget(button)
-
-        normalize_button = QtWidgets.QToolButton(self)
-        normalize_button.setText("Normalize")
-        normalize_button.setCheckable(True)
-        normalize_button.setChecked(False)
-        normalize_button.clicked.connect(lambda state: self._normalize_plots(state))
-        toolbar.addWidget(normalize_button)
 
         toolbar.addSeparator()
 
