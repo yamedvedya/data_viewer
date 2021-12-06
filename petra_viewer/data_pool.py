@@ -623,7 +623,10 @@ class DataPool(QtCore.QObject):
         :return: 2D np.array
         """
         logger.debug(f"Return 2D image: for file {file}")
-        return self._files_data[file].get_2d_picture()
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        data = self._files_data[file].get_2d_picture()
+        QtWidgets.QApplication.restoreOverrideCursor()
+        return data
 
     # ----------------------------------------------------------------------
     def get_section(self, file):
