@@ -46,7 +46,7 @@ class ArraySelector(QtWidgets.QWidget):
     def _new_cut(self):
         self._old_z_min = self._ui.sl_range.low()
         self._old_z_max = self._ui.sl_range.high()
-        self._cut_selector.new_range(self._my_id)
+        self._cut_selector.set_integration(self._my_id)
 
     # ----------------------------------------------------------------------
     def switch_integration_mode(self, state):

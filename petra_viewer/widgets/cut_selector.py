@@ -196,6 +196,11 @@ class CutSelector(QtWidgets.QWidget):
         self._frame_viewer.new_cut(ind not in [self._last_axes['X'], self._last_axes['Y'], self._last_axes['Z']])
 
     # ----------------------------------------------------------------------
+    def set_integration(self, ind):
+        self._integration_boxes[ind].setChecked(True)
+        self._integration_changed(True, ind)
+
+    # ----------------------------------------------------------------------
     def _integration_changed(self, state, ind):
         self._array_selectors[ind].switch_integration_mode(state)
         self.new_range(ind)
