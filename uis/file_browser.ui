@@ -58,6 +58,9 @@
     </layout>
    </item>
    <item>
+    <widget class="BreadcrumbsAddressBar" name="breadcrumbsaddressbar" native="true"/>
+   </item>
+   <item>
     <widget class="QTreeView" name="tr_file_browser">
      <property name="minimumSize">
       <size>
@@ -69,6 +72,16 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <customwidgets>
+  <customwidget>
+   <class>BreadcrumbsAddressBar</class>
+   <extends>QWidget</extends>
+   <header>petra_viewer.widgets.breadcrumbsaddressbar</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

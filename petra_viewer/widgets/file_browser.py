@@ -1,5 +1,6 @@
 # Created by matveyev at 15.02.2021
 
+import platform
 import os
 import logging
 
@@ -13,6 +14,12 @@ try:
     import PyTango
 except:
     pass
+
+from petra_viewer.widgets.breadcrumbsaddressbar.platform.common import if_platform
+
+if platform.system() == "Windows":
+    from petra_viewer.widgets.breadcrumbsaddressbar.platform.windows import (
+        event_device_connection, parse_message)
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -49,8 +56,7 @@ class FileBrowser(AbstractWidget):
         self._mode = mode
 
         self.file_browser = QtWidgets.QFileSystemModel()
-        self.file_browser.setRootPath("")
-        self.file_browser.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDot | QtCore.QDir.Files)
+        self.file_browser.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDot | QtCore.QDir.NoDotDot | QtCore.QDir.Files)
         self.file_browser.setNameFilters(file_formats)
         self.file_browser.setNameFilterDisables(False)
 
@@ -72,6 +78,12 @@ class FileBrowser(AbstractWidget):
         self._ui.tr_file_browser.setSortingEnabled(True)
         self._ui.tr_file_browser.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
+        path = os.getcwd()
+        self.address = self._ui.breadcrumbsaddressbar
+        self.address.set_path(path)
+        self.address.path_selected.connect(self._set_tree_to_path)
+        self._set_tree_to_path(path)
+
         try:
             self._my_event_handler = PatternMatchingEventHandler(file_formats, "", False, True)
             self._my_event_handler.on_any_event = self._on_created
@@ -90,6 +102,16 @@ class FileBrowser(AbstractWidget):
             self._ui.chk_door.setVisible(False)
 
         self._ui.cmd_reload.clicked.connect(self._reload)
+
+    # ----------------------------------------------------------------------
+    @if_platform('Windows')
+    def nativeEvent(self, eventType, message):
+        msg = parse_message(message)
+        devices = event_device_connection(msg)
+        if devices:
+            print("insert/remove device")
+            self.address.update_rootmenu_devices()
+        return False, 0
 
     # ----------------------------------------------------------------------
     def _reload(self):
@@ -146,23 +168,19 @@ class FileBrowser(AbstractWidget):
                     self.file_selected.emit(info.strip("Operation saved in").strip('(nxs)').strip(), self._mode)
 
     # ----------------------------------------------------------------------
+    def _set_tree_to_path(self, path):
+
+        path = str(path)
+        self.file_browser.setRootPath(path)
+        self._ui.tr_file_browser.setRootIndex(self.file_filter.mapFromSource(self.file_browser.index(path)))
+
+    # ----------------------------------------------------------------------
     def _open_folder(self):
 
         selected_index = self._ui.tr_file_browser.selectionModel().currentIndex()
         file_index = self.file_filter.mapToSource(selected_index)
         if self.file_browser.isDir(file_index):
-            name = str(self.file_browser.filePath(file_index))
-            if name.endswith('..'):
-                parent = self.file_filter.parent(self.file_filter.parent(selected_index))
-                if self.file_filter.parent(parent) == QtCore.QModelIndex():
-                    self._ui.tr_file_browser.setRootIndex(QtCore.QModelIndex())
-                    self.file_browser.setRootPath("")
-                else:
-                    self._ui.tr_file_browser.setRootIndex(parent)
-                    self.file_browser.setRootPath(self.file_browser.filePath(self.file_filter.mapToSource(parent)))
-            else:
-                self._ui.tr_file_browser.setRootIndex(selected_index)
-                self.file_browser.setRootPath(name)
+            self.address.set_path(str(self.file_browser.filePath(file_index)))
         else:
             file_name = str(self.file_browser.filePath(file_index))
             self.file_selected.emit(file_name, self._mode)
