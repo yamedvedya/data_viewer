@@ -8,8 +8,8 @@ import platform
 from pathlib import Path
 from typing import Union
 
-from qtpy import QtCore, QtGui, QtWidgets
-from qtpy.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 
 from .layouts import LeftHBoxLayout
 from .models_views import FilenameModel, MenuListView
@@ -24,9 +24,9 @@ TRANSP_ICON_SIZE = 40, 40  # px, size of generated semi-transparent icons
 # ----------------------------------------------------------------------
 class BreadcrumbsAddressBar(QtWidgets.QFrame):
     "Windows Explorer-like address bar"
-    listdir_error = QtCore.Signal(Path)  # failed to list a directory
-    path_error = QtCore.Signal(Path)  # entered path does not exist
-    path_selected = QtCore.Signal(Path)
+    listdir_error = QtCore.pyqtSignal(Path)  # failed to list a directory
+    path_error = QtCore.pyqtSignal(Path)  # entered path does not exist
+    path_selected = QtCore.pyqtSignal(Path)
 
     # ----------------------------------------------------------------------
     def __init__(self, parent=None):

@@ -1,7 +1,7 @@
 import os.path
 from pathlib import Path
-from qtpy import QtCore, QtWidgets
-from qtpy.QtCore import Qt
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt
 
 class FilenameModel(QtCore.QStringListModel):
     """

@@ -1,4 +1,4 @@
-import ctypes, pythoncom
+import ctypes
 from ctypes import POINTER, Structure, byref
 from ctypes.wintypes import DWORD, WORD, USHORT, BYTE, MSG
 shell32 = ctypes.windll.shell32

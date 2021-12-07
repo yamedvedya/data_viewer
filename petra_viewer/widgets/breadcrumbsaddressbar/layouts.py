@@ -1,5 +1,5 @@
-from qtpy import QtCore, QtWidgets
-from qtpy.QtCore import Qt
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt
 
 class LeftHBoxLayout(QtWidgets.QHBoxLayout):
     '''
@@ -7,7 +7,7 @@ class LeftHBoxLayout(QtWidgets.QHBoxLayout):
     Hides items similar to Windows Explorer address bar.
     '''
     # Signal is emitted when an item is hidden/shown or removed with `takeAt`
-    widget_state_changed = QtCore.Signal(object, bool)
+    widget_state_changed = QtCore.pyqtSignal(object, bool)
 
     def __init__(self, parent=None, minimal_space=0.1):
         super().__init__(parent)
