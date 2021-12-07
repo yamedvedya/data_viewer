@@ -14,7 +14,7 @@ if 'asapo_consumer' in sys.modules:
 from petra_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 from petra_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from petra_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
-from petra_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, \
+from petra_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, HeavySardana, \
     ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView
 
 
@@ -74,6 +74,8 @@ class Opener(QtCore.QThread):
                     new_file = SardanaPeak1(self.data_pool)
                 elif self.params['test_name'] == 'SardanaPeak2':
                     new_file = SardanaPeak2(self.data_pool)
+                elif self.params['test_name'] == 'HeavySardana':
+                    new_file = HeavySardana(self.data_pool)
                 elif self.params['test_name'] == 'ASAPO2DPeak':
                     new_file = ASAPO2DPeak(self.data_pool)
                 elif self.params['test_name'] == 'ASAPO3DPeak':

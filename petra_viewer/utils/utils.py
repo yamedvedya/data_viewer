@@ -1,11 +1,20 @@
 # Created by matveyev at 15.02.2021
 
 import h5py
-import os
+from contextlib import contextmanager
 import numpy as np
 
 from PyQt5 import QtCore, QtWidgets
 
+
+# ----------------------------------------------------------------------
+@contextmanager
+def wait_cursor():
+    try:
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        yield
+    finally:
+        QtWidgets.QApplication.restoreOverrideCursor()
 
 # ----------------------------------------------------------------------
 class FileFilter(QtCore.QSortFilterProxyModel):

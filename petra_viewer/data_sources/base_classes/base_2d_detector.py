@@ -96,30 +96,25 @@ class Base2DDetectorDataSet(BaseDataSet):
 
         logger.debug(f"Request data with frame_id={frame_id}, mode={self._data_pool.memory_mode}")
         frame_id = np.arange(*frame_id) if frame_id is not None else None
-        if self._data_pool.memory_mode == 'ram':
-            # if since last reload program parameters were not changed - we just return already COPY of loaded data
-            if not self._need_apply_mask:
-                _data = np.copy(self._nD_data_array)
-                if frame_id is not None:
-                    _data = _data[frame_id]
-                return _data
-            else:
-                self._nD_data_array = None
-                _data = self._reload_data()
-                self.apply_corrections(_data)
-        else:
+
+        if self._data_pool.memory_mode != 'ram':
             self._nD_data_array = None
             _data = self._reload_data(frame_id)
             self.apply_corrections(_data, frame_id)
 
-        if self._data_pool.memory_mode == 'ram':
-            self._need_apply_mask = False
-            self._nD_data_array = np.copy(_data)
-            # Data from ram contain all frames_id
             if frame_id is not None:
-                _data = _data[frame_id]
+                return _data[frame_id]
+            return _data
 
-        return _data
+        if self._need_apply_mask:
+            self._nD_data_array = self._reload_data()
+            self.apply_corrections(self._nD_data_array)
+            self._need_apply_mask = False
+
+        if frame_id is not None:
+            return self._nD_data_array[frame_id]
+
+        return self._nD_data_array
 
     # ----------------------------------------------------------------------
     def apply_corrections(self, data, frame_id=None):
@@ -183,7 +178,35 @@ class Base2DDetectorDataSet(BaseDataSet):
         :return:
         """
         section_sorted = sorted(section)
-        data = self._get_data((section_sorted[0][1], section_sorted[0][2]))
+
+        if self._data_pool.memory_mode != 'ram':
+            data = self._get_data((section_sorted[0][1], section_sorted[0][2]))
+        else:
+            data = self._get_data()
+
+        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
+
+        for axis_slice in section[output_dim:]:
+            axis, start, stop = axis_slice
+            start = max(start, 0)
+            stop = min(stop, data.shape[axis])
+            if axis > 0 or self._data_pool.memory_mode == 'ram':
+                data = np.mean(data.take(indices=range(start, stop), axis=axis), axis=axis, keepdims=True)
+            else:
+                data = np.mean(axis=axis, keepdims=True)
+
+        for axis_slice in section[:output_dim]:
+            axis, start, stop = axis_slice
+            if axis > 0 or self._data_pool.memory_mode == 'ram':
+                start = max(start, 0)
+                stop = min(stop, data.shape[axis])
+                if axis > 0 or self._data_pool.memory_mode == 'ram':
+                    data = data.take(indices=range(start, stop), axis=axis)
+
+        if np.ndim(data) == 0:
+            data = np.zeros(5)[:, None]
+        if np.ndim(data) == 1 and output_dim == 2:
+            data = data[:, None]
 
         axes_order = list(range(len(data.shape)))
         for ind, (axis, _, _) in enumerate(section):
@@ -193,23 +216,7 @@ class Base2DDetectorDataSet(BaseDataSet):
                 del axes_order[move_from]
                 axes_order.insert(ind, axis)
 
-        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
-
-        for ind, axis_slice in list(enumerate(section))[::-1]:
-            axis, start, stop = axis_slice
-            if axis > 0:
-                start = max(start, 0)
-                stop = min(stop, data.shape[ind])
-                data = data.take(indices=range(start, stop), axis=ind)
-            if do_sum and ind >= output_dim:
-                data = np.sum(data, axis=ind)
-
         data = np.squeeze(data)
-
-        if np.ndim(data) == 0:
-            data = np.zeros(5)
-        while np.ndim(data) < output_dim:
-            data = data[..., np.newaxis]
 
         logger.debug(f"Data after cut {data.shape} ")
         return data

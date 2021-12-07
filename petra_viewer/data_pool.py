@@ -11,6 +11,7 @@ from PyQt5 import QtCore, QtWidgets
 
 from petra_viewer.utils.batcher import Batcher
 from petra_viewer.utils.opener import Opener
+from petra_viewer.utils.utils import wait_cursor
 
 from petra_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 
@@ -475,10 +476,8 @@ class DataPool(QtCore.QObject):
             calculate 1D plot from the data cube, defined by the ROI[roi_key]
             :returns two 1D np.arrays (X, Y)
         """
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-        data = self._files_data[file].get_roi_plot(self._rois[roi_key].get_section_params())
-        QtWidgets.QApplication.restoreOverrideCursor()
-        return data
+        with wait_cursor():
+            return self._files_data[file].get_roi_plot(self._rois[roi_key].get_section_params())
 
     # ----------------------------------------------------------------------
     def set_section_axis(self, roi_key, axis):
@@ -626,10 +625,8 @@ class DataPool(QtCore.QObject):
         :return: 2D np.array
         """
         logger.debug(f"Return 2D image: for file {file}")
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-        data = self._files_data[file].get_2d_picture()
-        QtWidgets.QApplication.restoreOverrideCursor()
-        return data
+        with wait_cursor():
+            return self._files_data[file].get_2d_picture()
 
         # ----------------------------------------------------------------------
     def get_section(self, file):
@@ -773,10 +770,8 @@ class DataPool(QtCore.QObject):
         else:
             section = self._rois[roi_ind].get_section_params()
 
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-        data = self._files_data[file].get_3d_cube(section)
-        QtWidgets.QApplication.restoreOverrideCursor()
-        return data
+        with wait_cursor():
+            return self._files_data[file].get_3d_cube(section)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

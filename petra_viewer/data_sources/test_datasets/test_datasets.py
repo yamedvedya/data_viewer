@@ -7,7 +7,7 @@ from petra_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
 from petra_viewer.data_sources.asapo.asapo_data_set import ASAPODataSet
 from petra_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 
-__all__ = ['SardanaPeak1', 'SardanaPeak2', 'ASAPO2DPeak', 'ASAPO3DPeak', 'ASAPO4DPeak', 'BeamView']
+__all__ = ['SardanaPeak1', 'SardanaPeak2', 'HeavySardana', 'ASAPO2DPeak', 'ASAPO3DPeak', 'ASAPO4DPeak', 'BeamView']
 
 
 class BaseTestDataSet(object):
@@ -37,8 +37,6 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
 
         self._axes_units = ['point_nb', 'detector X', 'detector Y']
         self._axis_units_is_valid = [True, True, True]
-
-        self._original_data = self._generate_fake_data()
 
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
@@ -75,9 +73,9 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
     # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
         if frame_ids is None:
-            return np.copy(self._original_data)
+            return self._generate_fake_data()
         else:
-            return np.copy(self._original_data[frame_ids])
+            return self._generate_fake_data()[frame_ids]
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):
@@ -102,6 +100,7 @@ class SardanaPeak1(__Fake3DSardana):
         self._possible_axes_units[0]['omega'] = np.linspace(1, 2, self.dims[0])
         self._possible_axes_units[0]['delta'] = np.linspace(2, 4, self.dims[0])
 
+
 # ----------------------------------------------------------------------
 class SardanaPeak2(__Fake3DSardana):
 
@@ -118,6 +117,22 @@ class SardanaPeak2(__Fake3DSardana):
         self._possible_axes_units[0]['omega'] = np.linspace(1.5, 2.5, self.dims[0])
 
 
+# ----------------------------------------------------------------------
+class HeavySardana(__Fake3DSardana):
+
+    dims = [501, 1556, 516]
+
+    my_name = 'HeavySardana'
+
+    max_int = 1e6
+
+    # ----------------------------------------------------------------------
+    def __init__(self, data_pool):
+        super(HeavySardana, self).__init__(data_pool)
+
+        self._possible_axes_units[0]['omega'] = np.linspace(1.5, 2.5, self.dims[0])
+
+
 # --------------------------------------------------------------------
 class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
 
@@ -125,8 +140,6 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
     def __init__(self, data_pool):
 
         super(ASAPODataSet, self).__init__(data_pool)
-
-        self._original_data = self._generate_fake_data()
 
         if self._data_pool.memory_mode == 'ram':
             self._nD_data_array = self._get_data()
@@ -192,9 +205,9 @@ class __FakeNDASAPO(ASAPODataSet, BaseTestDataSet):
     # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
         if frame_ids is None:
-            return np.copy(self._original_data)
+            return self._generate_fake_data()
         else:
-            return np.copy(self._original_data[frame_ids])
+            return self._generate_fake_data()[frame_ids]
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):

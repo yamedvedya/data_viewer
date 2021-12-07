@@ -240,6 +240,8 @@ class ArraySelector(QtWidgets.QWidget):
         self._ui.sp_step.setValue(section['step'])
         self._set_slider_value(section['min'], section['max'])
         self._set_spin_boxes(section['min'], section['max'])
+        self._old_z_min = section['min']
+        self._old_z_max = section['max']
 
     # ----------------------------------------------------------------------
     def get_values(self):
