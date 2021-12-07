@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, QtCore
 
 from petra_viewer.widgets.abstract_widget import AbstractWidget
 
-from petra_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, \
+from petra_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, HeavySardana, \
     ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView
 
 from petra_viewer.gui.tests_browser_ui import Ui_TestsBrowser
@@ -28,7 +28,7 @@ class TestsBrowser(AbstractWidget):
         self._ui.tb_sets.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self._ui.tb_sets.setColumnWidth(1, 50)
 
-        self.test_classes = [SardanaPeak1, SardanaPeak2, ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView]
+        self.test_classes = [SardanaPeak1, SardanaPeak2, HeavySardana, ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView]
         self._ui.tb_sets.setRowCount(len(self.test_classes))
 
         for ind, test_class in enumerate(self.test_classes):

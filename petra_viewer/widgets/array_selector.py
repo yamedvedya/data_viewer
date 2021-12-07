@@ -22,6 +22,9 @@ class ArraySelector(QtWidgets.QWidget):
         self.limit_range = 0
         self._max_frame = 0
 
+        self._old_z_min = None
+        self._old_z_max = None
+
         self._data_pool = data_pool
         self._frame_viewer = frame_viewer
         self._cut_selector = cut_selector
@@ -40,6 +43,12 @@ class ArraySelector(QtWidgets.QWidget):
         self._ui.cmd_show_all.clicked.connect(self._show_all)
 
     # ----------------------------------------------------------------------
+    def _new_cut(self):
+        self._old_z_min = self._ui.sl_range.low()
+        self._old_z_max = self._ui.sl_range.high()
+        self._cut_selector.set_integration(self._my_id)
+
+    # ----------------------------------------------------------------------
     def switch_integration_mode(self, state):
 
         self._ui.sl_frame.setVisible(not state)
@@ -52,7 +61,7 @@ class ArraySelector(QtWidgets.QWidget):
         self._set_spin_boxes(0, self._max_frame)
         self._set_slider_value(0, self._max_frame)
 
-        self._cut_selector.new_range(self._my_id)
+        self._new_cut()
 
     # ----------------------------------------------------------------------
     def _update_from_frame_slider(self, value):
@@ -61,7 +70,7 @@ class ArraySelector(QtWidgets.QWidget):
         """
         self._set_spin_boxes(value, value)
         self._set_slider_value(value, value)
-        self._cut_selector.new_range(self._my_id)
+        self._new_cut()
 
     # ----------------------------------------------------------------------
     def _update_from_range_slider(self, z_min, z_max):
@@ -71,7 +80,7 @@ class ArraySelector(QtWidgets.QWidget):
         z_min, z_max = self._apply_range_limit(z_min, z_max)
         self._set_spin_boxes(z_min, z_max)
         self._set_slider_value(z_min, z_max)
-        self._cut_selector.new_range(self._my_id)
+        self._new_cut()
 
     # ----------------------------------------------------------------------
     def _update_from_navigation_buttons(self, mode):
@@ -103,7 +112,7 @@ class ArraySelector(QtWidgets.QWidget):
 
         self._set_spin_boxes(new_min, new_max)
         self._set_slider_value(new_min, new_max)
-        self._cut_selector.new_range(self._my_id)
+        self._new_cut()
 
     # ----------------------------------------------------------------------
     def _update_from_sp(self):
@@ -113,9 +122,11 @@ class ArraySelector(QtWidgets.QWidget):
         z_min = self._value_to_frame(self._ui.sp_value_from.value())
         z_max = self._value_to_frame(self._ui.sp_value_to.value())
         z_min, z_max = self._apply_range_limit(z_min, z_max)
-        self._set_slider_value(z_min, z_max)
-        self._set_spin_boxes(z_min, z_max)
-        self._cut_selector.new_range(self._my_id)
+
+        if z_min != self._old_z_min or z_max != self._old_z_max:
+            self._set_slider_value(z_min, z_max)
+            self._set_spin_boxes(z_min, z_max)
+            self._new_cut()
 
     # ----------------------------------------------------------------------
     def _set_slider_value(self, z_min, z_max):
@@ -229,6 +240,8 @@ class ArraySelector(QtWidgets.QWidget):
         self._ui.sp_step.setValue(section['step'])
         self._set_slider_value(section['min'], section['max'])
         self._set_spin_boxes(section['min'], section['max'])
+        self._old_z_min = section['min']
+        self._old_z_max = section['max']
 
     # ----------------------------------------------------------------------
     def get_values(self):
