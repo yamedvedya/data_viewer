@@ -32,7 +32,7 @@ DESCRIPTION = 'Simple viewer of data, acquired by xray-detectors at PETRA3'
 EMAIL = 'yury.matveev@desy.de'
 AUTHOR = 'Yury Matveyev'
 REQUIRES_PYTHON = '>=3.6'
-VERSION = '0.9.3'
+VERSION = '0.9.5'
 
 # What packages are required for this module to be executed?
 REQUIRED = [

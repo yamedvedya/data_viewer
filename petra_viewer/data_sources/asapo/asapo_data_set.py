@@ -54,7 +54,7 @@ logger = logging.getLogger(APP_NAME)
 # ----------------------------------------------------------------------
 def apply_settings_asapo(settings):
 
-    for param in ['host', 'path', 'beamtime', 'token']:
+    for param in ['host', 'path', 'beamtime', 'token', 'detectors']:
         if param in settings:
             SETTINGS[param] = settings[param]
         else:
@@ -84,8 +84,6 @@ class ASAPODataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def __init__(self, detector_name, stream_name, data_pool):
         super(ASAPODataSet, self).__init__(data_pool)
-
-        self._need_apply_mask = False
 
         self.my_name = stream_name
 

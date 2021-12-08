@@ -24,15 +24,12 @@ class ASAPOScanSetup(Base2DDetectorSetup):
         settings = super(ASAPOScanSetup, self).get_settings()
 
         settings.update({'max_streams': str(self._ui.sp_max_streams.value()),
-                         'max_messages': str(self._ui.sp_max_messages.value())})
-
-        if str(self._ui.le_host.text()) != '' and str(self._ui.le_beamtime.text()) != '' \
-                and str(self._ui.le_token.text()) != '' and str(self._ui.le_detectors.text()) != '':
-            settings.update({'host': str(self._ui.le_host.text()),
-                             'path': str(self._ui.le_path.text()),
-                             'has_filesystem': str(self._ui.chk_filesystem.isChecked()),
-                             'beamtime': str(self._ui.le_beamtime.text()),
-                             'token': str(self._ui.le_token.text()),
-                             'detectors': str(self._ui.le_detectors.text())})
+                         'max_messages': str(self._ui.sp_max_messages.value()),
+                         'host': str(self._ui.le_host.text()),
+                         'path': str(self._ui.le_path.text()),
+                         'has_filesystem': str(self._ui.chk_filesystem.isChecked()),
+                         'beamtime': str(self._ui.le_beamtime.text()),
+                         'token': str(self._ui.le_token.text()),
+                         'detectors': str(self._ui.le_detectors.text())})
 
         return {'ASAPO': settings}
