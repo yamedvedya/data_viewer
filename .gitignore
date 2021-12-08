@@ -134,7 +134,5 @@ dmypy.json
 /.idea
 /petra_viewer/tests/logs
 /petra_viewer/tests/.pytest_cache
-/petra_viewer/gui/*
-!/petra_viewer/gui/__init__.py
 /logs
 /temp

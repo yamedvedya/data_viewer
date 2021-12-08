@@ -4,6 +4,7 @@ WIDGET_NAME = 'ROIsView'
 
 import logging
 import pickle
+import os
 
 try:
     import PyTango
@@ -11,9 +12,8 @@ try:
 except:
     has_pytango = False
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
-from petra_viewer.widgets.abstract_widget import AbstractWidget
 from petra_viewer.gui.rois_view_ui import Ui_RoisView
 from petra_viewer.widgets.section_view import SectionView
 
@@ -61,6 +61,16 @@ class RoisView(QtWidgets.QMainWindow):
 
         self._menu_rois = QtWidgets.QMenu('Show ROI', self)
         self.menuBar().addMenu(self._menu_rois)
+
+        batch_menu = QtWidgets.QMenu('Batch process', self)
+
+        action = batch_menu.addAction("Process files...")
+        action.triggered.connect(lambda checked, x='files': self._batch_process(x))
+
+        action = batch_menu.addAction("Process folder...")
+        action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
+
+        self.menuBar().addMenu(batch_menu)
 
         self._roi_widgets = {}
         self._docks = {}
@@ -142,6 +152,22 @@ class RoisView(QtWidgets.QMainWindow):
         self.update_roi.emit(idx)
 
         return idx
+
+    # ----------------------------------------------------------------------
+    def _batch_process(self, mode):
+        if mode == 'files':
+            file_names, _ = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select files',
+                                                                   self.file_browser.current_folder(),
+                                                                   'NEXUS files (*.nxs)')
+        else:
+            dir_name = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select directory',
+                                                                  self.file_browser.current_folder())
+
+            file_names = [name for name in os.listdir(dir_name) if name.endswith('.nxs')]
+
+        save_dir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save to', self.file_browser.current_folder())
+        if save_dir:
+            self._data_pool.batch_process_rois(file_names, save_dir, '.txt')
 
     # ----------------------------------------------------------------------
     def _add_dock(self, WidgetClass, label, location, *args, **kwargs):
