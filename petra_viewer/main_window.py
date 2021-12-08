@@ -322,22 +322,6 @@ class PETRAViewer(QtWidgets.QMainWindow):
             self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------
-    def _batch_process(self, mode):
-        if mode == 'files':
-            file_names, _ = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select files',
-                                                                   self.file_browser.current_folder(),
-                                                                   'NEXUS files (*.nxs)')
-        else:
-            dir_name = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select directory',
-                                                                  self.file_browser.current_folder())
-
-            file_names = [name for name in os.listdir(dir_name) if name.endswith('.nxs')]
-
-        save_dir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save to', self.file_browser.current_folder())
-        if save_dir:
-            self.data_pool.batch_process_rois(file_names, save_dir, '.txt')
-
-    # ----------------------------------------------------------------------
     def _convert(self):
         self.converter.show(self.frame_view.current_file())
 
@@ -348,15 +332,6 @@ class PETRAViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _setup_menu(self):
         if self.configuration['sardana']:
-            batch_menu = QtWidgets.QMenu('Batch process', self)
-
-            action = batch_menu.addAction("Process files...")
-            action.triggered.connect(lambda checked, x='files': self._batch_process(x))
-
-            action = batch_menu.addAction("Process folder...")
-            action.triggered.connect(lambda checked, x='folder': self._batch_process(x))
-
-            self.menuBar().addMenu(batch_menu)
 
             if has_converter:
                 space_menu = QtWidgets.QMenu('Space', self)
