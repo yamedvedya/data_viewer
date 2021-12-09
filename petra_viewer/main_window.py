@@ -67,13 +67,14 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if has_converter:
             self.converter = Converter(self)
 
-        self.setCentralWidget(None)
+        self.scrollable_widget = QtWidgets.QMainWindow(self)
+        self._ui.scrollArea.setWidget(self.scrollable_widget)
 
-        self.setDockOptions(QtWidgets.QMainWindow.AnimatedDocks |
-                            QtWidgets.QMainWindow.AllowNestedDocks |
-                            QtWidgets.QMainWindow.AllowTabbedDocks)
+        self.scrollable_widget.setDockOptions(QtWidgets.QMainWindow.AnimatedDocks |
+                                              QtWidgets.QMainWindow.AllowNestedDocks |
+                                              QtWidgets.QMainWindow.AllowTabbedDocks)
 
-        self.setTabPosition(QtCore.Qt.LeftDockWidgetArea, QtWidgets.QTabWidget.North)
+        self.scrollable_widget.setTabPosition(QtCore.Qt.LeftDockWidgetArea, QtWidgets.QTabWidget.North)
 
         self.settings = self.get_settings(options)
 
@@ -370,7 +371,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         dock.setStyleSheet("""QDockWidget {font-size: 14pt; font-weight: bold;}""")
 
-        self.addDockWidget(location, dock)
+        self.scrollable_widget.addDockWidget(location, dock)
         self._menu_view.addAction(dock.toggleViewAction())
 
         return widget, dock
@@ -426,6 +427,9 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self.rois_view.save_ui_settings(settings)
         self.frame_view.save_ui_settings(settings)
 
+        settings.setValue("InternalWindow/geometry", self.scrollable_widget.saveGeometry())
+        settings.setValue("InternalWindow/state", self.scrollable_widget.saveState())
+
         settings.setValue("MainWindow/geometry", self.saveGeometry())
         settings.setValue("MainWindow/state", self.saveState())
 
@@ -442,6 +446,16 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         try:
             self.restoreState(settings.value("MainWindow/state"))
+        except:
+            pass
+
+        try:
+            self.scrollable_widget.restoreGeometry(settings.value("InternalWindow/geometry"))
+        except:
+            pass
+
+        try:
+            self.scrollable_widget.restoreState(settings.value("InternalWindow/state"))
         except:
             pass
 
