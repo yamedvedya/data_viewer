@@ -9,6 +9,24 @@ WIDGET_NAME = 'ASAPOScanSetup'
 class ASAPOScanSetup(Base2DDetectorSetup):
 
     # ----------------------------------------------------------------------
+    def __init__(self, main_window):
+        """
+        """
+        super(ASAPOScanSetup, self).__init__(main_window)
+
+        self._ui.le_host.setText(SETTINGS['host'])
+        self._ui.le_path.setText(SETTINGS['path'])
+
+        self._ui.chk_filesystem.setChecked(SETTINGS['has_filesystem'])
+
+        self._ui.le_beamtime.setText(SETTINGS['beamtime'])
+        self._ui.le_token.setText(SETTINGS['token'])
+        self._ui.le_detectors.setText(SETTINGS['detectors'])
+
+        self._ui.sp_max_messages.setValue(SETTINGS['max_messages'])
+        self._ui.sp_max_streams.setValue(SETTINGS['max_streams'])
+
+    # ----------------------------------------------------------------------
     def _my_ui(self):
 
         return Ui_ASAPOImageSetup()

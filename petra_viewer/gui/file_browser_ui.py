@@ -57,5 +57,5 @@ class Ui_FileBrowser(object):
         self.chk_monitor.setText(_translate("FileBrowser", "Monitor folder"))
         self.cmd_reload.setText(_translate("FileBrowser", "Refresh"))
 
-from petra_viewer.widgets.breadcrumbsaddressbar import BreadcrumbsAddressBar
+from petra_viewer.widgets.breadcrumbsaddressbar.breadcrumbsaddressbar import BreadcrumbsAddressBar
 import petra_viewer.gui.icons_rc
