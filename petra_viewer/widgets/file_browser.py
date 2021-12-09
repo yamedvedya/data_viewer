@@ -114,6 +114,21 @@ class FileBrowser(AbstractWidget):
         return False, 0
 
     # ----------------------------------------------------------------------
+    def load_ui_settings(self, settings):
+        super(FileBrowser, self).load_ui_settings(settings)
+        try:
+            path = settings.value(f"{WIDGET_NAME}/last_path")
+            self.address.set_path(path)
+            self._set_tree_to_path(path)
+        except:
+            pass
+
+    # ----------------------------------------------------------------------
+    def save_ui_settings(self, settings):
+        super(FileBrowser, self).save_ui_settings(settings)
+        settings.setValue(f"{WIDGET_NAME}/last_path", self.address.path())
+
+    # ----------------------------------------------------------------------
     def _reload(self):
         current_folder = self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex())
         parent = self.file_filter.mapToSource(self.file_filter.parent(self._ui.tr_file_browser.rootIndex()))
