@@ -185,7 +185,7 @@ class FrameView(AbstractWidget):
     # ----------------------------------------------------------------------
     def new_coordinate(self, source, x_value, y_value, pos):
 
-        self._coordinate_label.setText(f'{x_value}, {y_value}')
+        self._coordinate_label.setText(f'Current coordinates: X: {x_value}, Y: {y_value}')
 
         if source == 'main':
             self._second_view.move_marker(pos)

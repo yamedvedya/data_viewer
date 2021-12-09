@@ -247,7 +247,7 @@ class BaseDataSet(object):
             a_max = self.get_frame_for_value(sect[f'axis_{axis}'], sect[f'axis_{axis}_pos'] + sect[f'axis_{axis}_width'], False)
             slices.append((sect[f'axis_{axis}'], a_min, a_max))
 
-        return self._cut_data(slices, do_sum, 1)
+        return self._cut_data(slices, 1 if do_sum else 3)
 
     # ----------------------------------------------------------------------
     def get_2d_picture(self):
@@ -292,21 +292,20 @@ class BaseDataSet(object):
         y_min = self.get_value_for_frame(y_axis_ind, y_min)
         y_max = self.get_value_for_frame(y_axis_ind, y_max)
 
-        return self._cut_data(cut_params, True, 2), QtCore.QRectF(x_min, y_min, x_max - x_min, y_max-y_min)
+        return self._cut_data(cut_params, 2), QtCore.QRectF(x_min, y_min, x_max - x_min, y_max-y_min)
 
     # ----------------------------------------------------------------------
-    def _cut_data(self, section, do_sum, output_dim):
+    def _cut_data(self, section, output_dim):
         """
         return cut from data
         :param data: nD np.array
         :param section: array of tuples to define section: (axis, from, to)
-        :param do_sum: if True - sums the section along all axes
         :return:
         """
 
         data = self._get_data()
 
-        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
+        logger.debug(f"Data before cut {data.shape}, selection={section}, output_dim: {output_dim}")
 
         for axis_slice in section[output_dim:]:
             axis, start, stop = axis_slice
@@ -394,7 +393,7 @@ class BaseDataSet(object):
             else:
                 cut_params.append((axis, section[axis]['min'], section[axis]['min'] + 1))
 
-        return self._cut_data(cut_params, True, 3), axes_names
+        return self._cut_data(cut_params, 3), axes_names
 
     # ----------------------------------------------------------------------
     def get_histogram(self, mode):

@@ -169,12 +169,11 @@ class Base2DDetectorDataSet(BaseDataSet):
             raise RuntimeError("{}: cannot apply mask: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
-    def _cut_data(self, section, do_sum, output_dim):
+    def _cut_data(self, section, output_dim):
         """
         return cut from data
         :param data: nD np.array
         :param section: array of tuples to define section: (axis, from, to)
-        :param do_sum: if True - sums the section along all axes
         :return:
         """
         section_sorted = sorted(section)
@@ -184,7 +183,7 @@ class Base2DDetectorDataSet(BaseDataSet):
         else:
             data = self._get_data()
 
-        logger.debug(f"Data before cut {data.shape}, selection={section}, do_sum: {do_sum}, output_dim: {output_dim}")
+        logger.debug(f"Data before cut {data.shape}, selection={section}, output_dim: {output_dim}")
 
         for axis_slice in section[output_dim:]:
             axis, start, stop = axis_slice

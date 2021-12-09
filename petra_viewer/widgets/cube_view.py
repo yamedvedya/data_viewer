@@ -33,6 +33,7 @@ class CubeView(AbstractWidget):
 
         self._visible = True
         self._view_is_actual = True
+        self._hist_is_actual = True
 
         self._fake_image_item = FakeImageItem(data_pool)
         self._ui.hist.item.setImageItem(self._fake_image_item)
@@ -203,7 +204,7 @@ class CubeView(AbstractWidget):
 
         self._block_hist_signals(True)
         self.fill_roi()
-        self._fake_image_item.setNewFile(self._parent.get_current_file())
+        self._hist_is_actual = False
         self._block_hist_signals(False)
 
         self.display_file()
@@ -255,6 +256,10 @@ class CubeView(AbstractWidget):
         if not self._visible:
             self._view_is_actual = False
             return
+
+        if not self._hist_is_actual:
+            self._fake_image_item.setNewFile(self._parent.get_current_file())
+            self._hist_is_actual = True
 
         self.clear_view()
 
