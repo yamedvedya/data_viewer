@@ -76,7 +76,7 @@
   <customwidget>
    <class>BreadcrumbsAddressBar</class>
    <extends>QWidget</extends>
-   <header>petra_viewer.widgets.breadcrumbsaddressbar</header>
+   <header>petra_viewer.widgets.breadcrumbsaddressbar.breadcrumbsaddressbar</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

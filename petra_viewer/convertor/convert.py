@@ -31,6 +31,8 @@ class Converter(QtWidgets.QMainWindow):
         for plot in plots:
             self._plots[plot] = pg.PlotItem()
             self._plots[plot].setMenuEnabled(False)
+            self._plots[plot].setLabel('bottom', f'Q{plot[0]}')
+            self._plots[plot].setLabel('left', f'Q{plot[1]}')
 
             getattr(self._ui, f'gv_{plot}').setStyleSheet("")
             getattr(self._ui, f'gv_{plot}').setBackground('w')
