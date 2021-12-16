@@ -56,6 +56,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self._ui = Ui_MainWindow()
         self._ui.setupUi(self)
 
+        self.menuBar().setNativeMenuBar(False)
+
         self.configuration = {}
 
         self._test_mode = options.test
