@@ -38,6 +38,8 @@ class RoisView(QtWidgets.QMainWindow):
         self._ui = Ui_RoisView()
         self._ui.setupUi(self)
 
+        self.menuBar().setNativeMenuBar(False)
+
         self.setCentralWidget(None)
 
         self.setDockOptions(QtWidgets.QMainWindow.AnimatedDocks |
