@@ -364,9 +364,10 @@ class SectionView(QtWidgets.QWidget):
     def _save(self, type):
         default_name = self._parent.current_folder() + '/roi_{}'.format(self.data_pool.get_roi_index(self.my_id))
         if type == 'image':
-            file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
+            file_name, format = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
                  'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*.jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*.ppm); X11 Bitmap (*.xbm);; X11 Pixmap (*.xpm)')
             if file_name:
+                file_name += format.split('*')[1].strip('()')
                 pix = QtGui.QPixmap(self._ui.gv_main.size())
                 self._ui.gv_main.render(pix)
                 pix.save(file_name)
