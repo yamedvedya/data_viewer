@@ -28,6 +28,7 @@ pip3 install asapo_consumer-21.09.0.tar.gz
 rm ./asapo_consumer-21.09.0.tar.gz
 
 pip3 install -U hdf5plugin
+pip3 install -U h5py
 pip3 install -U scikit-image
 pip3 install -U attrs
 #pip3 install -U pyqtgraph
