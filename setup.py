@@ -32,13 +32,18 @@ DESCRIPTION = 'Simple viewer of data, acquired by xray-detectors at PETRA3'
 EMAIL = 'yury.matveev@desy.de'
 AUTHOR = 'Yury Matveyev'
 REQUIRES_PYTHON = '>=3.6'
-VERSION = '0.9.7'
+VERSION = '0.9.8'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'hdf5plugin', 'attrs', 'pyqtgraph', 'psutil', 'xrayutilities',
-    'numpy', 'scipy', 'h5py', 'PyOpenGL', 'silx', 'python-dateutil'
+    'attrs', 'pyqtgraph >= 0.11', 'psutil', 'numpy', 'scipy', 'h5py >= 2.5', 'python-dateutil'
 ]
+
+EXTRA_REQUIRED = {'ASAPO': ['hdf5plugin'],
+                  'CONVERTER': ['xrayutilities'],
+                  'SILX': ['silx'],
+                  '3D': ['PyOpenGL']
+                  }
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
@@ -73,6 +78,7 @@ setup(
         'install': PostInstallCommand,
     },
     install_requires=REQUIRED,
+    extras_require=EXTRA_REQUIRED,
     include_package_data=True,
     license='GPLv3',
     entry_points={
