@@ -12,9 +12,12 @@ class PostInstallCommand(install):
     def run(self):
         print("Run pre-setup")
         # Set version
-        cmd = "git log -1 --format='%at' | xargs -I{} date -d @{} +'%Y/%m/%d %H:%M:%S'"
-        version = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
-        version = version.replace("\n", "")
+        cmd = 'git log -1 --pretty=format:"%ad" --date=format:"%Y-%m-%d %H:%M:%S"'
+        try:
+            version = check_output(cmd, stderr=STDOUT, shell=True, universal_newlines=True)
+            version = version.replace("\n", "")
+        except:
+            version = 'unknown'
         file = open('petra_viewer/version.py', 'w')
         file.write('__version__="{}"'.format(version))
         file.close()
