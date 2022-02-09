@@ -55,10 +55,10 @@ class FileBrowser(AbstractWidget):
         self._ui.setupUi(self)
         self._mode = mode
 
-        self.file_browser = QtWidgets.QFileSystemModel()
-        self.file_browser.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDot | QtCore.QDir.NoDotDot | QtCore.QDir.Files)
-        self.file_browser.setNameFilters(file_formats)
-        self.file_browser.setNameFilterDisables(False)
+        self._file_model = QtWidgets.QFileSystemModel()
+        self._file_model.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDot | QtCore.QDir.NoDotDot | QtCore.QDir.Files)
+        self._file_model.setNameFilters(file_formats)
+        self._file_model.setNameFilterDisables(False)
 
         self._eid = None
         self._door_server = None
@@ -68,7 +68,7 @@ class FileBrowser(AbstractWidget):
             self.file_filter.setRecursiveFilteringEnabled(True)
         except AttributeError:
             self.file_filter.new_version = False
-        self.file_filter.setSourceModel(self.file_browser)
+        self.file_filter.setSourceModel(self._file_model)
 
         self._ui.tr_file_browser.setModel(self.file_filter)
         self._ui.tr_file_browser.hideColumn(2)
@@ -132,8 +132,8 @@ class FileBrowser(AbstractWidget):
     def _reload(self):
         current_folder = self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex())
         parent = self.file_filter.mapToSource(self.file_filter.parent(self._ui.tr_file_browser.rootIndex()))
-        self.file_browser.setRootPath(self.file_browser.filePath(parent))
-        self.file_browser.setRootPath(self.file_browser.filePath(current_folder))
+        self._file_model.setRootPath(self._file_model.filePath(parent))
+        self._file_model.setRootPath(self._file_model.filePath(current_folder))
 
     # ----------------------------------------------------------------------
     def apply_settings(self):
@@ -186,18 +186,18 @@ class FileBrowser(AbstractWidget):
     def _set_tree_to_path(self, path):
 
         path = str(path)
-        self.file_browser.setRootPath(path)
-        self._ui.tr_file_browser.setRootIndex(self.file_filter.mapFromSource(self.file_browser.index(path)))
+        self._file_model.setRootPath(path)
+        self._ui.tr_file_browser.setRootIndex(self.file_filter.mapFromSource(self._file_model.index(path)))
 
     # ----------------------------------------------------------------------
     def _open_folder(self):
 
         selected_index = self._ui.tr_file_browser.selectionModel().currentIndex()
         file_index = self.file_filter.mapToSource(selected_index)
-        if self.file_browser.isDir(file_index):
-            self.address.set_path(str(self.file_browser.filePath(file_index)))
+        if self._file_model.isDir(file_index):
+            self.address.set_path(str(self._file_model.filePath(file_index)))
         else:
-            file_name = str(self.file_browser.filePath(file_index))
+            file_name = str(self._file_model.filePath(file_index))
             self.file_selected.emit(file_name, self._mode)
 
     # ----------------------------------------------------------------------
@@ -214,7 +214,7 @@ class FileBrowser(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def current_folder(self):
-        return self.file_browser.filePath(self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex()))
+        return self._file_model.filePath(self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex()))
 
     # ----------------------------------------------------------------------
     def _change_observer_folder(self):
@@ -223,7 +223,7 @@ class FileBrowser(AbstractWidget):
                 self._my_observer.stop()
                 self._my_observer.join()
 
-            folder = self.file_browser.filePath(self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex()))
+            folder = self._file_model.filePath(self.file_filter.mapToSource(self._ui.tr_file_browser.rootIndex()))
 
             if folder != '':
                 self._my_observer = Observer()

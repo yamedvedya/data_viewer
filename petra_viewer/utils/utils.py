@@ -1,6 +1,7 @@
 # Created by matveyev at 15.02.2021
 
 import h5py
+import os
 from contextlib import contextmanager
 import numpy as np
 
@@ -34,6 +35,16 @@ class FileFilter(QtCore.QSortFilterProxyModel):
             match |= super(FileFilter, self).filterAcceptsRow(source_row, source_parent)
 
             return match
+
+    # ----------------------------------------------------------------------
+    def lessThan(self, left, right):
+        left_name = self.sourceModel().data(left)
+        right_name = self.sourceModel().data(right)
+
+        left_is_dir = self.sourceModel().isDir(left)
+        right_is_dir = self.sourceModel().isDir(right)
+
+        return (not left_is_dir, left_name) < (not right_is_dir, right_name)
 
 
 # ----------------------------------------------------------------------
