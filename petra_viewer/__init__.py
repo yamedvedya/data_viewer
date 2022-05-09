@@ -42,6 +42,7 @@ def excepthook(exc_type, exc_value, traceback_obj):
         f = open(log_path, "a")
         f.write(msg)
         f.close()
+        logging.error(msg)
     except IOError:
         pass
 
