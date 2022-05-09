@@ -433,7 +433,8 @@ class FrameView(AbstractWidget):
         Update widget in case if main file was changed
         """
         if self._main_view.current_file is None:
-            self._fake_image_item.setEmptyFile()
+            if self.backend == 'pyqt':
+                self._fake_image_item.setEmptyFile()
             self._change_chk_auto_levels_state(True)
             self._ui.cut_selectors.refresh_selectors()
             self.clear_view.emit()
