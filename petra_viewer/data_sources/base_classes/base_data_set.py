@@ -117,6 +117,8 @@ class BaseDataSet(object):
         :return: int, decimals for particular axis
         """
         axis_values = self._get_axis(axis)
+        if len(axis_values) < 2:
+            return 0
         min_shift = np.min(np.diff(axis_values))
         power = 0
         while np.power(10., -power) > min_shift:
