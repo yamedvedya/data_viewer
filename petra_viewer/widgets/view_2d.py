@@ -458,8 +458,9 @@ class ViewSilx(View2d):
 
     # ----------------------------------------------------------------------
     def update_image(self):
-        data_to_display, x, y = super(ViewSilx, self).update_image()
+        data_to_display, pos = super(ViewSilx, self).update_image()
         if data_to_display is not None:
+            x, y = pos.bottom(), pos.left()
             sections = self.data_pool.get_section(self.current_file)
             origen = [s['min'] for s in sections if s['axis'] == 'X']
             origen += [s['min'] for s in sections if s['axis'] == 'Y']
