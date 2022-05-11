@@ -215,7 +215,7 @@ class Base2DDetectorDataSet(BaseDataSet):
                 del axes_order[move_from]
                 axes_order.insert(ind, axis)
 
-        data = np.squeeze(data)
+        data = np.squeeze(data, tuple(np.arange(output_dim, data.ndim)))
 
         logger.debug(f"Data after cut {data.shape} ")
         return data
