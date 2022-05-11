@@ -404,7 +404,7 @@ class FrameView(AbstractWidget):
         limits = self.data_pool.get_file_axis_limits(self._main_view.current_file)
         self._ui.cut_selectors.set_limits(limits)
 
-        self._shape_label.setText(f"Data shape: {limits}")
+        self._shape_label.setText(f"Data shape: {[lim+1 for lim in limits]}")
 
     # ----------------------------------------------------------------------
     def current_file(self):
