@@ -197,6 +197,11 @@ class ArraySelector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _apply_range_limit(self, z_min, z_max):
         z_min = max(0, min(z_min, z_max))
+        if z_min == z_max:
+            if z_min < self._max_frame - 1:
+                z_max = z_min + 1
+            if z_min > 0 and z_min == self._max_frame:
+                z_min = z_max - 1
         if 0 < self.limit_range - 1 < (z_max - z_min):
             z_max = self.limit_range + z_min - 1
         return z_min, z_max
