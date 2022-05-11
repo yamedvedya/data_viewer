@@ -133,6 +133,7 @@ class CutSelector(QtWidgets.QWidget):
         self._units_selectors = {}
         self._x_buttons = []
         self._y_buttons = []
+        self._z_buttons = []
 
         self._axes_labels = []
 
