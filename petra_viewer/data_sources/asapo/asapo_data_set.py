@@ -146,6 +146,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
         """
         old_max = self._data_shape[0]
         self._data_shape[0] = info['lastId']
+        self._possible_axes_units[0]['message_ID'] = np.arange(self._data_shape[0])
         sel = self._section[0]
         if sel['max'] == old_max-1:
             sel['max'] = info['lastId'] - 1
@@ -217,14 +218,17 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         # ToDO Limit number of retrieved messages
         img_list = []
-        logger.debug(f"Retrieve messages from ASAPO. IDs: {frame_ids}")
         if frame_ids is None:
             frame_ids = np.arange(self.receiver.get_current_size())
+            logger.debug(f"Retrieve all messages from ASAPO. IDs: {frame_ids}")
+        else:
+            logger.debug(f"Retrieve messages from ASAPO. IDs: {frame_ids}")
         for frame in frame_ids:
             if frame not in self._additional_data['already_loaded_ids']:
-                if len(self._additional_data['already_loaded_ids']) == SETTINGS['max_messages']:
+                if len(self._additional_data['already_loaded_ids']) > SETTINGS['max_messages']:
                     self._additional_data['already_loaded_ids'].pop(0)
                     self._additional_data['metadata'].pop(0)
+                    self._additional_data['raw_img'].pop(0)
                 self.receiver.set_start_id(frame + 1)
                 data, meta_data = self.receiver.get_next(self.meta_only)
                 img = self._convert_image(data, meta_data)
@@ -236,10 +240,16 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 idx = self._additional_data['already_loaded_ids'].index(frame)
                 img_list.append(self._additional_data['raw_img'][idx])
 
-        img_array = np.stack(img_list)
+        # ToDo, find better solution
+        # This is temporary solution for ASAPO pipeline uses mini-batches
+        # As side effect selection of metadata information will not work properly
+        try:
+            img_array = np.stack(img_list)
+        except ValueError:
+            img_array = np.concatenate(img_list)
         logger.debug(f"Retrieved image array {img_array.shape}, "
                      f"metadata len {len(self._additional_data['metadata'])}")
-        return np.stack(img_list)
+        return img_array
 
     # ----------------------------------------------------------------------
     def _convert_image(self, data, meta_data):
