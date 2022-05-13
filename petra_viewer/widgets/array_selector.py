@@ -58,8 +58,17 @@ class ArraySelector(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def _show_all(self):
-        self._set_spin_boxes(0, self._max_frame)
-        self._set_slider_value(0, self._max_frame)
+        z_min = self._ui.sl_range.low()
+
+        if self.limit_range > 0:
+            new_max = min(z_min+self.limit_range-1, self._max_frame)
+            new_min = max(new_max-self.limit_range+1, 0)
+        else:
+            new_max = self._max_frame
+            new_min = 0
+
+        self._set_spin_boxes(new_min, new_max)
+        self._set_slider_value(new_min, new_max)
 
         self._old_z_min = self._ui.sl_range.low()
         self._old_z_max = self._ui.sl_range.high()
@@ -108,6 +117,8 @@ class ArraySelector(QtWidgets.QWidget):
             new_max = self._max_frame
             if z_min == z_max:
                 new_min = self._max_frame
+            if self.limit_range > 0 and (new_max - z_min) >= self.limit_range:
+                new_min = new_max - self.limit_range + 1
 
         new_max = min(max(0, new_max), self._max_frame)
         new_min = min(max(0, new_min), self._max_frame)
@@ -197,11 +208,6 @@ class ArraySelector(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def _apply_range_limit(self, z_min, z_max):
         z_min = max(0, min(z_min, z_max))
-        if z_min == z_max:
-            if z_min < self._max_frame - 1:
-                z_max = z_min + 1
-            if z_min > 0 and z_min == self._max_frame:
-                z_min = z_max - 1
         if 0 < self.limit_range - 1 < (z_max - z_min):
             z_max = self.limit_range + z_min - 1
         return z_min, z_max
@@ -246,10 +252,13 @@ class ArraySelector(QtWidgets.QWidget):
 
         self.limit_range = section['range_limit']
         self._ui.sp_step.setValue(section['step'])
-        self._set_slider_value(section['min'], section['max'])
-        self._set_spin_boxes(section['min'], section['max'])
-        self._old_z_min = section['min']
-        self._old_z_max = section['max']
+
+        z_min, z_max = self._apply_range_limit(section['min'], section['max'])
+
+        self._set_slider_value(z_min, z_max)
+        self._set_spin_boxes(z_min, z_max)
+        self._old_z_min = z_min
+        self._old_z_max = z_max
 
     # ----------------------------------------------------------------------
     def get_values(self):
