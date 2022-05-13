@@ -153,7 +153,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             if not sel['integration'] and sel['axis'] == '':
                 sel['min'] = info['lastId'] - 1
             if sel['max'] - sel['min'] >= sel['range_limit']:
-                sel['min'] = sel['max'] - sel['range_limit'] - 1
+                sel['min'] = sel['max'] - sel['range_limit'] + 1
 
     # ----------------------------------------------------------------------
     def _setup_receiver(self, consumer, stream_name, data_source):
