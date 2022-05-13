@@ -102,8 +102,9 @@ class Base2DDetectorDataSet(BaseDataSet):
             _data = self._reload_data(frame_id)
             self.apply_corrections(_data, frame_id)
 
-            if frame_id is not None:
-                return _data[frame_id]
+            # ToDo Check if it works only for ASAPO
+            #if frame_id is not None:
+            #    return _data[frame_id]
             return _data
 
         if self._need_apply_mask:
@@ -192,7 +193,7 @@ class Base2DDetectorDataSet(BaseDataSet):
             if axis > 0 or self._data_pool.memory_mode == 'ram':
                 data = np.mean(data.take(indices=range(start, stop), axis=axis), axis=axis, keepdims=True)
             else:
-                data = np.mean(axis=axis, keepdims=True)
+                data = np.mean(data, axis=axis, keepdims=True)
 
         for axis_slice in section[:output_dim]:
             axis, start, stop = axis_slice
