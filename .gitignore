@@ -132,6 +132,7 @@ dmypy.json
 
 # Project related ignores
 /.idea
+/deb_dist
 /petra_viewer/tests/logs
 /petra_viewer/tests/.pytest_cache
 /logs

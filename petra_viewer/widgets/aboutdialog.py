@@ -22,7 +22,7 @@ from petra_viewer.version import __version__
 class AboutDialog(QtWidgets.QDialog):
     """
     """
-    SOURCE_DIR = "data_viewer"
+    SOURCE_DIR = "./petra_viewer"
     DATETIME = "%Y-%m-%d %H:%M:%S"
 
     # ----------------------------------------------------------------------

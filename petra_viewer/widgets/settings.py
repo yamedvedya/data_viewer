@@ -37,6 +37,8 @@ class ProgramSetup(QtWidgets.QDialog):
         self._ui.cmd_sav_profile.clicked.connect(self._save_settings)
         self._ui.cmd_load_profile.clicked.connect(self._load_settings)
 
+        self._ui.cmd_reset_settings.clicked.connect(self._reset_settings)
+
         self._display_settings()
 
     # ----------------------------------------------------------------------
@@ -176,24 +178,6 @@ class ProgramSetup(QtWidgets.QDialog):
         return settings
 
     # ----------------------------------------------------------------------
-    def accept(self):
-
-        self.settings.update(self._get_settings())
-
-        self._main_window.apply_settings()
-
-        QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
-
-        super(ProgramSetup, self).accept()
-
-    # ----------------------------------------------------------------------
-    def reject(self):
-
-        QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
-
-        super(ProgramSetup, self).reject()
-
-    # ----------------------------------------------------------------------
     def _save_settings(self):
 
         settings = configparser.ConfigParser()
@@ -220,3 +204,27 @@ class ProgramSetup(QtWidgets.QDialog):
             self._ui.tb_sources.clear()
             self._display_settings()
 
+    # ----------------------------------------------------------------------
+    def _reset_settings(self):
+
+        self._main_window.reset_settings()
+        self._ui.tb_sources.clear()
+        self._display_settings()
+
+    # ----------------------------------------------------------------------
+    def accept(self):
+
+        self.settings.update(self._get_settings())
+
+        self._main_window.apply_settings()
+
+        QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
+
+        super(ProgramSetup, self).accept()
+
+    # ----------------------------------------------------------------------
+    def reject(self):
+
+        QtCore.QSettings(APP_NAME).setValue("{}/geometry".format(WIDGET_NAME), self.saveGeometry())
+
+        super(ProgramSetup, self).reject()

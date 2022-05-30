@@ -256,6 +256,15 @@ class PETRAViewer(QtWidgets.QMainWindow):
         return settings
 
     # -----------------------------------------------------------------
+    def reset_settings(self):
+
+        self.settings = configparser.ConfigParser()
+        home = os.path.join(str(Path.home()), '.petra_viewer')
+        shutil.copy(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_settings.ini'),
+                    os.path.join(home, 'default.ini'))
+        self.settings.read(os.path.join(home, 'default.ini'))
+
+    # -----------------------------------------------------------------
     def save_settings(self, file_name):
         if self._test_mode:
             return
