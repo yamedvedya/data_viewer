@@ -62,6 +62,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         self._test_mode = options.test
 
+        self.dock_locations = {}
+
         self.parameter_actions = []
         self.parameter_action_group = None
 
@@ -83,8 +85,19 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self._menu_view = QtWidgets.QMenu('Widgets', self)
 
         self.frame_view, self.frame_view_dock = self._add_dock(FrameView, "Frame View",
-                                                               QtCore.Qt.LeftDockWidgetArea,
+                                                               QtCore.Qt.RightDockWidgetArea,
                                                                self, self.data_pool, self.settings)
+
+        try:
+            self.configuration['metadata'] = 'metadata' in self.settings['WIDGETS']['visualization']
+        except:
+            self.configuration['metadata'] = True
+
+        if self.configuration['metadata']:
+            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
+                                                                               QtCore.Qt.BottomDockWidgetArea,
+                                                                               self, self.data_pool)
+            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
 
         try:
             self.configuration['cube_view'] = 'cube' in self.settings['WIDGETS']['visualization']
@@ -94,7 +107,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if self.configuration['cube_view']:
             try:
                 self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube view",
-                                                                     QtCore.Qt.LeftDockWidgetArea,
+                                                                     QtCore.Qt.BottomDockWidgetArea,
                                                                      self, self.data_pool)
 
                 self.cube_view_dock.visibilityChanged.connect(self.cube_view.visibility_changed)
@@ -108,19 +121,9 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         if self.configuration['roi']:
             self.rois_view, self.rois_view_dock = self._add_dock(RoisView, "ROIs View",
-                                                                 QtCore.Qt.LeftDockWidgetArea,
+                                                                 QtCore.Qt.BottomDockWidgetArea,
                                                                  self, self.data_pool)
 
-        try:
-            self.configuration['metadata'] = 'metadata' in self.settings['WIDGETS']['visualization']
-        except:
-            self.configuration['metadata'] = True
-
-        if self.configuration['metadata']:
-            self.metadata_browser, self.metadata_browser_dock = self._add_dock(JsonView, "Metadata View",
-                                                                               QtCore.Qt.LeftDockWidgetArea,
-                                                                               self, self.data_pool)
-            self.frame_view.section_updated.connect(self.metadata_browser.update_meta)
 
         try:
             self.configuration['sardana'] = 'sardana' in self.settings['WIDGETS']['file_types']
@@ -382,7 +385,13 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         dock.setStyleSheet("""QDockWidget {font-size: 14pt; font-weight: bold;}""")
 
-        self.scrollable_widget.addDockWidget(location, dock)
+        if location not in self.dock_locations:
+            self.scrollable_widget.addDockWidget(location, dock)
+        else:
+            self.scrollable_widget.tabifyDockWidget(self.dock_locations[location], dock)
+
+        self.dock_locations[location] = dock
+
         self._menu_view.addAction(dock.toggleViewAction())
 
         return widget, dock
