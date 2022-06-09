@@ -43,6 +43,8 @@ def excepthook(exc_type, exc_value, traceback_obj):
         f.write(msg)
         f.close()
         logging.error(msg)
+        # Printing is needed because logger could be not setup properly
+        print(msg)
     except IOError:
         pass
 
