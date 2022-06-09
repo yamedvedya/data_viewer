@@ -78,7 +78,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         self.scrollable_widget.setTabPosition(QtCore.Qt.LeftDockWidgetArea, QtWidgets.QTabWidget.North)
 
-        self.settings = self.get_settings(options)
+        self.settings = self.get_settings(options.profile)
 
         self._menu_view = QtWidgets.QMenu('Widgets', self)
 
@@ -210,49 +210,61 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self.apply_settings()
 
     # ----------------------------------------------------------------------
-    def get_settings(self, options):
+    def get_settings(self, file_name):
 
         settings = configparser.ConfigParser()
         if self._test_mode:
-            settings.read(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_settings.ini'))
+            config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_settings.ini')
+            settings.read(config_path)
+            logger.info(f"Use config from: {config_path}")
             return settings
 
-        home = os.path.join(str(Path.home()), '.petra_viewer')
-        file_name = str(options.profile)
-        if not file_name.endswith('.ini'):
-            file_name += '.ini'
+        # Default setting
+        if file_name == 'default':
+            return self.get_default_setting()
 
-        if not os.path.exists(os.path.join(home, file_name)):
-            _finished = False
-            while not _finished:
-                file = QtWidgets.QFileDialog.getOpenFileName(self, 'Cannot find settings file, please locate it',
-                                                             str(Path.home()), 'INI settings (*.ini)')
-                if file[0]:
-                    settings.read(file[0])
-                    _finished = check_settings(settings)
-                else:
-                    break
-            if _finished:
-                return settings
-        else:
-            settings.read(os.path.join(home, file_name))
+        # Setting from given file
+        if os.path.exists(file_name):
+            settings.read(file_name)
             if check_settings(settings):
                 return settings
 
+        # Select setting in dialog
+        caption = 'Cannot find settings file, please locate it'
+        while True:
+            file = QtWidgets.QFileDialog.getOpenFileNames(self,
+                                                          caption=caption,
+                                                          directory=str(Path.home()),
+                                                          filter='INI settings (*.ini)')
+            if file[0]:
+                settings.read(file[0])
+                if check_settings(settings):
+                    logger.info(f"Use config from: {file[0]}")
+                    return settings
+                caption = f"Selected setting is incorrect. Try different setting."
+            else:
+                return self.get_default_setting()
+
+    def get_default_setting(self):
+        settings = configparser.ConfigParser()
+        home = os.path.join(str(Path.home()), '.petra_viewer')
+        # Set default path
         if not os.path.exists(home):
             os.mkdir(home)
 
-        if not os.path.exists(os.path.join(home, file_name)):
+        if not os.path.exists(os.path.join(home, 'default.ini')):
             shutil.copy(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_settings.ini'),
                         os.path.join(home, 'default.ini'))
+            logger.info(f"Create default config: {os.path.join(home, 'default.ini')}")
 
         settings.read(os.path.join(home, 'default.ini'))
+        logger.info(f"Use config from: {os.path.join(home, 'default.ini')}")
 
         if not check_settings(settings):
             shutil.copy(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_settings.ini'),
                         os.path.join(home, 'default.ini'))
+            logger.info(f"Create default config: {os.path.join(home, 'default.ini')}")
             settings.read(os.path.join(home, 'default.ini'))
-
         return settings
 
     # -----------------------------------------------------------------
@@ -264,6 +276,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
             os.mkdir(os.path.dirname(file_name))
 
         with open(file_name, 'w') as configfile:
+            logger.info(f"Write config to {file_name}")
             self.settings.write(configfile)
 
     # ----------------------------------------------------------------------

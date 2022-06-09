@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import configparser
 import logging
+import json
+import yaml
 
 from PyQt5 import QtWidgets, QtCore
 from distutils.util import strtobool
@@ -44,6 +46,7 @@ class ProgramSetup(QtWidgets.QDialog):
         self.settings = self._main_window.settings
 
         self._data_sources = []
+        logger.debug(f"Display setting {self.settings} {type(self.settings)}")
 
         for widget in ['cube', 'roi', 'metadata']:
             try:
@@ -204,19 +207,60 @@ class ProgramSetup(QtWidgets.QDialog):
                                                      'INI settings (*.ini)')
         if file[0]:
             with open(file[0] + '.ini', 'w') as configfile:
+                logger.info(f"Save setting to file {file[0]}")
                 settings.write(configfile)
 
     # ----------------------------------------------------------------------
     def _load_settings(self):
         file = QtWidgets.QFileDialog.getOpenFileName(self, 'Load settings...',
                                                      os.path.join(str(Path.home()), '.petra_viewer'),
-                                                     'INI settings (*.ini)')
-        if file[0]:
-            settings = configparser.ConfigParser()
+                                                     ('INI settings (*.ini);;'
+                                                      'Beamtime metadata (beamtime*.json);;'
+                                                      'Pipeline config (*.yaml)'))
+
+        settings = configparser.ConfigParser()
+        if file[0] and file[1] == 'INI settings (*.ini)':
             settings.read(file[0])
-            if check_settings(settings):
-                self._main_window.set_settings(settings)
+        elif file[0] and file[1] == 'Beamtime metadata (beamtime*.json)':
+            settings.update(self._get_settings())
+            settings['ASAPO'].update(get_parameters_from_beamtime(file[0]))
+        elif file[0] and file[1] == 'Pipeline config (*.yaml)':
+            settings.update(self._get_settings())
+            settings['ASAPO'].update(get_parameters_from_jaml(file[0]))
+        else:
+            return
 
-            self._ui.tb_sources.clear()
-            self._display_settings()
+        if check_settings(settings):
+            self._main_window.set_settings(settings)
 
+        self._ui.tb_sources.clear()
+        self._display_settings()
+        logger.debug(f"{self._get_settings()}")
+
+
+def get_parameters_from_jaml(file_name):
+    with open(file_name, "r") as f:
+        pl_config = yaml.load(f.read(), Loader=yaml.FullLoader)
+
+    detectors = ''
+    for worker in pl_config.values():
+        if 'receiver.data_source' in worker:
+            detectors += f"{worker['receiver.data_source']};"
+
+    params = {
+        'host': pl_config['common']['receiver.source'],
+        'path': pl_config['common']['receiver.path'],
+        'beamtime': pl_config['common']['receiver.beamtime'],
+        'token': pl_config['common']['receiver.token'],
+        'detectors': detectors
+    }
+    return params
+
+
+def get_parameters_from_beamtime(file_name):
+    with open(file_name) as f:
+        bt_config = json.load(f)
+    return {'host': bt_config['asapo']['endpoint'],
+            'path': bt_config['corePath'],
+            'has_filesystem': True,
+            'beamtime': bt_config['beamtimeId']}
