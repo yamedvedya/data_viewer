@@ -178,7 +178,11 @@ class View2d(QtWidgets.QWidget):
             self.plot_2d.clear()
             return None, None
 
-        data_to_display, pos = self.data_pool.get_2d_picture(self.current_file)
+        picture = self.data_pool.get_2d_picture(self.current_file)
+        if picture is None:
+            self.plot_2d.clear()
+            return None, None
+        data_to_display, pos = picture
 
         if data_to_display is None:
             self.plot_2d.clear()
