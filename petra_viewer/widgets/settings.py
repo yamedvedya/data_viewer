@@ -252,6 +252,7 @@ def get_parameters_from_jaml(file_name):
         'path': pl_config['common']['receiver.path'],
         'beamtime': pl_config['common']['receiver.beamtime'],
         'token': pl_config['common']['receiver.token'],
+        'has_filesystem': str(os.path.exists(pl_config['common']['receiver.path'])),
         'detectors': detectors
     }
     return params
@@ -260,7 +261,14 @@ def get_parameters_from_jaml(file_name):
 def get_parameters_from_beamtime(file_name):
     with open(file_name) as f:
         bt_config = json.load(f)
+
+    token = ''
+    if os.path.exists("{bt_config['corePath']}/{bt_config['asapo']['beamtimeTokenPath']}"):
+        with open(f"{bt_config['corePath']}/{bt_config['asapo']['beamtimeTokenPath']}", "r") as f:
+            token = f.readline().split("\n")[0]
+
     return {'host': bt_config['asapo']['endpoint'],
             'path': bt_config['corePath'],
-            'has_filesystem': True,
+            'token': token,
+            'has_filesystem': str(os.path.exists(bt_config['corePath'])),
             'beamtime': bt_config['beamtimeId']}
