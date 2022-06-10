@@ -39,8 +39,9 @@ class ASAPOBrowser(AbstractWidget):
         self._ui.setupUi(self)
 
         self.asapo_model = ASAPOModel()
-        self.asapo_model.save_columns_count() # reserved for further
+        self.asapo_model.save_columns_count()  # reserved for further
 
+        self.receivers = {}
         self.asapo_proxy = ProxyModel()
         self.asapo_proxy.setSourceModel(self.asapo_model)
         try:
@@ -109,6 +110,7 @@ class ASAPOBrowser(AbstractWidget):
     # ----------------------------------------------------------------------
     def apply_settings(self):
         try:
+            self.receivers = {}
             self.reset_detectors([detector.strip() for detector in SETTINGS['detectors'].split(';')])
             self.refresh_view()
         except Exception as err:
@@ -146,13 +148,16 @@ class ASAPOBrowser(AbstractWidget):
             model_streams_names = [child.my_name() for child in detector_node.all_child()]
 
             # then we get all streams from asapo
-            meta_data_receiver = AsapoMetadataReceiver(asapo_consumer.create_consumer(SETTINGS['host'],
-                                                                                      SETTINGS['path'],
-                                                                                      SETTINGS['has_filesystem'],
-                                                                                      SETTINGS['beamtime'],
-                                                                                      detector,
-                                                                                      SETTINGS['token'], 1000))
+            if detector not in self.receivers:
+                self.receivers[detector] = AsapoMetadataReceiver(asapo_consumer.create_consumer(SETTINGS['host'],
+                                                                                                SETTINGS['path'],
+                                                                                                SETTINGS['has_filesystem'],
+                                                                                                SETTINGS['beamtime'],
+                                                                                                detector,
+                                                                                                SETTINGS['token'],
+                                                                                                1000))
 
+            meta_data_receiver = self.receivers[detector]
             # Note, that to speed up, user can ask to show only N last streams
             asapo_streams = meta_data_receiver.get_stream_list()[-int(SETTINGS['max_streams']):]
 
@@ -183,7 +188,6 @@ class ASAPOBrowser(AbstractWidget):
                         self.stream_updated.emit(detector_node.my_name(), stream_name, asapo_streams[stream_ind])
                 else:
                     stream = self.asapo_model.add_stream(detector_ind, ind, asapo_streams[stream_ind])
-            # TODO: test auto_open feature
                     if self._auto_open:
                         self.stream_selected.emit(detector_node.my_name(), stream.my_name(), stream.info)
 
