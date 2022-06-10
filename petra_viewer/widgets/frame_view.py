@@ -330,6 +330,8 @@ class FrameView(AbstractWidget):
 
     # ----------------------------------------------------------------------
     def _set_section_for_second_view(self, file, section):
+        logger.debug(f"_set_section_for_second_view File: {file}, selection {section}")
+        '''
         if self.data_pool.get_file_dimension(self._second_view.current_file) != \
                 self.data_pool.get_file_dimension(self._main_view.current_file):
             return False
@@ -338,14 +340,20 @@ class FrameView(AbstractWidget):
             return False
 
         new_section = []
-
+        
+        Here is the place to match selection of the second view to the first view
         for ind, axis_param in enumerate(section):
-
+            logger.debug(f"Loop over selections {ind} {axis_param}")
+            logger.debug(f"1 {self._main_view.current_file}")
             v_min = self.data_pool.get_value_for_frame(self._main_view.current_file, ind, axis_param['min'])
+            logger.debug(f"2 {self._second_view.current_file} {v_min}")
             v_min = self.data_pool.get_frame_for_value(self._second_view.current_file, ind, v_min,
                                                        axis_param['axis'] not in ['X', 'Y'])
 
+            logger.debug(f"3 {self._main_view.current_file}")
             v_max = self.data_pool.get_value_for_frame(self._main_view.current_file, ind, axis_param['max'])
+
+            logger.debug(f"4 {self._second_view.current_file} {v_max}")
             v_max = self.data_pool.get_frame_for_value(self._second_view.current_file, ind, v_max,
                                                        axis_param['axis'] not in ['X', 'Y'] and axis_param['integration'])
 
@@ -355,14 +363,19 @@ class FrameView(AbstractWidget):
             new_params = dict(axis_param)
             new_params.update({'min': v_min, 'max': v_max})
             new_section.append(new_params)
+        '''
 
-        self.data_pool.save_section(file, new_section)
+        self.data_pool.save_section(file, section)
 
         return True
 
     # ----------------------------------------------------------------------
     def update_second_view_image(self):
-        selection = self.data_pool.get_section(self._main_view.current_file)
+        if not self._second_view.current_file:
+            return
+
+        selection = self.data_pool.get_section(self._second_view.current_file)
+        selection[0] = self.data_pool.get_section(self._main_view.current_file)[0]
 
         second_view_is_valid = True
         for file in self._second_view.get_files_list():
@@ -450,7 +463,8 @@ class FrameView(AbstractWidget):
         if self._main_view.previous_file is not None:
             old_axes = self.data_pool.get_file_axes(self._main_view.previous_file)
             if not self._ui.cut_selectors.set_axes(old_axes):
-                self._parent.report_error(f'File cannot be displayed in {old_axes} \nsetting {self.data_pool.get_file_axes(self._main_view.current_file)}')
+                logging.debug(f'File cannot be displayed in {old_axes} \nsetting {self.data_pool.get_file_axes(self._main_view.current_file)}')
+                #self._parent.report_error(f'File cannot be displayed in {old_axes} \nsetting {self.data_pool.get_file_axes(self._main_view.current_file)}')
         self._signals_blocked = False
         self.main_file_changed.emit()
 
