@@ -20,7 +20,7 @@ try:
 except:
     has_asapo = False
 
-from petra_viewer.data_sources.sardana.sardana_data_set import apply_settings_sardana
+from petra_viewer.data_sources.p23scan.p23scan_data_set import apply_settings_p23scan
 
 from petra_viewer.widgets.cube_view import CubeView
 from petra_viewer.widgets.tests_browser import TestsBrowser
@@ -124,15 +124,24 @@ class PETRAViewer(QtWidgets.QMainWindow):
                                                                  QtCore.Qt.BottomDockWidgetArea,
                                                                  self, self.data_pool)
 
+        try:
+            self.configuration['p23scan'] = 'p23scan' in self.settings['WIDGETS']['file_types']
+        except:
+            self.configuration['p23scan'] = True
+
+        if self.configuration['p23scan']:
+            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "P23 scan browser",
+                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'p23scan')
+            self.file_browser.file_selected.connect(self.data_pool.open_file)
 
         try:
-            self.configuration['sardana'] = 'sardana' in self.settings['WIDGETS']['file_types']
+            self.configuration['p11scan'] = 'p11scan' in self.settings['WIDGETS']['file_types']
         except:
-            self.configuration['sardana'] = True
+            self.configuration['p11scan'] = True
 
-        if self.configuration['sardana']:
-            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "Sardana Browser",
-                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'sardana')
+        if self.configuration['p11scan']:
+            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "P11 scan browser",
+                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'p11scan')
             self.file_browser.file_selected.connect(self.data_pool.open_file)
 
         try:
@@ -156,7 +165,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         if self.configuration['beamline']:
             self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "Beamline Browser",
-                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'beam')
+                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'beamline')
             self.file_browser.file_selected.connect(self.data_pool.open_file)
 
         try:
@@ -293,8 +302,11 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if 'CUBE_VIEW' in self.settings and self.configuration['cube_view']:
             self.cube_view.set_settings(self.settings['CUBE_VIEW'])
 
-        if 'SARDANA' in self.settings and self.configuration['sardana']:
-            apply_settings_sardana(self.settings['SARDANA'])
+        if 'P23SCAN' in self.settings and self.configuration['p23scan']:
+            apply_settings_p23scan(self.settings['P23SCAN'])
+            self.file_browser.apply_settings()
+
+        if 'P11SCAN' in self.settings and self.configuration['p11scan']:
             self.file_browser.apply_settings()
 
         if 'ASAPO' in self.settings and self.configuration['asapo']:
@@ -311,7 +323,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):
-        if self.configuration['sardana'] or self.configuration['beamline']:
+        if self.configuration['p23scan'] or self.configuration['beamline']:
             return self.file_browser.current_folder()
         else:
             return os.getcwd()
@@ -346,7 +358,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def _setup_menu(self):
-        if self.configuration['sardana']:
+        if self.configuration['p23scan']:
 
             if has_converter:
                 space_menu = QtWidgets.QMenu('Space', self)
@@ -415,7 +427,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _close_me(self):
         logger.info("Closing the app...")
-        if self.configuration['sardana']:
+        if self.configuration['p23scan']:
             self.file_browser.safe_close()
         self.save_settings(os.path.join(os.path.join(str(Path.home()), '.petra_viewer'), 'default.ini'))
         self._save_ui_settings()
@@ -438,7 +450,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
         """
         settings = QtCore.QSettings(APP_NAME)
 
-        if self.configuration['sardana']:
+        if self.configuration['p23scan']:
             self.file_browser.save_ui_settings(settings)
 
         if self.configuration['asapo']:
@@ -479,7 +491,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
         except:
             pass
 
-        if self.configuration['sardana']:
+        if self.configuration['p23scan']:
             self.file_browser.load_ui_settings(settings)
 
         if self.configuration['asapo']:

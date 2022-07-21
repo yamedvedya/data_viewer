@@ -27,12 +27,12 @@ from petra_viewer.widgets.abstract_widget import AbstractWidget
 from petra_viewer.gui.file_browser_ui import Ui_FileBrowser
 
 from petra_viewer.utils.utils import FileFilter
-from petra_viewer.data_sources.sardana.sardana_data_set import SETTINGS
+from petra_viewer.data_sources.p23scan.p23scan_data_set import SETTINGS
 from petra_viewer.main_window import APP_NAME
 
 WIDGET_NAME = 'DataBrowser'
 
-file_formats = ["*.nxs", "*.h5"]
+file_formats = [".nxs", ".h5"]
 
 FILE_REFRESH_PERIOD = 1
 
@@ -57,13 +57,14 @@ class FileBrowser(AbstractWidget):
 
         self._file_model = QtWidgets.QFileSystemModel()
         self._file_model.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDot | QtCore.QDir.NoDotDot | QtCore.QDir.Files)
-        self._file_model.setNameFilters(file_formats)
-        self._file_model.setNameFilterDisables(False)
 
         self._eid = None
         self._door_server = None
 
         self.file_filter = FileFilter()
+        self.file_filter.user_file_types = file_formats
+        if mode == 'p11scan':
+            self.file_filter.user_file_names = ['master', ]
         try:
             self.file_filter.setRecursiveFilteringEnabled(True)
         except AttributeError:
@@ -96,7 +97,7 @@ class FileBrowser(AbstractWidget):
         self._ui.le_filter.textEdited.connect(self._apply_filter)
         self._ui.chk_monitor.clicked.connect(self._toggle_watch_dog)
 
-        if self._mode == 'sardana':
+        if self._mode == 'p23scan':
             self._ui.chk_door.clicked.connect(self._toggle_watch_door)
         else:
             self._ui.chk_door.setVisible(False)
@@ -138,7 +139,7 @@ class FileBrowser(AbstractWidget):
     # ----------------------------------------------------------------------
     def apply_settings(self):
         try:
-            if self._mode == 'sardana':
+            if self._mode == 'p23scan':
                 if 'door_address' in SETTINGS:
                     if self._eid is not None:
                         self._toggle_watch_door(False)
@@ -188,6 +189,12 @@ class FileBrowser(AbstractWidget):
         path = str(path)
         self._file_model.setRootPath(path)
         self._ui.tr_file_browser.setRootIndex(self.file_filter.mapFromSource(self._file_model.index(path)))
+        self._adjust_colum_size()
+
+    # ----------------------------------------------------------------------
+    def _adjust_colum_size(self):
+        for ind in range(self._ui.tr_file_browser.header().count()):
+            self._ui.tr_file_browser.header().setSectionResizeMode(ind, QtWidgets.QHeaderView.ResizeToContents)
 
     # ----------------------------------------------------------------------
     def _open_folder(self):

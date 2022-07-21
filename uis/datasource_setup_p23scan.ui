@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SardanaSetup</class>
- <widget class="QWidget" name="SardanaSetup">
+ <class>P23ScanSetup</class>
+ <widget class="QWidget" name="P23ScanSetup">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -539,9 +539,9 @@
  <connections/>
  <buttongroups>
   <buttongroup name="bg_mask_option"/>
-  <buttongroup name="bg_ff_option"/>
   <buttongroup name="bg_intensity"/>
-  <buttongroup name="bg_fill_option"/>
   <buttongroup name="bg_attenuator"/>
+  <buttongroup name="bg_ff_option"/>
+  <buttongroup name="bg_fill_option"/>
  </buttongroups>
 </ui>

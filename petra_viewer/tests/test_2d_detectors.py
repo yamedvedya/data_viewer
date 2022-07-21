@@ -1,6 +1,6 @@
 import numpy as np
 
-from petra_viewer.tests.test_sardana import _load_file, z_dim, y_dim, x_dim, generate_fake_data, viewer, change_test_dir
+from petra_viewer.tests.test_p23scan import _load_file, z_dim, y_dim, x_dim, generate_fake_data, viewer, change_test_dir
 
 
 def test_2d_functionality(change_test_dir, viewer):

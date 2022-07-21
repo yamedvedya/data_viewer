@@ -28,7 +28,7 @@ SETTINGS = {'door_address': None,
 
 
 # ----------------------------------------------------------------------
-def apply_settings_sardana(settings):
+def apply_settings_p23scan(settings):
     if 'door_address' in settings:
         SETTINGS['door_address'] = settings['door_address']
     else:
@@ -48,11 +48,11 @@ def apply_settings_sardana(settings):
 
 
 # ----------------------------------------------------------------------
-class SardanaDataSet(Base2DDetectorDataSet):
+class P23ScanDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, file_name):
-        super(SardanaDataSet, self).__init__(data_pool)
+        super(P23ScanDataSet, self).__init__(data_pool)
 
         self.my_name = os.path.splitext(os.path.basename(file_name))[0]
 
@@ -127,7 +127,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
     # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
         """
-        reloads sardana data
+        reloads p23scan data
         :param frame_ids: if not None: frames to be loaded
         :return: np.array, 3D data cube
         """
@@ -216,7 +216,7 @@ class SardanaDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def _corrections_required(self):
-        if super(SardanaDataSet, self)._corrections_required():
+        if super(P23ScanDataSet, self)._corrections_required():
             return True
 
         if SETTINGS['atten_correction']:

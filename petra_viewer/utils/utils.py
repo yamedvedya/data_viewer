@@ -17,24 +17,43 @@ def wait_cursor():
     finally:
         QtWidgets.QApplication.restoreOverrideCursor()
 
+
 # ----------------------------------------------------------------------
 class FileFilter(QtCore.QSortFilterProxyModel):
 
     new_version = True
+    user_file_types = []
+    user_file_names = []
 
     # ----------------------------------------------------------------------
     def filterAcceptsRow(self, source_row, source_parent):
+        my_index = self.sourceModel().index(source_row, 0, source_parent)
         if self.new_version:
-            return super(FileFilter, self).filterAcceptsRow(source_row, source_parent)
+            filter_accepts = super(FileFilter, self).filterAcceptsRow(source_row, source_parent)
         else:
-            match = False
-            my_index = self.sourceModel().index(source_row, 0, source_parent)
+            filter_accepts = False
             for row in range(self.sourceModel().rowCount(my_index)):
-                match |= self.filterAcceptsRow(row, my_index)
+                filter_accepts |= self.filterAcceptsRow(row, my_index)
 
-            match |= super(FileFilter, self).filterAcceptsRow(source_row, source_parent)
+            filter_accepts |= super(FileFilter, self).filterAcceptsRow(source_row, source_parent)
 
-            return match
+        if not self.sourceModel().isDir(my_index):
+            file_name = str(self.sourceModel().data(my_index))
+            if self.user_file_types:
+                extension_matches = False
+                for user_type in self.user_file_types:
+                    extension_matches += file_name.endswith(user_type)
+
+                filter_accepts &= extension_matches
+
+            if self.user_file_names:
+                name_matches = False
+                for user_name in self.user_file_names:
+                    name_matches += user_name in file_name
+
+                filter_accepts &= name_matches
+
+        return filter_accepts
 
     # ----------------------------------------------------------------------
     def lessThan(self, left, right):

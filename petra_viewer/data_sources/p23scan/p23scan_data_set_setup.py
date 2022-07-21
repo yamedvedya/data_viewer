@@ -1,13 +1,13 @@
-# Created by matveyev at 13.08.2021
-from petra_viewer.data_sources.sardana.sardana_data_set import SETTINGS
+# Created by matveyev at 02.07.2022
+from petra_viewer.data_sources.p23scan.p23scan_data_set import SETTINGS
 from petra_viewer.data_sources.base_classes.base_2d_detector_setup import Base2DDetectorSetup
-from petra_viewer.gui.datasource_setup_sardana_ui import Ui_SardanaSetup
+from petra_viewer.gui.datasource_setup_p23scan_ui import Ui_P23ScanSetup
 from petra_viewer.utils.utils import refresh_combo_box
 
-WIDGET_NAME = 'SardanaScanSetup'
+WIDGET_NAME = 'P23ScanScanSetup'
 
 
-class SardanaScanSetup(Base2DDetectorSetup):
+class P23ScanScanSetup(Base2DDetectorSetup):
     """
     SETTINGS = {'enable_mask': False,
                 'loaded_mask': None,
@@ -28,7 +28,7 @@ class SardanaScanSetup(Base2DDetectorSetup):
     def __init__(self, main_window):
         """
         """
-        super(SardanaScanSetup, self).__init__(main_window)
+        super(P23ScanScanSetup, self).__init__(main_window)
 
         self._ui.le_door_address.setText(SETTINGS['door_address'])
 
@@ -56,7 +56,7 @@ class SardanaScanSetup(Base2DDetectorSetup):
     # ----------------------------------------------------------------------
     def _my_ui(self):
 
-        return Ui_SardanaSetup()
+        return Ui_P23ScanSetup()
 
     # ----------------------------------------------------------------------
     def _my_settings(self):
@@ -66,7 +66,7 @@ class SardanaScanSetup(Base2DDetectorSetup):
     # ----------------------------------------------------------------------
     def get_settings(self):
 
-        settings = super(SardanaScanSetup, self).get_settings()
+        settings = super(P23ScanScanSetup, self).get_settings()
 
         if self._ui.le_door_address.text() != '':
             settings['door_address'] = str(self._ui.le_door_address.text())
@@ -77,5 +77,5 @@ class SardanaScanSetup(Base2DDetectorSetup):
         if self._ui.rb_atten_on.isChecked():
             settings['inten_param'] = str(self._ui.cmb_intensity.currentText())
 
-        return {'SARDANA': settings}
+        return {'P23SCAN': settings}
 

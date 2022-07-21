@@ -159,16 +159,8 @@ class DataPool(QtCore.QObject):
             logger.error("File with this name already opened")
             return
 
-        if ".nxs" in file_name:
-            self._start_opener('sardana', f'Opening file {file_name}',
-                               {'file_name': file_name, 'entry_name': entry_name})
-        elif ".h5" in file_name:
-            if mode == 'beam':
-                self._start_opener('beamline', f'Opening file {file_name}',
-                                   {'file_name': file_name, 'entry_name': entry_name})
-            else:
-                self._start_opener('reciprocal', f'Opening file {file_name}',
-                                   {'file_name': file_name, 'entry_name': entry_name})
+        self._start_opener(mode, f'Opening file {file_name}',
+                           {'file_name': file_name, 'entry_name': entry_name})
 
     # ----------------------------------------------------------------------
     def open_test(self, test_name):
@@ -667,7 +659,7 @@ class DataPool(QtCore.QObject):
     def get_frame_for_value(self, file, axis, pos, check_range=False):
         """
         for some file types user can select the displayed unit for some axis
-        e.g. for Sardana scan we can display point_nb, or motor position etc...
+        e.g. for p23scan scan we can display point_nb, or motor position etc...
 
         here we return the frame number along this axis for particular unit value
 
@@ -682,7 +674,7 @@ class DataPool(QtCore.QObject):
     def get_value_for_frame(self, file, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
-        e.g. for Sardana scan we can display point_nb, or motor position etc...
+        e.g. for p23scan scan we can display point_nb, or motor position etc...
 
         here we return the unit value along this axis for particular frame number
         :param file:
@@ -696,7 +688,7 @@ class DataPool(QtCore.QObject):
     def get_axis_resolution(self, file, axis):
         """
         for some file types user can select the displayed unit for some axis
-        e.g. for Sardana scan we can display point_nb, or motor position etc...
+        e.g. for p23scan scan we can display point_nb, or motor position etc...
 
         here we return the expected resolution of axis to set the resolution of spin boxes
         :param file:

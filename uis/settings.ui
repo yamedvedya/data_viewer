@@ -30,37 +30,20 @@
           <string>Widget configuration</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_12">
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="chk_asapo">
-            <property name="text">
-             <string>ASAPO</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_21">
-            <property name="text">
-             <string>File types</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
+          <item row="4" column="0">
            <widget class="QCheckBox" name="chk_beamline">
             <property name="text">
-             <string>Beamline view</string>
+             <string>Beamline (P23)</string>
             </property>
             <property name="checked">
              <bool>true</bool>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="chk_sardana">
+          <item row="5" column="0">
+           <widget class="QCheckBox" name="chk_tests">
             <property name="text">
-             <string>Sardana</string>
+             <string>Tests</string>
             </property>
             <property name="checked">
              <bool>true</bool>
@@ -84,20 +67,47 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QCheckBox" name="chk_cube">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_21">
             <property name="text">
-             <string>Cube view</string>
+             <string>File types</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="chk_p23scan">
+            <property name="text">
+             <string>P23 scans</string>
             </property>
             <property name="checked">
              <bool>true</bool>
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
-           <widget class="QCheckBox" name="chk_tests">
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="chk_asapo">
             <property name="text">
-             <string>Tests</string>
+             <string>ASAPO streams (P02; P23)</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="chk_p11scan">
+            <property name="text">
+             <string>P11 scans</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QCheckBox" name="chk_cube">
+            <property name="text">
+             <string>Cube view</string>
             </property>
             <property name="checked">
              <bool>true</bool>

@@ -164,7 +164,7 @@ class BaseDataSet(object):
     def get_frame_for_value(self, axis, pos, check_range):
         """
         for some file types user can select the displayed unit for some axis
-        e.g. for Sardana scan we can display point_nb, or motor position etc...
+        e.g. for p23scan scan we can display point_nb, or motor position etc...
 
         here we return the frame number along this axis for particular unit value
 
@@ -186,7 +186,7 @@ class BaseDataSet(object):
     def get_value_for_frame(self, axis, pos):
         """
         for some file types user can select the displayed unit for some axis
-        e.g. for Sardana scan we can display point_nb, or motor position etc...
+        e.g. for p23scan scan we can display point_nb, or motor position etc...
 
         here we return the unit value along this axis for particular frame number
 

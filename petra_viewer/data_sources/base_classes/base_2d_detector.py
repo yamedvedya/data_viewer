@@ -192,7 +192,7 @@ class Base2DDetectorDataSet(BaseDataSet):
             if axis > 0 or self._data_pool.memory_mode == 'ram':
                 data = np.mean(data.take(indices=range(start, stop), axis=axis), axis=axis, keepdims=True)
             else:
-                data = np.mean(axis=axis, keepdims=True)
+                data = np.mean(data, axis=axis, keepdims=True)
 
         for axis_slice in section[:output_dim]:
             axis, start, stop = axis_slice

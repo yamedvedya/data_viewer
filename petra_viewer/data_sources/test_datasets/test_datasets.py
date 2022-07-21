@@ -3,11 +3,11 @@
 import numpy as np
 import configparser
 
-from petra_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
+from petra_viewer.data_sources.p23scan.p23scan_data_set import P23ScanDataSet
 from petra_viewer.data_sources.asapo.asapo_data_set import ASAPODataSet
 from petra_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 
-__all__ = ['SardanaPeak1', 'SardanaPeak2', 'HeavySardana', 'ASAPO2DPeak', 'ASAPO3DPeak', 'ASAPO4DPeak', 'BeamView']
+__all__ = ['Peak1', 'Peak2', 'HeavyPeak', 'ASAPO2DPeak', 'ASAPO3DPeak', 'ASAPO4DPeak', 'BeamView']
 
 
 class BaseTestDataSet(object):
@@ -24,12 +24,12 @@ class BaseTestDataSet(object):
 
 
 # --------------------------------------------------------------------
-class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
+class __Fake3DPeak(P23ScanDataSet, BaseTestDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
 
-        super(SardanaDataSet, self).__init__(data_pool)
+        super(P23ScanDataSet, self).__init__(data_pool)
 
         self._possible_axes_units = [{'point_nb': np.arange(self.dims[0])},
                                      {'detector X': np.arange(self.dims[1])},
@@ -84,51 +84,51 @@ class __Fake3DSardana(SardanaDataSet, BaseTestDataSet):
 
 
 # ----------------------------------------------------------------------
-class SardanaPeak1(__Fake3DSardana):
+class Peak1(__Fake3DPeak):
 
     dims = [11, 101, 201]
 
-    my_name = 'SardanaPeak1'
+    my_name = 'Peak1'
 
     max_int = 50
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
 
-        super(SardanaPeak1, self).__init__(data_pool)
+        super(Peak1, self).__init__(data_pool)
 
         self._possible_axes_units[0]['omega'] = np.linspace(1, 2, self.dims[0])
         self._possible_axes_units[0]['delta'] = np.linspace(2, 4, self.dims[0])
 
 
 # ----------------------------------------------------------------------
-class SardanaPeak2(__Fake3DSardana):
+class Peak2(__Fake3DPeak):
 
     dims = [21, 151, 101]
 
-    my_name = 'SardanaPeak2'
+    my_name = 'Peak2'
 
     max_int = 150
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
-        super(SardanaPeak2, self).__init__(data_pool)
+        super(Peak2, self).__init__(data_pool)
 
         self._possible_axes_units[0]['omega'] = np.linspace(1.5, 2.5, self.dims[0])
 
 
 # ----------------------------------------------------------------------
-class HeavySardana(__Fake3DSardana):
+class HeavyPeak(__Fake3DPeak):
 
     dims = [501, 1556, 516]
 
-    my_name = 'HeavySardana'
+    my_name = 'HeavyPeak'
 
     max_int = 1e6
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool):
-        super(HeavySardana, self).__init__(data_pool)
+        super(HeavyPeak, self).__init__(data_pool)
 
         self._possible_axes_units[0]['omega'] = np.linspace(1.5, 2.5, self.dims[0])
 

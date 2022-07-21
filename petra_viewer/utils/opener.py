@@ -13,8 +13,9 @@ if 'asapo_consumer' in sys.modules:
 
 from petra_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 from petra_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
-from petra_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
-from petra_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, HeavySardana, \
+from petra_viewer.data_sources.p23scan.p23scan_data_set import P23ScanDataSet
+from petra_viewer.data_sources.p11scan.p11scan_data_set import P11ScanDataSet
+from petra_viewer.data_sources.test_datasets.test_datasets import Peak1, Peak2, HeavyPeak, \
     ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView
 
 
@@ -38,11 +39,29 @@ class Opener(QtCore.QThread):
     # ----------------------------------------------------------------------
     def run(self):
         try:
-            if self.mode == 'sardana':
+            if self.mode == 'p23scan':
                 finished = False
                 while not finished:
                     try:
-                        new_file = SardanaDataSet(self.data_pool, self.params['file_name'])
+                        new_file = P23ScanDataSet(self.data_pool, self.params['file_name'])
+                        self.data_pool.add_new_entry(self.params['entry_name'], new_file)
+                        finished = True
+
+                    except OSError as err:
+                        if 'Resource temporarily unavailable' in str(err.args):
+                            time.sleep(0.5)
+                            print('Waiting for file {}'.format(self.params['file_name']))
+                        else:
+                            self.exception.emit('Cannot open file',
+                                                'Cannot open {}'.format(self.params['file_name']),
+                                                self._make_err_msg(err))
+                            finished = True
+
+            elif self.mode == 'p11scan':
+                finished = False
+                while not finished:
+                    try:
+                        new_file = P11ScanDataSet(self.data_pool, self.params['file_name'])
                         self.data_pool.add_new_entry(self.params['entry_name'], new_file)
                         finished = True
 
@@ -70,12 +89,12 @@ class Opener(QtCore.QThread):
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'test':
-                if self.params['test_name'] == 'SardanaPeak1':
-                    new_file = SardanaPeak1(self.data_pool)
-                elif self.params['test_name'] == 'SardanaPeak2':
-                    new_file = SardanaPeak2(self.data_pool)
-                elif self.params['test_name'] == 'HeavySardana':
-                    new_file = HeavySardana(self.data_pool)
+                if self.params['test_name'] == 'Peak1':
+                    new_file = Peak1(self.data_pool)
+                elif self.params['test_name'] == 'Peak2':
+                    new_file = Peak2(self.data_pool)
+                elif self.params['test_name'] == 'HeavyPeak':
+                    new_file = HeavyPeak(self.data_pool)
                 elif self.params['test_name'] == 'ASAPO2DPeak':
                     new_file = ASAPO2DPeak(self.data_pool)
                 elif self.params['test_name'] == 'ASAPO3DPeak':

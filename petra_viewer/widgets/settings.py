@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets, QtCore
 from distutils.util import strtobool
 from petra_viewer.utils.utils import refresh_combo_box, check_settings
 
-from petra_viewer.data_sources.sardana.sardana_data_set_setup import SardanaScanSetup
+from petra_viewer.data_sources.p23scan.p23scan_data_set_setup import P23ScanScanSetup
 if 'asapo_consumer' in sys.modules:
     from petra_viewer.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
 
@@ -53,7 +53,7 @@ class ProgramSetup(QtWidgets.QDialog):
             except Exception as err:
                 logger.error(f'Cannot display {widget} state: {repr(err)}')
 
-        for ftype in ['asapo', 'sardana', 'beamline', 'tests']:
+        for ftype in ['asapo', 'p23scan', 'beamline', 'tests']:
             try:
                 getattr(self._ui, f'chk_{ftype}').setChecked(ftype in self.settings['WIDGETS']['file_types'])
             except Exception as err:
@@ -115,12 +115,12 @@ class ProgramSetup(QtWidgets.QDialog):
             logger.error(f'Cannot display ROIS settings: {repr(err)}')
 
         try:
-            if self._main_window.configuration['sardana'] or self._main_window.configuration['tests']:
-                widget = SardanaScanSetup(self._main_window)
+            if self._main_window.configuration['p23scan'] or self._main_window.configuration['tests']:
+                widget = P23ScanScanSetup(self._main_window)
                 self._data_sources.append(widget)
-                self._ui.tb_sources.addTab(widget, 'Sardana')
+                self._ui.tb_sources.addTab(widget, 'P23Scan')
         except Exception as err:
-            logger.error(f'Cannot display SARDANA settings: {repr(err)}')
+            logger.error(f'Cannot display P23Scan settings: {repr(err)}')
 
         try:
             if self._main_window.configuration['asapo'] or self._main_window.configuration['tests'] \
@@ -143,7 +143,7 @@ class ProgramSetup(QtWidgets.QDialog):
         settings['WIDGETS']['visualization'] = ';'.join(cmd)
 
         cmd = []
-        for widget in ['asapo', 'sardana', 'beamline', 'tests']:
+        for widget in ['asapo', 'p23scan', 'p11scan', 'beamline', 'tests']:
             if getattr(self._ui, f'chk_{widget}').isChecked():
                 cmd.append(widget)
 
