@@ -57,6 +57,8 @@ def apply_base_settings(settings, SETTINGS):
 
 # ----------------------------------------------------------------------
 class Base2DDetectorDataSet(BaseDataSet):
+
+    MAX_FRAME_LOAD_IN_CYCLE = 1
     
     def __init__(self, data_pool):
         super(Base2DDetectorDataSet, self).__init__(data_pool)
@@ -102,8 +104,6 @@ class Base2DDetectorDataSet(BaseDataSet):
             _data = self._reload_data(frame_id)
             self.apply_corrections(_data, frame_id)
 
-            if frame_id is not None:
-                return _data[frame_id]
             return _data
 
         if self._need_apply_mask:
@@ -169,21 +169,7 @@ class Base2DDetectorDataSet(BaseDataSet):
             raise RuntimeError("{}: cannot apply mask: {}".format(self.my_name, err))
 
     # ----------------------------------------------------------------------
-    def _cut_data(self, section, output_dim):
-        """
-        return cut from data
-        :param data: nD np.array
-        :param section: array of tuples to define section: (axis, from, to)
-        :return:
-        """
-        section_sorted = sorted(section)
-
-        if self._data_pool.memory_mode != 'ram':
-            data = self._get_data((section_sorted[0][1], section_sorted[0][2]))
-        else:
-            data = self._get_data()
-
-        logger.debug(f"Data before cut {data.shape}, selection={section}, output_dim: {output_dim}")
+    def _slice_data(self, data, section, output_dim):
 
         for axis_slice in section[output_dim:]:
             axis, start, stop = axis_slice
@@ -202,6 +188,39 @@ class Base2DDetectorDataSet(BaseDataSet):
                 if axis > 0 or self._data_pool.memory_mode == 'ram':
                     data = data.take(indices=range(start, stop), axis=axis)
 
+        return data
+
+    # ----------------------------------------------------------------------
+    def _cut_data(self, section, output_dim):
+        """
+        return cut from data
+        :param data: nD np.array
+        :param section: array of tuples to define section: (axis, from, to)
+        :return:
+        """
+        section_sorted = sorted(section)
+
+        if self._data_pool.memory_mode != 'ram':
+            data = None
+            for frame_id in np.arange(section_sorted[0][1], section_sorted[0][2], self.MAX_FRAME_LOAD_IN_CYCLE):
+                last_frame = min(frame_id + self.MAX_FRAME_LOAD_IN_CYCLE, section_sorted[0][2])
+                frame = self._slice_data(self._get_data([frame_id, last_frame]), section, output_dim)
+                if data is None:
+                    data = frame
+                else:
+                    data = np.concatenate((data, frame))
+
+            for axis_slice in section[output_dim:]:
+                axis, start, stop = axis_slice
+                if axis == 0:
+                    data = np.mean(data, axis=axis, keepdims=True)
+
+        else:
+            data = self._get_data()
+
+            logger.debug(f"Data before cut {data.shape}, selection={section}, output_dim: {output_dim}")
+            data = self._slice_data(data, section, output_dim)
+
         if np.ndim(data) == 0:
             data = np.zeros(5)[:, None]
         if np.ndim(data) == 1 and output_dim == 2:
@@ -216,6 +235,8 @@ class Base2DDetectorDataSet(BaseDataSet):
                 axes_order.insert(ind, axis)
 
         data = np.squeeze(data)
+
+        return data
 
         logger.debug(f"Data after cut {data.shape} ")
         return data

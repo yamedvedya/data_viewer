@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Petra_Viewer
+Version=v1.2.0
+Exec=python3 -c "from petra_viewer import main;main()"
+Terminal=true
+Type=Application
+StartupNotify=true

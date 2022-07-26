@@ -456,7 +456,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if self.configuration['asapo']:
             self.asapo_browser.save_ui_settings(settings)
 
-        self.rois_view.save_ui_settings(settings)
+        if self.configuration['roi']:
+            self.rois_view.save_ui_settings(settings)
         self.frame_view.save_ui_settings(settings)
 
         settings.setValue("InternalWindow/geometry", self.scrollable_widget.saveGeometry())
@@ -497,7 +498,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if self.configuration['asapo']:
             self.asapo_browser.load_ui_settings(settings)
 
-        self.rois_view.load_ui_settings(settings)
+        if self.configuration['roi']:
+            self.rois_view.load_ui_settings(settings)
         self.frame_view.load_ui_settings(settings)
 
     # ----------------------------------------------------------------------

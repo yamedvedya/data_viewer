@@ -53,7 +53,7 @@ class ProgramSetup(QtWidgets.QDialog):
             except Exception as err:
                 logger.error(f'Cannot display {widget} state: {repr(err)}')
 
-        for ftype in ['asapo', 'p23scan', 'beamline', 'tests']:
+        for ftype in ['asapo', 'p23scan', 'p11scan', 'beamline', 'tests']:
             try:
                 getattr(self._ui, f'chk_{ftype}').setChecked(ftype in self.settings['WIDGETS']['file_types'])
             except Exception as err:
