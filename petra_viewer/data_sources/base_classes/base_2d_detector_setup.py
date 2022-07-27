@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets, QtCore
 from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
 
 from petra_viewer.main_window import APP_NAME
+from petra_viewer.gui.base_2d_setup_ui import Ui_Base2DDetectorSetup
 from petra_viewer.utils.utils import read_mask_file, read_ff_file
 
 WIDGET_NAME = ''
@@ -37,8 +38,15 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
         """
         super(Base2DDetectorSetup, self).__init__()
 
-        self._ui = self._my_ui()
+        self._ui = Ui_Base2DDetectorSetup()
         self._ui.setupUi(self)
+
+        self._individual_widget = None
+        my_ui_class = self._get_my_ui_class()
+        if my_ui_class is not None:
+            self._individual_widget = IndividualSettingsWidget(my_ui_class)
+            self._ui.v_layout.insertWidget(0, self._individual_widget)
+            self._my_ui = self._individual_widget.ui
 
         self._main_window = main_window
 
@@ -103,8 +111,9 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
             logger.error("{} : cannot restore geometry: {}".format(WIDGET_NAME, err))
 
     # ----------------------------------------------------------------------
-    def _my_ui(self):
-        raise RuntimeError('Non implemented')
+    def _get_my_ui_class(self):
+
+        return None
 
     # ----------------------------------------------------------------------
     def _my_settings(self):
@@ -238,3 +247,12 @@ class Base2DDetectorSetup(QtWidgets.QWidget):
                 self._main_plot.autoRange()
             except:
                 pass
+
+
+# ----------------------------------------------------------------------
+class IndividualSettingsWidget(QtWidgets.QWidget):
+
+    def __init__(self, my_class):
+        super().__init__()
+        self.ui = my_class()
+        self.ui.setupUi(self)

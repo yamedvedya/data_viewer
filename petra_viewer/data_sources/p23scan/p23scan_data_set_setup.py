@@ -30,33 +30,33 @@ class P23ScanScanSetup(Base2DDetectorSetup):
         """
         super(P23ScanScanSetup, self).__init__(main_window)
 
-        self._ui.le_door_address.setText(SETTINGS['door_address'])
+        self._my_ui.le_door_address.setText(SETTINGS['door_address'])
 
-        self._ui.cmb_attenuator.addItems(SETTINGS['all_params'])
-        self._ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'])
+        self._my_ui.cmb_attenuator.addItems(SETTINGS['all_params'])
+        self._my_ui.cmb_attenuator.setEnabled(SETTINGS['atten_correction'])
         if SETTINGS['atten_param'] not in SETTINGS['all_params']:
-            self._ui.cmb_attenuator.addItem(SETTINGS['atten_param'])
-        refresh_combo_box(self._ui.cmb_attenuator, SETTINGS['atten_param'])
-        self._ui.rb_atten_on.setChecked(SETTINGS['atten_correction'])
-        self._ui.rb_atten_off.setChecked(not SETTINGS['atten_correction'])
+            self._my_ui.cmb_attenuator.addItem(SETTINGS['atten_param'])
+        refresh_combo_box(self._my_ui.cmb_attenuator, SETTINGS['atten_param'])
+        self._my_ui.rb_atten_on.setChecked(SETTINGS['atten_correction'])
+        self._my_ui.rb_atten_off.setChecked(not SETTINGS['atten_correction'])
 
-        self._ui.cmb_intensity.addItems(SETTINGS['all_params'])
-        self._ui.cmb_intensity.setEnabled(SETTINGS['inten_correction'])
+        self._my_ui.cmb_intensity.addItems(SETTINGS['all_params'])
+        self._my_ui.cmb_intensity.setEnabled(SETTINGS['inten_correction'])
         if SETTINGS['inten_param'] not in SETTINGS['all_params']:
-            self._ui.cmb_intensity.addItem(SETTINGS['inten_param'])
-        refresh_combo_box(self._ui.cmb_intensity, SETTINGS['inten_param'])
-        self._ui.rb_inten_on.setChecked(SETTINGS['inten_correction'])
-        self._ui.rb_inten_off.setChecked(not SETTINGS['inten_correction'])
+            self._my_ui.cmb_intensity.addItem(SETTINGS['inten_param'])
+        refresh_combo_box(self._my_ui.cmb_intensity, SETTINGS['inten_param'])
+        self._my_ui.rb_inten_on.setChecked(SETTINGS['inten_correction'])
+        self._my_ui.rb_inten_off.setChecked(not SETTINGS['inten_correction'])
 
-        self._ui.bg_intensity.buttonClicked.connect(
-            lambda button: self._ui.cmb_intensity.setEnabled(button == self._ui.rb_inten_on))
-        self._ui.bg_attenuator.buttonClicked.connect(
-            lambda button: self._ui.cmb_attenuator.setEnabled(button == self._ui.rb_atten_on))
+        self._my_ui.bg_intensity.buttonClicked.connect(
+            lambda button: self._my_ui.cmb_intensity.setEnabled(button == self._my_ui.rb_inten_on))
+        self._my_ui.bg_attenuator.buttonClicked.connect(
+            lambda button: self._my_ui.cmb_attenuator.setEnabled(button == self._my_ui.rb_atten_on))
 
     # ----------------------------------------------------------------------
-    def _my_ui(self):
+    def _get_my_ui_class(self):
 
-        return Ui_P23ScanSetup()
+        return Ui_P23ScanSetup
 
     # ----------------------------------------------------------------------
     def _my_settings(self):
@@ -68,14 +68,14 @@ class P23ScanScanSetup(Base2DDetectorSetup):
 
         settings = super(P23ScanScanSetup, self).get_settings()
 
-        if self._ui.le_door_address.text() != '':
-            settings['door_address'] = str(self._ui.le_door_address.text())
+        if self._my_ui.le_door_address.text() != '':
+            settings['door_address'] = str(self._my_ui.le_door_address.text())
 
-        if self._ui.rb_atten_on.isChecked():
-            settings['atten_param'] = str(self._ui.cmb_attenuator.currentText())
+        if self._my_ui.rb_atten_on.isChecked():
+            settings['atten_param'] = str(self._my_ui.cmb_attenuator.currentText())
 
-        if self._ui.rb_atten_on.isChecked():
-            settings['inten_param'] = str(self._ui.cmb_intensity.currentText())
+        if self._my_ui.rb_atten_on.isChecked():
+            settings['inten_param'] = str(self._my_ui.cmb_intensity.currentText())
 
         return {'P23SCAN': settings}
 

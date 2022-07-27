@@ -20,7 +20,7 @@ except:
     pass
 
 from petra_viewer.main_window import APP_NAME
-from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings
+from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings, BASE_SETTINGS
 
 try:
     from AsapoWorker.asapo_receiver import SerialDatasetAsapoReceiver, SerialAsapoReceiver
@@ -36,20 +36,11 @@ SETTINGS = {'host': '',
             'detectors': '',
             'max_messages': 1000,
             'max_streams': 100,
-            'enable_mask': False,
-            'mask': None,
-            'mask_file': '',
-            'enable_ff': False,
-            'ff': None,
-            'ff_file': '',
-            'ff_min': 0,
-            'ff_max': 100,
-            'enable_fill': False,
-            'fill_radius': 7,
             }
 
-logger = logging.getLogger(APP_NAME)
+SETTINGS.update(dict(BASE_SETTINGS))
 
+logger = logging.getLogger(APP_NAME)
 
 # ----------------------------------------------------------------------
 def apply_settings_asapo(settings):

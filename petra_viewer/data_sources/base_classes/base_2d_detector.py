@@ -21,6 +21,17 @@ from petra_viewer.data_sources.base_classes.base_data_set import BaseDataSet
 
 logger = logging.getLogger(APP_NAME)
 
+BASE_SETTINGS = {'enable_mask': False,
+                 'mask': None,
+                 'mask_file': '',
+                 'enable_ff': False,
+                 'ff': None,
+                 'ff_file': '',
+                 'ff_min': 0,
+                 'ff_max': 100,
+                 'enable_fill': False,
+                 'fill_radius': 7,
+                 }
 
 # ----------------------------------------------------------------------
 def apply_base_settings(settings, SETTINGS):
@@ -58,12 +69,18 @@ def apply_base_settings(settings, SETTINGS):
 # ----------------------------------------------------------------------
 class Base2DDetectorDataSet(BaseDataSet):
 
-    MAX_FRAME_LOAD_IN_CYCLE = 1
-    
     def __init__(self, data_pool):
         super(Base2DDetectorDataSet, self).__init__(data_pool)
         
         self._need_apply_mask = True
+
+    # ----------------------------------------------------------------------
+    def _prepare_for_bunch_reading(self):
+        pass
+
+    # ----------------------------------------------------------------------
+    def _finish_bunch_reading(self):
+        pass
 
     # ----------------------------------------------------------------------
     def _get_settings(self):
@@ -202,13 +219,16 @@ class Base2DDetectorDataSet(BaseDataSet):
 
         if self._data_pool.memory_mode != 'ram':
             data = None
-            for frame_id in np.arange(section_sorted[0][1], section_sorted[0][2], self.MAX_FRAME_LOAD_IN_CYCLE):
-                last_frame = min(frame_id + self.MAX_FRAME_LOAD_IN_CYCLE, section_sorted[0][2])
+            self._prepare_for_bunch_reading()
+            for frame_id in np.arange(section_sorted[0][1], section_sorted[0][2], self._data_pool.frame_bunch):
+                last_frame = min(frame_id + self._data_pool.frame_bunch, section_sorted[0][2])
                 frame = self._slice_data(self._get_data([frame_id, last_frame]), section, output_dim)
                 if data is None:
                     data = frame
                 else:
                     data = np.concatenate((data, frame))
+
+            self._finish_bunch_reading()
 
             for axis_slice in section[output_dim:]:
                 axis, start, stop = axis_slice
@@ -235,8 +255,6 @@ class Base2DDetectorDataSet(BaseDataSet):
                 axes_order.insert(ind, axis)
 
         data = np.squeeze(data)
-
-        return data
 
         logger.debug(f"Data after cut {data.shape} ")
         return data

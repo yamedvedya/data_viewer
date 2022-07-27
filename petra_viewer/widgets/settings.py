@@ -11,6 +11,7 @@ from distutils.util import strtobool
 from petra_viewer.utils.utils import refresh_combo_box, check_settings
 
 from petra_viewer.data_sources.p23scan.p23scan_data_set_setup import P23ScanScanSetup
+from petra_viewer.data_sources.p11scan.p11scan_data_set_setup import P11ScanScanSetup
 if 'asapo_consumer' in sys.modules:
     from petra_viewer.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
 
@@ -33,6 +34,14 @@ class ProgramSetup(QtWidgets.QDialog):
         self._ui.setupUi(self)
 
         self._main_window = main_window
+
+        self._ui.fr_drive_setting.setVisible(False)
+
+        self._ui.cmb_memory_mode.currentTextChanged.connect(
+            lambda text: self._ui.fr_drive_setting.setVisible(text == 'DRIVE/ASAPO'))
+
+        self._ui.chk_frame_buffer.toggled.connect(lambda state: self._ui.sp_frame_buffer.setEnabled(state))
+        self._ui.chk_frame_bunch.toggled.connect(lambda state: self._ui.sp_frame_bunch.setEnabled(state))
 
         self._ui.cmd_sav_profile.clicked.connect(self._save_settings)
         self._ui.cmd_load_profile.clicked.connect(self._load_settings)
@@ -66,6 +75,17 @@ class ProgramSetup(QtWidgets.QDialog):
                         refresh_combo_box(self._ui.cmb_memory_mode, 'RAM')
                     else:
                         refresh_combo_box(self._ui.cmb_memory_mode, 'DRIVE/ASAPO')
+                        self._ui.fr_drive_setting.setVisible(True)
+
+                if 'frame_buffer' in self.settings['DATA_POOL']:
+                    frame_buffer = int(self.settings['DATA_POOL']['frame_buffer'])
+                    self._ui.chk_frame_buffer.setChecked(frame_buffer)
+                    self._ui.sp_frame_buffer.setValue(frame_buffer)
+
+                if 'frame_bunch' in self.settings['DATA_POOL']:
+                    frame_bunch = max(int(self.settings['DATA_POOL']['frame_bunch']), 1)
+                    self._ui.chk_frame_bunch.setChecked(frame_bunch > 1)
+                    self._ui.sp_frame_bunch.setValue(frame_bunch)
 
                 if 'max_open_files' in self.settings['DATA_POOL']:
                     self._ui.sp_lim_num.setValue(int(self.settings['DATA_POOL']['max_open_files']))
@@ -123,6 +143,14 @@ class ProgramSetup(QtWidgets.QDialog):
             logger.error(f'Cannot display P23Scan settings: {repr(err)}')
 
         try:
+            if self._main_window.configuration['p11scan']:
+                widget = P11ScanScanSetup(self._main_window)
+                self._data_sources.append(widget)
+                self._ui.tb_sources.addTab(widget, 'P11Scan')
+        except Exception as err:
+            logger.error(f'Cannot display P11Scan settings: {repr(err)}')
+
+        try:
             if self._main_window.configuration['asapo'] or self._main_window.configuration['tests'] \
                     and has_asapo:
                 widget = ASAPOScanSetup(self._main_window)
@@ -150,6 +178,8 @@ class ProgramSetup(QtWidgets.QDialog):
         settings['WIDGETS']['file_types'] = ';'.join(cmd)
 
         settings['DATA_POOL'] = {'max_open_files': str(self._ui.sp_lim_num.value()),
+                                 'frame_buffer': str(self._ui.sp_frame_buffer.value() if self._ui.chk_frame_buffer.isChecked() else 0),
+                                 'frame_bunch': str(self._ui.sp_frame_bunch.value()),
                                  'max_memory_usage': str(self._ui.sb_lim_mem.value()),
                                  'export_file_delimiter': str(self._ui.le_separator.text()),
                                  'export_file_format': str(self._ui.le_format.text()),

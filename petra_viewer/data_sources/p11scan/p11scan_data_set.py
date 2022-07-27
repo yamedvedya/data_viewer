@@ -8,18 +8,26 @@ import numpy as np
 
 
 from petra_viewer.main_window import APP_NAME
-from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet
+from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings, BASE_SETTINGS
 
-logger = logging.getLogger(APP_NAME)
+SETTINGS = {'max_frames_in_dataset': 1000,
+            }
+
+SETTINGS.update(dict(BASE_SETTINGS))
 
 
 # ----------------------------------------------------------------------
+def apply_settings_p11scan(settings):
+    if 'max_frames_in_dataset' in settings:
+        SETTINGS['max_frames_in_dataset'] = int(settings['max_frames_in_dataset'])
+
+    apply_base_settings(settings, SETTINGS)
+
+
+logger = logging.getLogger(APP_NAME)
+
+# ----------------------------------------------------------------------
 class P11ScanDataSet(Base2DDetectorDataSet):
-
-    MAX_FRAMES_IN_DATASET = 1000
-    MAX_FRAMES_IN_BUFFER = 20
-
-    MAX_FRAME_LOAD_IN_CYCLE = 10
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, file_name):
@@ -57,6 +65,8 @@ class P11ScanDataSet(Base2DDetectorDataSet):
         self._frames_buffer = {}
         self._frames_in_buffer = []
 
+        self._opened_file = None
+
         print(f'Init finished: self._data_shape: {self._data_shape}')
 
     # ----------------------------------------------------------------------
@@ -85,19 +95,26 @@ class P11ScanDataSet(Base2DDetectorDataSet):
                           'range_limit': self._data_shape[2]})
 
     # ----------------------------------------------------------------------
-    def _corrections_required(self):
-
-        return False
-
-    # ----------------------------------------------------------------------
-    def apply_corrections(self, data, frame_id=None):
-
-        pass
+    def _get_settings(self):
+        return SETTINGS
 
     # ----------------------------------------------------------------------
     def get_metadata(self):
 
         return self._additional_data
+
+    # ----------------------------------------------------------------------
+    def _prepare_for_bunch_reading(self):
+
+        if self._opened_file is None:
+            self._opened_file = h5py.File(self._original_file, 'r')
+
+    # ----------------------------------------------------------------------
+    def _finish_bunch_reading(self):
+
+        if self._opened_file is not None:
+            self._opened_file.close()
+            self._opened_file = None
 
     # ----------------------------------------------------------------------
     def _reload_data(self, frame_ids=None):
@@ -123,11 +140,22 @@ class P11ScanDataSet(Base2DDetectorDataSet):
                 if frame_id in self._frames_buffer:
                     data = self._frames_buffer[frame_id][np.newaxis, :]
                 else:
-                    with h5py.File(self._original_file, 'r') as opened_file:
-                        scan_data = opened_file['entry']['data']
-                        dataset = f'data_{(frame_id // self.MAX_FRAMES_IN_DATASET) + 1:06d}'
-                        frame_in_dataset = frame_id % self.MAX_FRAMES_IN_DATASET
-                        data = np.array(scan_data[dataset][frame_in_dataset], dtype=np.float32)[np.newaxis, :]
+                    dataset = f'data_{(frame_id // SETTINGS["max_frames_in_dataset"]) + 1:06d}'
+                    frame_in_dataset = frame_id % SETTINGS["max_frames_in_dataset"]
+
+                    need_to_close = False
+                    if self._opened_file is None:
+                        opened_file = h5py.File(self._original_file, 'r')
+                        need_to_close = True
+                    else:
+                        opened_file = self._opened_file
+
+                    scan_data = opened_file['entry']['data']
+                    data = np.array(scan_data[dataset][frame_in_dataset], dtype=np.float32)[np.newaxis, :]
+
+                    if need_to_close:
+                        opened_file.close()
+
                 if cube is None:
                     cube = data
                 else:
@@ -157,9 +185,11 @@ class P11ScanDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def _save_data_in_buffer(self, frame_ids, data):
-        for frame_id, frame in zip(frame_ids, data):
-            if frame_id not in self._frames_buffer:
-                self._frames_in_buffer.append(frame_id)
-                if len(self._frames_in_buffer) > self.MAX_FRAMES_IN_BUFFER:
-                    del self._frames_buffer[self._frames_in_buffer.pop(0)]
-                self._frames_buffer[frame_id] = frame
+
+        if self._data_pool.frame_buffer:
+            for frame_id, frame in zip(frame_ids, data):
+                if frame_id not in self._frames_buffer:
+                    self._frames_in_buffer.append(frame_id)
+                    if len(self._frames_in_buffer) > self._data_pool.frame_buffer:
+                        del self._frames_buffer[self._frames_in_buffer.pop(0)]
+                    self._frames_buffer[frame_id] = frame

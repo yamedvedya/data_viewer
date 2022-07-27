@@ -6,19 +6,9 @@ import os
 import numpy as np
 
 from petra_viewer.utils.fio_reader import fioReader
-from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings
+from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings, BASE_SETTINGS
 
 SETTINGS = {'door_address': None,
-            'enable_mask': False,
-            'mask': None,
-            'mask_file': '',
-            'enable_ff': False,
-            'ff': None,
-            'ff_file': '',
-            'ff_min': 0,
-            'ff_max': 100,
-            'enable_fill': False,
-            'fill_radius': 7,
             'atten_correction': True,
             'atten_param': 'atten',
             'inten_correction': True,
@@ -26,6 +16,7 @@ SETTINGS = {'door_address': None,
             'all_params': []
             }
 
+SETTINGS.update(dict(BASE_SETTINGS))
 
 # ----------------------------------------------------------------------
 def apply_settings_p23scan(settings):

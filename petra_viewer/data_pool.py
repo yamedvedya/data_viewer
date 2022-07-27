@@ -44,6 +44,9 @@ class DataPool(QtCore.QObject):
         self._max_memory = None
         self.memory_mode = 'ram'
 
+        self.frame_buffer = 0
+        self.frame_bunch = 1
+
         self._files_data = {}
         self._files_history = []
         self._protected_files = []
@@ -79,6 +82,12 @@ class DataPool(QtCore.QObject):
 
         if 'memory_mode' in settings:
             self.memory_mode = settings['memory_mode']
+
+        if 'frame_buffer' in settings:
+            self.frame_buffer = int(settings['frame_buffer'])
+
+        if 'frame_bunch' in settings:
+            self.frame_bunch = int(settings['frame_bunch'])
 
         if 'max_memory_usage' in settings:
             self._max_memory = int(settings['max_memory_usage'])

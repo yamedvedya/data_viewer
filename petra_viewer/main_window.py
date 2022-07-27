@@ -21,6 +21,7 @@ except:
     has_asapo = False
 
 from petra_viewer.data_sources.p23scan.p23scan_data_set import apply_settings_p23scan
+from petra_viewer.data_sources.p11scan.p11scan_data_set import apply_settings_p11scan
 
 from petra_viewer.widgets.cube_view import CubeView
 from petra_viewer.widgets.tests_browser import TestsBrowser
@@ -307,6 +308,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
             self.file_browser.apply_settings()
 
         if 'P11SCAN' in self.settings and self.configuration['p11scan']:
+            apply_settings_p11scan(self.settings['P11SCAN'])
             self.file_browser.apply_settings()
 
         if 'ASAPO' in self.settings and self.configuration['asapo']:
