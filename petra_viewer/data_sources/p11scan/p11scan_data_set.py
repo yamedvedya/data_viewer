@@ -26,6 +26,7 @@ def apply_settings_p11scan(settings):
 
 logger = logging.getLogger(APP_NAME)
 
+
 # ----------------------------------------------------------------------
 class P11ScanDataSet(Base2DDetectorDataSet):
 
@@ -134,32 +135,74 @@ class P11ScanDataSet(Base2DDetectorDataSet):
                         cube = np.array(data_set, dtype=np.float32)
                     else:
                         cube = np.concatenate((cube, np.array(data_set, dtype=np.float32)), 0)
-            frame_ids = np.arange(cube.shape[0])
         else:
+
+            need_to_close = False
+            if self._opened_file is None:
+                opened_file = h5py.File(self._original_file, 'r')
+                need_to_close = True
+            else:
+                opened_file = self._opened_file
+            scan_data = opened_file['entry']['data']
+
+            start_id = frame_ids[0]
+            stop_id = frame_ids[-1]
+
             for frame_id in frame_ids:
                 if frame_id in self._frames_buffer:
-                    data = self._frames_buffer[frame_id][np.newaxis, :]
-                else:
-                    dataset = f'data_{(frame_id // SETTINGS["max_frames_in_dataset"]) + 1:06d}'
-                    frame_in_dataset = frame_id % SETTINGS["max_frames_in_dataset"]
-
-                    need_to_close = False
-                    if self._opened_file is None:
-                        opened_file = h5py.File(self._original_file, 'r')
-                        need_to_close = True
+                    start_id += 1
+                    if cube is None:
+                        cube = np.copy(self._frames_buffer[frame_id][np.newaxis, :])
                     else:
-                        opened_file = self._opened_file
-
-                    scan_data = opened_file['entry']['data']
-                    data = np.array(scan_data[dataset][frame_in_dataset], dtype=np.float32)[np.newaxis, :]
-
-                    if need_to_close:
-                        opened_file.close()
-
-                if cube is None:
-                    cube = data
+                        cube = np.concatenate((cube, self._frames_buffer[frame_id][np.newaxis, :]), 0)
                 else:
-                    cube = np.concatenate((cube, data), 0)
+                    break
+
+            # for frame_id in frame_ids[::-1]:
+            #     if frame_id in self._frames_buffer:
+            #         stop_id -= 1
+            #     else:
+            #         break
+
+            if stop_id >= start_id:
+                reading_finished = False
+                while not reading_finished:
+                    current_dataset = (start_id // SETTINGS["max_frames_in_dataset"]) + 1
+                    start_frame_in_dataset = start_id % SETTINGS["max_frames_in_dataset"]
+                    stop_frame_in_dataset = stop_id % SETTINGS["max_frames_in_dataset"]
+                    dataset = f'data_{current_dataset:06d}'
+                    ids = start_id
+
+                    for ids in np.arange(start_id, stop_id+1):
+                        if (ids // SETTINGS["max_frames_in_dataset"]) + 1 != current_dataset:
+                            start_id = ids
+                            stop_frame_in_dataset = SETTINGS["max_frames_in_dataset"]
+                            break
+
+                    data = np.array(scan_data[dataset][start_frame_in_dataset:stop_frame_in_dataset+1],
+                                    dtype=np.float32)
+
+                    if len(data.shape) < 3:
+                        data = data[np.newaxis, :]
+
+                    if cube is None:
+                        cube = data
+                    else:
+                        cube = np.concatenate((cube, data), 0)
+
+                    reading_finished = ids >= stop_id
+
+            # for frame_id in frame_ids:
+            #     if frame_id in self._frames_buffer:
+            #         start_id += 1
+            #         if cube is None:
+            #             cube = np.copy(self._frames_buffer[frame_id][np.newaxis, :])
+            #         else:
+            #             cube = np.concatenate((cube, self._frames_buffer[frame_id][np.newaxis, :]), 0)
+
+
+            if need_to_close:
+                opened_file.close()
 
         self._save_data_in_buffer(frame_ids, cube)
 

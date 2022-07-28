@@ -523,7 +523,12 @@ class FrameView(AbstractWidget):
     def _save(self):
         default_name = self._parent.get_current_folder()
         file_name, format = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as', default_name,
-                                                             'Windows Bitmap (*.bmp);; Joint Photographic Experts Group (*.jpg);; Portable Network Graphics (*.png);; Portable Pixmap (*.ppm); X11 Bitmap (*.xbm);; X11 Pixmap (*.xpm)')
+                                                             'Windows Bitmap (*.bmp);; '
+                                                             'Joint Photographic Experts Group (*.jpg);; '
+                                                             'Portable Network Graphics (*.png);; '
+                                                             'Portable Pixmap (*.ppm);; '
+                                                             'X11 Bitmap (*.xbm);; '
+                                                             'X11 Pixmap (*.xpm)')
         if file_name:
             file_name += format.split('*')[1].strip('()')
             pix = QtGui.QPixmap(self._ui.view_widget.size())
