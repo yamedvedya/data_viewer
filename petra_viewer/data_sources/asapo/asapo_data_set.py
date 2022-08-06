@@ -87,16 +87,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
 
         self.my_name = stream_name
 
-        consumer = asapo_consumer.create_consumer(SETTINGS['host'], SETTINGS['path'],
-                                                  SETTINGS['has_filesystem'], SETTINGS['beamtime'],
-                                                  detector_name, SETTINGS['token'], 1000)
-        logger.debug(
-            "Create new consumer (host=%s, path=%s, has_filesystem=%s, "
-            "beamtime=%s, data_source=%s, token=%s, timeout=%i).",
-            SETTINGS['host'], SETTINGS['path'], SETTINGS['has_filesystem'], SETTINGS['beamtime'],
-            detector_name, SETTINGS['token'], 1000)
-
-        self._setup_receiver(consumer, stream_name, detector_name)
+        self._setup_receiver(stream_name, detector_name)
         self._additional_data['metadata'] = []
         self._additional_data['raw_img'] = []
         self._additional_data['already_loaded_ids'] = []
@@ -105,9 +96,11 @@ class ASAPODataSet(Base2DDetectorDataSet):
             self._data_shape = list(self._nD_data_array.shape)
         else:
             self._data_shape = self._get_data_shape()
-        axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
 
-        self._possible_axes_units = [{name: np.arange(axis_len)} for name, axis_len in zip(axes_names, self._data_shape)]
+        self._additional_data['stream_meta'] = self._get_stream_metadata()
+        axes_names = self._get_axis_info(self._additional_data['stream_meta'])
+        self._additional_data['unit_labels'] = self._get_unit_labels(self._additional_data['stream_meta'], axes_names)
+        self._possible_axes_units = self._get_axes_units(axes_names, self._additional_data['stream_meta'])
 
         self._axes_units = axes_names
         self._axis_units_is_valid = [True for _ in axes_names]
@@ -136,6 +129,31 @@ class ASAPODataSet(Base2DDetectorDataSet):
             self._section.append({'axis': axis, 'integration': False, 'min': 0, 'max': self._data_shape[i] - 1,
                                   'step': 1, 'range_limit': range_limit})
 
+    def _get_unit_labels(self, stream_meta, axes_names):
+        if stream_meta is not None and 'units' in stream_meta and len(stream_meta['units']) == len(axes_names):
+            return [f"[{unit}]" if unit != '' else "" for unit in stream_meta['units']]
+        return None
+
+    def _get_axis_info(self, stream_meta):
+        if stream_meta is not None and 'axes' in stream_meta:
+            axes_names = ['message_ID'] + stream_meta['axes'][1:]
+        else:
+            axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+        return axes_names
+
+    def _get_axes_units(self, axes_names, stream_meta):
+        axes_units = [{name: np.arange(axis_len)} for name, axis_len in zip(axes_names, self._data_shape)]
+        for i, name in enumerate(axes_names):
+            if stream_meta is not None and name in stream_meta:
+                axes_units[i][name] = stream_meta[name]
+        return axes_units
+
+    def _get_stream_metadata(self):
+        try:
+            return self.receiver.get_stream_metadata()
+        except Exception as e:
+            return None
+
     # ----------------------------------------------------------------------
     def update_info(self, info):
         """
@@ -156,17 +174,26 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 sel['min'] = sel['max'] - sel['range_limit'] + 1
 
     # ----------------------------------------------------------------------
-    def _setup_receiver(self, consumer, stream_name, data_source):
+    def _setup_receiver(self, stream_name, data_source):
         """
         Create and set parameters for receiver, which will be used to retrieve data from ASAPO.
         Currently there is no information in the ASAPO data_source about it content.
         Several try/except blocks stays to guess, how to retrieve data from given data_source.
 
         Parameters:
-            consumer (asapo_consumer): ASAPO consumer
             stream_name (str): Stream name
             data_source (str): ASAPO data_source
         """
+
+        consumer = asapo_consumer.create_consumer(SETTINGS['host'], SETTINGS['path'],
+                                                  SETTINGS['has_filesystem'], SETTINGS['beamtime'],
+                                                  data_source, SETTINGS['token'], 1000)
+        logger.debug(
+            "Create new consumer (host=%s, path=%s, has_filesystem=%s, "
+            "beamtime=%s, data_source=%s, token=%s, timeout=%i).",
+            SETTINGS['host'], SETTINGS['path'], SETTINGS['has_filesystem'], SETTINGS['beamtime'],
+            data_source, SETTINGS['token'], 1000)
+
         opt = [['file', SerialAsapoReceiver, False],
                ['file', SerialAsapoReceiver, True],
                ['dataset', SerialDatasetAsapoReceiver, False],
@@ -206,6 +233,8 @@ class ASAPODataSet(Base2DDetectorDataSet):
         for item_id in item_ids:
             data_to_display[str(item_id)] = self._additional_data['metadata'][item_id]
 
+        if self._additional_data['stream_meta'] is not None:
+            data_to_display['stream'] = self._additional_data['stream_meta']
         return data_to_display
 
     # -------------------------------------------------------------------
@@ -255,14 +284,14 @@ class ASAPODataSet(Base2DDetectorDataSet):
     def _convert_image(self, data, meta_data):
         """
         de-Serialize numpy array (image) from ASAPO data based on ASAPO metadata.
-        Default empty image of 2x2 is used to be compatible with the rest code of the package.
+        Default empty image is used to be compatible with the rest code of the package.
         Parameters:
             data (byte): data from ASAPO message
             meta_data (dict): metadata from ASAPO message
         Returns:
             image (np.ndarray): n-Dimensional np.array
         """
-        def_img = np.zeros((2, 2), dtype=np.float32)
+        def_img = np.array(None)[None, None]
         if data is None:
             return def_img
         try:
@@ -272,6 +301,16 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 return get_image(data[0], meta_data[0]).astype(np.float32)
         except Exception as e:
             logger.info(f"Fail to get image from ASAPO data: {e}")
+            # ToDo
+            # This is temporary code for demonstaration
+            # Read data from file
+            import h5py
+            try:
+                file_path = f"{SETTINGS['path']}/{meta_data['name']}"
+                with h5py.File(file_path, 'r') as hf:
+                    return hf['entry/data/data'][()]
+            except Exception as e:
+                logger.info(f"Fail to get image from ASAPO data: {e}")
             return def_img
 
     # ----------------------------------------------------------------------
