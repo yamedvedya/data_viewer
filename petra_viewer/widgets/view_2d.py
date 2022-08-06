@@ -464,8 +464,20 @@ class ViewSilx(View2d):
     def update_image(self):
         data_to_display, pos = super(ViewSilx, self).update_image()
         if data_to_display is not None:
-            x, y = pos.bottom(), pos.left()
-            sections = self.data_pool.get_section(self.current_file)
-            origen = [s['min'] for s in sections if s['axis'] == 'X']
-            origen += [s['min'] for s in sections if s['axis'] == 'Y']
-            self.plot_2d.addImage(np.transpose(data_to_display), replace=True, origin=origen)
+            scale, origin = self._get_scale()
+            self.plot_2d.addImage(np.transpose(data_to_display), replace=True, origin=origin, scale=scale)
+
+    def _get_scale(self):
+        """
+        Return scale and origin parameter to adjust image with respect to axis units
+        in the plot_2d.addImage function.
+        """
+        sections = self.data_pool.get_section(self.current_file)
+        scale = []
+        origin = []
+        for axis in ['X', 'Y']:
+            axis = [i for i, s in enumerate(sections) if s['axis'] == axis][0]
+            binning = list(self.data_pool.get_possible_axis_units(self.current_file, axis).values())[0]
+            scale.append((binning[-1]-binning[0])/(len(binning)-1))
+            origin.append(binning[0])
+        return scale, origin
