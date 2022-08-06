@@ -2,6 +2,7 @@
 
 import time
 import traceback
+import logging
 
 import h5py
 import sys
@@ -16,6 +17,9 @@ from petra_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalS
 from petra_viewer.data_sources.sardana.sardana_data_set import SardanaDataSet
 from petra_viewer.data_sources.test_datasets.test_datasets import SardanaPeak1, SardanaPeak2, HeavySardana, \
     ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView
+
+from petra_viewer.main_window import APP_NAME
+logger = logging.getLogger(APP_NAME)
 
 
 # ----------------------------------------------------------------------
@@ -90,6 +94,8 @@ class Opener(QtCore.QThread):
                 self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
         except Exception as err:
+            # Logs are helpful to run pytest
+            logger.error(f"Openner failed with error {err}, {self._make_err_msg(err)+traceback.format_exc()}")
             self.exception.emit(f'Cannot open {self.mode}',
                                 f'Cannot open {self.params["entry_name"]}',
                                 self._make_err_msg(err)+traceback.format_exc())
