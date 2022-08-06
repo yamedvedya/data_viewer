@@ -192,9 +192,9 @@ class BaseDataSet(object):
 
         here we return the unit value along this axis for particular frame number
 
-        :param axis: axis index
-        :param pos: frame index
-        :return: unit value
+        :param axis: (int) axis index
+        :param pos: (int) array index along given axis
+        :return: (float) value along given axis in unit of this axis (e.g. 15 degree)
         """
 
         return self._possible_axes_units[axis][self._axes_units[axis]][pos]
