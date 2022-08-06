@@ -711,7 +711,7 @@ class DataPool(QtCore.QObject):
         """
         some files can have own axes captions
         :param file:
-        :return: dict {axis_index: axis_name}
+        :return: list of axis names
         """
         return self._files_data[file].get_file_axes()
 
@@ -741,16 +741,18 @@ class DataPool(QtCore.QObject):
 
         new_limits = [[0, 0] for _ in range(file_dim)]
 
-        for data_set in self._files_data.values():
+        for i, data_set in enumerate(self._files_data.values()):
             if data_set.get_file_dimension() != file_dim:
                 continue
 
             for axis, max_frame in enumerate(data_set.get_axis_limits()):
                 min_v = data_set.get_value_for_frame(axis, 0)
-                new_limits[axis][0] = min(new_limits[axis][0], min_v)
-
                 max_v = data_set.get_value_for_frame(axis, max_frame)
-                new_limits[axis][1] = max(new_limits[axis][1], max_v)
+                if i == 0:
+                    new_limits[axis] = [min_v, max_v]
+                else:
+                    new_limits[axis][0] = min(new_limits[axis][0], min_v)
+                    new_limits[axis][1] = max(new_limits[axis][1], max_v)
 
         return new_limits
 
