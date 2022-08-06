@@ -436,8 +436,12 @@ class FrameView(AbstractWidget):
             logger.debug(f"Setup frame_view selectors with section: {sections}")
             self._ui.cut_selectors.set_section(sections)
 
-            axes_labels = [name for s, name in zip(sections, axes_names) if s['axis'] == 'X']
-            axes_labels += [name for s, name in zip(sections, axes_names) if s['axis'] == 'Y']
+            # ToDo refactor this solution
+            unit_labels = self.data_pool.get_additional_data(self._main_view.current_file, 'unit_labels')
+            if unit_labels is None:
+                unit_labels = ["" for _ in axes_names]
+            axes_labels = [f"{name}{unit}" for s, name, unit in zip(sections, axes_names, unit_labels) if s['axis'] == 'X']
+            axes_labels += [f"{name}{unit}" for s, name, unit in zip(sections, axes_names, unit_labels) if s['axis'] == 'Y']
             self.update_axes(axes_labels)
 
     # ----------------------------------------------------------------------
