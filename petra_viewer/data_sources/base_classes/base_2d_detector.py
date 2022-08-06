@@ -123,7 +123,8 @@ class Base2DDetectorDataSet(BaseDataSet):
         Apply several corrections to the data value.
         """
         logger.debug(f"Applying correction for {self.my_name}")
-
+        if not np.all(data):
+            return None
         _settings = self._get_settings()
 
         _pixel_mask = None
@@ -183,7 +184,8 @@ class Base2DDetectorDataSet(BaseDataSet):
             data = self._get_data((section_sorted[0][1], section_sorted[0][2]))
         else:
             data = self._get_data()
-
+        if np.all(data) is None:
+            return None
         logger.debug(f"Data before cut {data.shape}, selection={section}, output_dim: {output_dim}")
 
         for axis_slice in section[output_dim:]:
@@ -191,8 +193,8 @@ class Base2DDetectorDataSet(BaseDataSet):
             start = max(start, 0)
             stop = min(stop, data.shape[axis])
             if axis > 0 or self._data_pool.memory_mode == 'ram':
-                data = np.mean(data.take(indices=range(start, stop), axis=axis), axis=axis, keepdims=True)
-            else:
+                data = data.take(indices=range(start, stop), axis=axis)
+            if data.shape[axis] > 1:
                 data = np.mean(data, axis=axis, keepdims=True)
 
         for axis_slice in section[:output_dim]:
