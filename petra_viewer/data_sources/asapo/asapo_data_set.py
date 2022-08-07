@@ -135,23 +135,27 @@ class ASAPODataSet(Base2DDetectorDataSet):
         return None
 
     def _get_axis_info(self, stream_meta):
-        if stream_meta is not None and 'axes' in stream_meta:
-            axes_names = ['message_ID'] + stream_meta['axes'][1:]
-        else:
-            axes_names = ['message_ID'] + [f'dim_{i}' for i in range(1, len(self._data_shape))]
+        axes_names = ['message_ID']
+        for i in range(1, len(self._data_shape)):
+            if stream_meta is not None and 'axes' in stream_meta and stream_meta['axes'][i] != '':
+                axes_names.append(stream_meta['axes'][i])
+            else:
+                axes_names.append(f'dim_{i}')
         return axes_names
 
     def _get_axes_units(self, axes_names, stream_meta):
         axes_units = [{name: np.arange(axis_len)} for name, axis_len in zip(axes_names, self._data_shape)]
         for i, name in enumerate(axes_names):
-            if stream_meta is not None and name in stream_meta:
+            if stream_meta is not None and name in stream_meta and len(stream_meta[name]) == self._data_shape[i]:
                 axes_units[i][name] = stream_meta[name]
         return axes_units
 
     def _get_stream_metadata(self):
         try:
+            logger.debug("Request stream metadata")
             return self.receiver.get_stream_metadata()
         except Exception as e:
+            logger.debug(f"Request stream metadata fails {e}", exc_info=True)
             return None
 
     # ----------------------------------------------------------------------
@@ -300,7 +304,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
             else:
                 return get_image(data[0], meta_data[0]).astype(np.float32)
         except Exception as e:
-            logger.info(f"Fail to get image from ASAPO data: {e}")
+            logger.info(f"Fail to get image from ASAPO data: {e}", exc_info=True)
             # ToDo
             # This is temporary code for demonstaration
             # Read data from file
@@ -310,7 +314,7 @@ class ASAPODataSet(Base2DDetectorDataSet):
                 with h5py.File(file_path, 'r') as hf:
                     return hf['entry/data/data'][()]
             except Exception as e:
-                logger.info(f"Fail to get image from ASAPO data: {e}")
+                logger.info(f"Fail to get image from ASAPO data: {e}", exc_info=True)
             return def_img
 
     # ----------------------------------------------------------------------
