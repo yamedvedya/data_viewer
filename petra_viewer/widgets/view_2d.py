@@ -475,9 +475,10 @@ class ViewSilx(View2d):
         sections = self.data_pool.get_section(self.current_file)
         scale = []
         origin = []
-        for axis in ['X', 'Y']:
-            axis = [i for i, s in enumerate(sections) if s['axis'] == axis][0]
+        for axis_name in ['X', 'Y']:
+            axis = [i for i, s in enumerate(sections) if s['axis'] == axis_name][0]
+            min_bin = [s['min'] for s in sections if s['axis'] == axis_name][0]
             binning = list(self.data_pool.get_possible_axis_units(self.current_file, axis).values())[0]
             scale.append((binning[-1]-binning[0])/(len(binning)-1))
-            origin.append(binning[0])
+            origin.append(binning[min_bin])
         return scale, origin
