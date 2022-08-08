@@ -9,8 +9,9 @@ import configparser
 from pathlib import Path
 
 from PyQt5 import QtWidgets, QtCore
-from petra_viewer.gui.main_window_ui import Ui_MainWindow
+from silx.gui.data.DataViewerFrame import DataViewerFrame
 
+from petra_viewer.gui.main_window_ui import Ui_MainWindow
 from petra_viewer.widgets.file_browser import FileBrowser
 from petra_viewer.widgets.metadata_viewer import JsonView
 try:
@@ -154,7 +155,13 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if self.configuration['beamline']:
             self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "Beamline Browser",
                                                                        QtCore.Qt.LeftDockWidgetArea, self, 'beam')
-            self.file_browser.file_selected.connect(self.data_pool.open_file)
+
+            self.silx_browser, self.silx_browser_dock = self._add_dock(DataViewerFrame, "Silx View",
+                                                                       QtCore.Qt.LeftDockWidgetArea,
+                                                                       self)
+            self.file_browser.node_opened.connect(self.silx_browser.setData)
+            # ToDo To be implemented for any pdf5 file
+            #self.file_browser.file_opened.connect(self.data_pool.open_file)
 
         try:
             self.configuration['tests'] = 'tests' in self.settings['WIDGETS']['file_types']

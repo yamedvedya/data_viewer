@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'uis/file_browser.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -41,10 +41,13 @@ class Ui_FileBrowser(object):
         self.breadcrumbsaddressbar = BreadcrumbsAddressBar(FileBrowser)
         self.breadcrumbsaddressbar.setObjectName("breadcrumbsaddressbar")
         self.verticalLayout.addWidget(self.breadcrumbsaddressbar)
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.tr_file_browser = QtWidgets.QTreeView(FileBrowser)
         self.tr_file_browser.setMinimumSize(QtCore.QSize(0, 0))
         self.tr_file_browser.setObjectName("tr_file_browser")
-        self.verticalLayout.addWidget(self.tr_file_browser)
+        self.horizontalLayout_4.addWidget(self.tr_file_browser)
+        self.verticalLayout.addLayout(self.horizontalLayout_4)
 
         self.retranslateUi(FileBrowser)
         QtCore.QMetaObject.connectSlotsByName(FileBrowser)

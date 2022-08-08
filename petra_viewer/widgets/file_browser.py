@@ -15,6 +15,8 @@ try:
 except:
     pass
 
+import silx.gui.hdf5
+
 from petra_viewer.widgets.breadcrumbsaddressbar.platform.common import if_platform
 
 if platform.system() == "Windows":
@@ -45,6 +47,8 @@ class FileBrowser(AbstractWidget):
     """
 
     file_selected = QtCore.pyqtSignal(str, str)
+    file_opened = QtCore.pyqtSignal(object, str)
+    node_opened = QtCore.pyqtSignal(object)
 
     # ----------------------------------------------------------------------
     def __init__(self, parent, mode):
@@ -54,6 +58,9 @@ class FileBrowser(AbstractWidget):
         self._ui = Ui_FileBrowser()
         self._ui.setupUi(self)
         self._mode = mode
+
+        self._h5treeview = silx.gui.hdf5.Hdf5TreeView(self)
+        self._ui.horizontalLayout_4.addWidget(self._h5treeview)
 
         self.file_browser = QtWidgets.QFileSystemModel()
         self.file_browser.setFilter(QtCore.QDir.AllDirs | QtCore.QDir.NoDot | QtCore.QDir.NoDotDot | QtCore.QDir.Files)
@@ -73,10 +80,11 @@ class FileBrowser(AbstractWidget):
         self._ui.tr_file_browser.setModel(self.file_filter)
         self._ui.tr_file_browser.hideColumn(2)
         self._ui.tr_file_browser.hideColumn(1)
+        self._ui.tr_file_browser.setColumnWidth(0, 250)
 
         self._ui.tr_file_browser.header().setSortIndicatorShown(True)
         self._ui.tr_file_browser.setSortingEnabled(True)
-        self._ui.tr_file_browser.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        #self._ui.tr_file_browser.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
         path = os.getcwd()
         self.address = self._ui.breadcrumbsaddressbar
@@ -102,6 +110,21 @@ class FileBrowser(AbstractWidget):
             self._ui.chk_door.setVisible(False)
 
         self._ui.cmd_reload.clicked.connect(self._reload)
+
+        self.file_selected.connect(self.open_file)
+        self._h5treeview.activated.connect(self.display_data)
+
+    def display_data(self):
+        selected = list(self._h5treeview.selectedH5Nodes())
+        if len(selected) == 1:
+            # Update the viewer for a single selection
+            data = selected[0]
+            self.node_opened.emit(data)
+            if isinstance(data, silx.gui.hdf5._utils.H5Node):
+                self.file_opened.emit(data, 'hdf5')
+
+    def open_file(self, str1, str2):
+        self._h5treeview.findHdf5TreeModel().insertFile(str1)
 
     # ----------------------------------------------------------------------
     @if_platform('Windows')
