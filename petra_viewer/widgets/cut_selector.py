@@ -256,8 +256,7 @@ class CutSelector(QtWidgets.QWidget):
                 integration_box.setVisible(True)
 
         self.block_signals(False)
-
-        self._frame_viewer.update_axes(labels)
+        self._frame_viewer.update_axes(labels, self._last_axes)
 
     # ----------------------------------------------------------------------
     def set_limits(self, limits):

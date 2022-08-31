@@ -207,10 +207,23 @@ class FrameView(AbstractWidget):
         self._second_view.delete_roi(idx)
 
     # ----------------------------------------------------------------------
-    def update_axes(self, axes_labels):
+    def update_axes(self, axes_names, axes_idx=None):
+        '''
+        ToDo This is an on-hock solution to enable axis units (not only names)
+        If the function is called in cut_selector contains axis names and axis index.
+        If it is called from update_files then axis units are already attached to axis names.
+        I also don't want of axes units to be shown in cut selector (only axis names).
+        '''
+        print("update_axes ", axes_names, axes_idx)
+        unit_labels = self.data_pool.get_additional_data(self._main_view.current_file, 'unit_labels')
+        if unit_labels is None or axes_idx is None:
+            unit_labels = ["" for _ in axes_names]
+        else:
+            unit_labels = [unit_labels[axes_idx['X']], unit_labels[axes_idx['Y']]]
+        axes_labels = [f"{name}{unit}" for name, unit in zip(axes_names, unit_labels)]
 
         self._main_view.new_axes(axes_labels)
-        self._second_view.new_axes(axes_labels)
+        #self._second_view.new_axes(axes_labels)
 
         self.update_images()
 
