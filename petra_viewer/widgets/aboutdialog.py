@@ -15,7 +15,7 @@ import os
 from PyQt5 import QtWidgets
 
 from petra_viewer.gui.about_dialog_ui import Ui_AboutDialog
-from petra_viewer.version import __version__
+from petra_viewer.release import Release
 
 
 # ----------------------------------------------------------------------
@@ -32,29 +32,10 @@ class AboutDialog(QtWidgets.QDialog):
         self._ui = Ui_AboutDialog()
         self._ui.setupUi(self)
 
-        self._getModification()
+        release = Release()
 
-    # ----------------------------------------------------------------------
-    def _getModification(self):
-        """Display last source code modification date.
-        """
-        mtime = 0
+        self._ui.lb_version.setText(f"Version: {release.version_long}")
+        self._ui.lb_authors.setText(f"Authors:\n{release.author_lines}")
 
-        for root, _, files in os.walk(self.SOURCE_DIR, topdown=True):
-            for name in files:
-                filename = os.path.join(root, name)
-                _, ext = os.path.splitext(filename)
-
-                if ext == ".py":
-                    ftime = os.path.getmtime(filename)
-                    if ftime > mtime:
-                        mtime = ftime
-
-        txt = datetime.fromtimestamp(mtime).strftime(self.DATETIME)
-        self._ui.lbModified.setText(f"Last modification: {txt}")
-        try:
-            self._ui.label_4.setText(f"Version: {__version__}")
-        except:
-            pass
 
 

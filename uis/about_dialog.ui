@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>387</width>
+    <width>550</width>
     <height>210</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>330</width>
+    <width>550</width>
     <height>210</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>450</width>
+    <width>550</width>
     <height>210</height>
    </size>
   </property>
@@ -52,7 +52,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../../../camera_viewer/ui/icons.qrc">:/ico/Desy_logo.jpg</pixmap>
+        <pixmap resource="icons.qrc">:/icon/Desy.png</pixmap>
        </property>
       </widget>
      </item>
@@ -66,34 +66,14 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_4">
+        <widget class="QLabel" name="lb_version">
          <property name="text">
           <string>Version: 1.0</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="lbModified">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QLabel" name="lbEmail">
+        <widget class="QLabel" name="lb_authors">
          <property name="minimumSize">
           <size>
            <width>200</width>
@@ -148,9 +128,6 @@ mikhail.karnevskiy@desy.de</string>
  </widget>
  <resources>
   <include location="icons.qrc"/>
-  <include location="icons.qrc"/>
-  <include location="../../../camera_viewer/ui/icons.qrc"/>
-  <include location="../../../camera_viewer/src/ui/icons.qrc"/>
  </resources>
  <connections>
   <connection>

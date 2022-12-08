@@ -7,7 +7,7 @@ import numpy as np
 
 from distutils.util import strtobool
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtCore
 
 from petra_viewer.utils.axes_3d import Custom3DAxis
 from petra_viewer.utils.fake_image_item import FakeImageItem

@@ -4,7 +4,11 @@ import pyqtgraph as pg
 import numpy as np
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from silx.gui.plot.PlotWindow import Plot2D
+try:
+    from silx.gui.plot.PlotWindow import Plot2D
+    has_silx = True
+except:
+    has_silx = False
 
 from petra_viewer.utils.image_marker import ImageMarker
 from petra_viewer.gui.view_2d_ui import Ui_View2D
@@ -439,28 +443,28 @@ class ViewPyQt(View2d):
             for ind in range(len(self._rois)):
                 self.roi_changed(ind)
 
-
 # ----------------------------------------------------------------------
-class ViewSilx(View2d):
+if has_silx:
+    class ViewSilx(View2d):
 
-    def __init__(self, frame_viewer, type, data_pool):
+        def __init__(self, frame_viewer, type, data_pool):
 
-        super(ViewSilx, self).__init__(frame_viewer, type, data_pool)
+            super(ViewSilx, self).__init__(frame_viewer, type, data_pool)
 
-        self.plot_2d = Plot2D(self)
-        self.plot_2d.setObjectName("plot_2d")
-        self._ui.v_layout.addWidget(self.plot_2d)
+            self.plot_2d = Plot2D(self)
+            self.plot_2d.setObjectName("plot_2d")
+            self._ui.v_layout.addWidget(self.plot_2d)
 
-    # ----------------------------------------------------------------------
-    def new_axes(self, labels):
-        self.plot_2d.getXAxis().setLabel(labels[0])
-        self.plot_2d.getYAxis().setLabel(labels[1])
+        # ----------------------------------------------------------------------
+        def new_axes(self, labels):
+            self.plot_2d.getXAxis().setLabel(labels[0])
+            self.plot_2d.getYAxis().setLabel(labels[1])
 
-    # ----------------------------------------------------------------------
-    def update_image(self):
-        data_to_display, x, y = super(ViewSilx, self).update_image()
-        if data_to_display is not None:
-            sections = self.data_pool.get_section(self.current_file)
-            origen = [s['min'] for s in sections if s['axis'] == 'X']
-            origen += [s['min'] for s in sections if s['axis'] == 'Y']
-            self.plot_2d.addImage(np.transpose(data_to_display), replace=True, origin=origen)
+        # ----------------------------------------------------------------------
+        def update_image(self):
+            data_to_display, x, y = super(ViewSilx, self).update_image()
+            if data_to_display is not None:
+                sections = self.data_pool.get_section(self.current_file)
+                origen = [s['min'] for s in sections if s['axis'] == 'X']
+                origen += [s['min'] for s in sections if s['axis'] == 'Y']
+                self.plot_2d.addImage(np.transpose(data_to_display), replace=True, origin=origen)

@@ -3,7 +3,6 @@
 WIDGET_NAME = 'FrameView'
 
 import logging
-import configparser
 from distutils.util import strtobool
 
 from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
@@ -11,7 +10,13 @@ from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
 from petra_viewer.main_window import APP_NAME
 from petra_viewer.utils.fake_image_item import FakeImageItem
 from petra_viewer.widgets.abstract_widget import AbstractWidget
-from petra_viewer.widgets.view_2d import ViewPyQt, ViewSilx
+from petra_viewer.widgets.view_2d import ViewPyQt
+try:
+    from petra_viewer.widgets.view_2d import ViewSilx
+    has_silx = True
+except:
+    has_silx = False
+
 from petra_viewer.gui.frame_view_ui import Ui_FrameView
 
 logger = logging.getLogger(APP_NAME)
@@ -45,10 +50,13 @@ class FrameView(AbstractWidget):
 
         self._signals_blocked = False
 
-        try:
-            self.backend = settings['FRAME_VIEW']['backend']
-        except:
-            self.backend = 'pyqt'
+        self.backend = 'pyqt'
+
+        if has_silx:
+            try:
+                self.backend = settings['FRAME_VIEW']['backend']
+            except:
+                pass
 
         self.hist_mode = 'selected'
         self.auto_levels = True

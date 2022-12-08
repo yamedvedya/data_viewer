@@ -1,21 +1,13 @@
 #!/usr/bin/python3
-import io
 import os
-import sys, sysconfig
-from petra_viewer.version import __version__
+import runpy
 
 from setuptools import setup, find_packages
 
-# Package meta-data.
-NAME = 'petra_viewer'
-DESCRIPTION = 'Simple viewer of data, acquired by xray-detectors at PETRA3'
-EMAIL = 'yury.matveev@desy.de'
-AUTHOR = 'Yury Matveyev'
-REQUIRES_PYTHON = '>=3.6'
+REQUIRES_PYTHON = '>=3.7'
 
-# What packages are required for this module to be executed?
 REQUIRED = [
-    'attrs', 'pyqtgraph >= 0.11', 'psutil', 'pyshortcuts', 'numpy', 'scipy', 'h5py >= 2.5', 'python-dateutil'
+    'pyqt5', 'attrs', 'pyqtgraph >= 0.11', 'psutil', 'pyshortcuts', 'numpy', 'scipy', 'h5py >= 2.5', 'python-dateutil'
 ]
 
 EXTRA_REQUIRED = {'ASAPO': ['hdf5plugin'],
@@ -24,32 +16,34 @@ EXTRA_REQUIRED = {'ASAPO': ['hdf5plugin'],
                   '3D': ['PyOpenGL']
                   }
 
-# Import the README and use it as the long-description.
-# Note: this will only work if 'README.md' is present in your MANIFEST.in file!
-here = os.path.abspath(os.path.dirname(__file__))
-try:
-    with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-        long_description = '\n' + f.read()
-except IOError:
-    long_description = DESCRIPTION
+def abspath(*path):
+    """A method to determine absolute path for a given relative path to the
+    directory where this setup.py script is located"""
+    setup_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(setup_dir, *path)
 
-# Load the package's __version__.py module as a dictionary.
-about = {}
-about['__version__'] = __version__
+def get_release_info():
+    namespace = runpy.run_path(abspath("petra_viewer/release.py"), run_name="petra_viewer.release")
+    return namespace["Release"]
+
+Release = get_release_info()
 
 # Where the magic happens:
 setup(
-    name=NAME,
-    version=about['__version__'],
-    description=DESCRIPTION,
-    long_description=long_description,
+    name=Release.name,
+    version=Release.version_long,
+    description=Release.description,
+    long_description=Release.long_description,
     long_description_content_type='text/markdown',
-    author=AUTHOR,
-    author_email=EMAIL,
+    author=Release.authors[0][0],
+    author_email=Release.authors[0][1],
+    download_url=Release.download_url,
+    platforms=Release.platform,
     python_requires=REQUIRES_PYTHON,
     packages=find_packages(),
     package_dir={'petra_viewer': 'petra_viewer',},
-    package_data={'petra_viewer': ['petra_viewer/*.py', 'petra_viewer/*.ini', 'petra_viewer/*.desktop'],},
+    package_data={'petra_viewer': ['README.txt', 'LICENSE.txt',
+                                   'petra_viewer/*.py', 'petra_viewer/*.ini', 'petra_viewer/*.desktop'],},
     install_requires=REQUIRED,
     extras_require=EXTRA_REQUIRED,
     include_package_data=True,
@@ -63,7 +57,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Development Status :: 3 - Alpha'
     ],

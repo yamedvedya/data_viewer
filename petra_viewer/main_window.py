@@ -23,7 +23,12 @@ except:
 from petra_viewer.data_sources.p23scan.p23scan_data_set import apply_settings_p23scan
 from petra_viewer.data_sources.p11scan.p11scan_data_set import apply_settings_p11scan
 
-from petra_viewer.widgets.cube_view import CubeView
+try:
+    from petra_viewer.widgets.cube_view import CubeView
+    has_3d = True
+except:
+    has_3d = True
+
 from petra_viewer.widgets.tests_browser import TestsBrowser
 
 from petra_viewer.widgets.frame_view import FrameView
@@ -105,7 +110,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
         except:
             self.configuration['cube_view'] = True
 
-        if self.configuration['cube_view']:
+        if has_3d and self.configuration['cube_view']:
             try:
                 self.cube_view, self.cube_view_dock = self._add_dock(CubeView, "Cube view",
                                                                      QtCore.Qt.BottomDockWidgetArea,
@@ -183,7 +188,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
         self.data_pool.close_file.connect(self.frame_view.file_closed_by_pool)
         self.data_pool.data_updated.connect(self.frame_view.data_updated)
 
-        if self.configuration['cube_view']:
+        if has_3d and self.configuration['cube_view']:
             self.frame_view.main_file_changed.connect(self.cube_view.main_file_changed)
             self.frame_view.roi_moved.connect(self.cube_view.roi_changed)
             self.frame_view.clear_view.connect(self.cube_view.clear_view)
@@ -202,7 +207,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
             self.rois_view.update_roi.connect(self.frame_view.roi_changed)
 
-            if self.configuration['cube_view']:
+            if has_3d and self.configuration['cube_view']:
                 self.rois_view.update_roi.connect(self.cube_view.roi_changed)
 
         self._load_ui_settings()
@@ -300,7 +305,7 @@ class PETRAViewer(QtWidgets.QMainWindow):
         if 'ROIS_VIEW' in self.settings and self.configuration['roi']:
             self.rois_view.set_settings(self.settings['ROIS_VIEW'])
 
-        if 'CUBE_VIEW' in self.settings and self.configuration['cube_view']:
+        if 'CUBE_VIEW' in self.settings and has_3d and self.configuration['cube_view']:
             self.cube_view.set_settings(self.settings['CUBE_VIEW'])
 
         if 'P23SCAN' in self.settings and self.configuration['p23scan']:
@@ -341,13 +346,13 @@ class PETRAViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def add_roi(self, idx):
         self.frame_view.add_roi(idx)
-        if self.configuration['cube_view']:
+        if has_3d and self.configuration['cube_view']:
             self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------
     def delete_roi(self, idx):
         self.frame_view.delete_roi(idx)
-        if self.configuration['cube_view']:
+        if has_3d and self.configuration['cube_view']:
             self.cube_view.fill_roi()
 
     # ----------------------------------------------------------------------

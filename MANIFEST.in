@@ -1,2 +1,5 @@
+include pyproject.toml
+include LICENSE.txt
+include README.md
 include petra_viewer/*.ini
 include petra_viewer/petra_viewer.sh

@@ -14,7 +14,6 @@ from PyQt5 import QtWidgets
 
 from petra_viewer.main_window import PETRAViewer, APP_NAME
 from petra_viewer.utils.option_parser import get_options
-from .version import __version__
 
 
 # --------------------------------------------------------------------
@@ -29,7 +28,7 @@ def excepthook(exc_type, exc_value, traceback_obj):
     :return:
     """
     separator = '-' * 80
-    log_path = f"{os.path.expanduser('~')}/.petra_viewer/error.log"
+    log_path = f"{Path.home()}/.petra_viewer/error.log"
     time_string = time.strftime("%Y-%m-%d, %H:%M:%S")
     tb_info_file = StringIO()
     traceback.print_tb(traceback_obj, None, tb_info_file)
