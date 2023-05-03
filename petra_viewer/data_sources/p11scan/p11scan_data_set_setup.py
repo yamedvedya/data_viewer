@@ -6,7 +6,7 @@ from petra_viewer.gui.datasource_setup_p11scan_ui import Ui_P11ScanSetup
 WIDGET_NAME = 'P11ScanScanSetup'
 
 
-class P11ScanScanSetup(Base2DDetectorSetup):
+class P11ScanSetup(Base2DDetectorSetup):
     """
     SETTINGS = {'enable_mask': False,
                 'loaded_mask': None,
@@ -27,7 +27,7 @@ class P11ScanScanSetup(Base2DDetectorSetup):
     def __init__(self, main_window):
         """
         """
-        super(P11ScanScanSetup, self).__init__(main_window)
+        super(P11ScanSetup, self).__init__(main_window)
         
         self._my_ui.sp_max_frames_in_dataset.setValue(SETTINGS['max_frames_in_dataset'])
 
@@ -44,7 +44,7 @@ class P11ScanScanSetup(Base2DDetectorSetup):
     # ----------------------------------------------------------------------
     def get_settings(self):
 
-        settings = super(P11ScanScanSetup, self).get_settings()
+        settings = super(P11ScanSetup, self).get_settings()
 
         settings['max_frames_in_dataset'] = str(self._my_ui.sp_max_frames_in_dataset.value())
 

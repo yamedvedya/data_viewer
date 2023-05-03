@@ -22,8 +22,11 @@ def wait_cursor():
 class FileFilter(QtCore.QSortFilterProxyModel):
 
     new_version = True
+    # combine_similar_names = False
     user_file_types = []
     user_file_names = []
+
+    # known_names_for_folder = []
 
     # ----------------------------------------------------------------------
     def filterAcceptsRow(self, source_row, source_parent):
@@ -52,6 +55,13 @@ class FileFilter(QtCore.QSortFilterProxyModel):
                     name_matches += user_name in file_name
 
                 filter_accepts &= name_matches
+
+            # if self.combine_similar_names:
+            #     base_name = "_".join(os.path.splitext(file_name)[0].split("_")[:-1])
+            #     if base_name not in self.known_names_for_folder:
+            #         self.known_names_for_folder.append([base_name])
+            #     else:
+            #         return False
 
         return filter_accepts
 

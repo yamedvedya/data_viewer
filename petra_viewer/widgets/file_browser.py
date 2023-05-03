@@ -32,7 +32,7 @@ from petra_viewer.main_window import APP_NAME
 
 WIDGET_NAME = 'DataBrowser'
 
-file_formats = [".nxs", ".h5"]
+file_formats = [".nxs", ".h5", "cbf"]
 
 FILE_REFRESH_PERIOD = 1
 
@@ -65,6 +65,8 @@ class FileBrowser(AbstractWidget):
         self.file_filter.user_file_types = file_formats
         if mode == 'p11scan':
             self.file_filter.user_file_names = ['master', ]
+        # if mode == "p1mscan":
+        #     self.file_filter.combine_similar_names = True
         try:
             self.file_filter.setRecursiveFilteringEnabled(True)
         except AttributeError:

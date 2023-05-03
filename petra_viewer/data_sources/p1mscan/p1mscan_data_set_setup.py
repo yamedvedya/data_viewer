@@ -1,4 +1,4 @@
-# Created by matveyev at 02.07.2022
+# Created by matveyev at 03.05.2023
 from petra_viewer.data_sources.p23scan.p23scan_data_set import SETTINGS
 from petra_viewer.data_sources.base_classes.base_2d_detector_setup import Base2DDetectorSetup
 from petra_viewer.gui.datasource_setup_p23scan_ui import Ui_P23ScanSetup
@@ -7,7 +7,7 @@ from petra_viewer.utils.utils import refresh_combo_box
 WIDGET_NAME = 'P23ScanScanSetup'
 
 
-class P23ScanSetup(Base2DDetectorSetup):
+class P1MScanSetup(Base2DDetectorSetup):
     """
     SETTINGS = {'enable_mask': False,
                 'loaded_mask': None,
@@ -28,7 +28,7 @@ class P23ScanSetup(Base2DDetectorSetup):
     def __init__(self, main_window):
         """
         """
-        super(P23ScanSetup, self).__init__(main_window)
+        super(P1MScanSetup, self).__init__(main_window)
 
         self._my_ui.le_door_address.setText(SETTINGS['door_address'])
 
@@ -66,7 +66,7 @@ class P23ScanSetup(Base2DDetectorSetup):
     # ----------------------------------------------------------------------
     def get_settings(self):
 
-        settings = super(P23ScanSetup, self).get_settings()
+        settings = super(P1MScanSetup, self).get_settings()
 
         if self._my_ui.le_door_address.text() != '':
             settings['door_address'] = str(self._my_ui.le_door_address.text())

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>796</width>
-    <height>716</height>
+    <height>812</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,7 +30,7 @@
           <string>Widget configuration</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_12">
-          <item row="4" column="0">
+          <item row="5" column="0">
            <widget class="QCheckBox" name="chk_beamline">
             <property name="text">
              <string>Beamline (P23)</string>
@@ -40,10 +40,27 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
-           <widget class="QCheckBox" name="chk_tests">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_21">
             <property name="text">
-             <string>Tests</string>
+             <string>File types</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="chk_p11scan">
+            <property name="text">
+             <string>P11 scans</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="chk_p23scan">
+            <property name="text">
+             <string>P23 scans</string>
             </property>
             <property name="checked">
              <bool>false</bool>
@@ -67,23 +84,6 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_21">
-            <property name="text">
-             <string>File types</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QCheckBox" name="chk_p23scan">
-            <property name="text">
-             <string>P23 scans</string>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
            <widget class="QCheckBox" name="chk_asapo">
             <property name="text">
@@ -94,10 +94,10 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="chk_p11scan">
+          <item row="6" column="0">
+           <widget class="QCheckBox" name="chk_tests">
             <property name="text">
-             <string>P11 scans</string>
+             <string>Tests</string>
             </property>
             <property name="checked">
              <bool>false</bool>
@@ -114,13 +114,23 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
+          <item row="4" column="1">
            <widget class="QCheckBox" name="chk_metadata">
             <property name="text">
              <string>Meta data view</string>
             </property>
             <property name="checked">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="chk_p1mscan">
+            <property name="text">
+             <string>P1m scans</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
             </property>
            </widget>
           </item>

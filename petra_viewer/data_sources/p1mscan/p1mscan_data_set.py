@@ -1,12 +1,14 @@
-# Created by matveyev at 18.02.2021
+# Created by matveyev at 03.05.2023
 
 import h5py
+import fabio
 import os
 
 import numpy as np
 
-from petra_viewer.utils.fio_reader import fioReader
 from petra_viewer.data_sources.base_classes.base_2d_detector import Base2DDetectorDataSet, apply_base_settings, BASE_SETTINGS
+
+EXTENSION = ".cbf"
 
 SETTINGS = {'door_address': None,
             'atten_correction': True,
@@ -20,7 +22,7 @@ SETTINGS.update(dict(BASE_SETTINGS))
 
 
 # ----------------------------------------------------------------------
-def apply_settings_p23scan(settings):
+def apply_settings_p1mscan(settings):
     if 'door_address' in settings:
         SETTINGS['door_address'] = settings['door_address']
     else:
@@ -40,58 +42,24 @@ def apply_settings_p23scan(settings):
 
 
 # ----------------------------------------------------------------------
-class P23ScanDataSet(Base2DDetectorDataSet):
+class P1MScanDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def __init__(self, data_pool, file_name):
-        super(P23ScanDataSet, self).__init__(data_pool)
+        super(P1MScanDataSet, self).__init__(data_pool)
 
-        self.my_name = os.path.splitext(os.path.basename(file_name))[0]
-
-        self._original_file = file_name
+        self.my_folder = os.path.dirname(file_name)
+        self.base_name = "_".join(os.path.splitext(os.path.basename(file_name))[0].split("_")[:-1])
 
         self._possible_axes_units = [{}, {}, {}]
 
-        # first we load scan data from .fio
-        if os.path.isfile(os.path.splitext(file_name)[0] + '.fio'):
-            fio_file = fioReader(os.path.splitext(file_name)[0] + '.fio')
-            for key, value in fio_file.parameters.items():
-                try:
-                    self._additional_data[key] = float(value)
-                except:
-                    self._additional_data[key] = value
+        if self._data_pool.memory_mode == 'ram':
+            self._nD_data_array = self._get_data()
+            self._data_shape = self._nD_data_array.shape
+        else:
+            self._data_shape = self._get_data_shape()
 
-        self._scan_length = None
-
-        opened_file = h5py.File(self._original_file, 'r')
-        scan_data = opened_file['scan']['data']
-
-        # if user did ct after scan, Lambda could save them as scan frames, we ignore them
-        for key in scan_data.keys():
-
-            # if this is 1D array - we add it to possible scan axes
-            if key != 'lmbd' and len(scan_data[key].shape) == 1:
-                if self._scan_length is None:
-                    self._scan_length = len(scan_data[key][...])
-                if len(scan_data[key][...]) == self._scan_length:
-                    self._possible_axes_units[0][key] = np.array(scan_data[key][...])
-                    if key not in SETTINGS['all_params']:
-                        SETTINGS['all_params'].append(key)
-
-        for key in scan_data.keys():
-            # up to now only one type of scans - Lambda scans
-            if key == 'lmbd':
-                self._detector = 'lmbd'
-                self._detector_folder = os.path.join(os.path.dirname(opened_file.filename),
-                                                     os.path.splitext(os.path.basename(opened_file.filename))[0], 'lmbd')
-
-                if self._data_pool.memory_mode == 'ram':
-                    self._nD_data_array = self._get_data()
-                    self._data_shape = self._nD_data_array.shape
-                else:
-                    self._data_shape = self._get_data_shape()
-
-        self._possible_axes_units[0]['point_nb'] = np.arange(self._data_shape[0])
+        self._possible_axes_units[0] = {'point_nb': np.arange(self._data_shape[0])}
         self._possible_axes_units[1] = {'detector Y': np.arange(self._data_shape[1])}
         self._possible_axes_units[2] = {'detector X': np.arange(self._data_shape[2])}
 
@@ -124,42 +92,27 @@ class P23ScanDataSet(Base2DDetectorDataSet):
         :return: np.array, 3D data cube
         """
 
-        file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
-        file_lists.sort()
+        file_lists = self._get_file_list()
 
         if len(file_lists) > 0:
             if frame_ids is not None:
-                _need_cut = False
-                if len(file_lists) > 1:
-                    _select_frames = False
-                    files_to_load = [file_lists[frame_ids[0]]]
-                    for frame in frame_ids[1:]:
-                        files_to_load.append(file_lists[frame_ids[frame]])
-                else:
-                    _select_frames = True
-                    files_to_load = file_lists
+                files_to_load = [file_lists[frame_ids[0]]]
+                for frame in frame_ids[1:]:
+                    files_to_load.append(file_lists[frame_ids[frame]])
             else:
                 files_to_load = file_lists
-                _select_frames = False
-                _need_cut = True
 
-            source_file = h5py.File(os.path.join(self._detector_folder, files_to_load[0]), 'r')
-            cube = np.array(source_file['entry']['instrument']['detector']['data'], dtype=np.float32)
+            cube = np.array(fabio.open(os.path.join(self.my_folder, files_to_load[0])).data,
+                            dtype=np.float32)[np.newaxis, :]
 
             for name in files_to_load[1:]:
-                source_file = h5py.File(os.path.join(self._detector_folder, name), 'r')
-                cube = np.vstack((cube, np.array(source_file['entry']['instrument']['detector']['data'],
-                                                 dtype=np.float32)))
+                cube = np.vstack((cube,
+                                  np.array(fabio.open(os.path.join(self.my_folder, name)).data,
+                                           dtype=np.float32)[np.newaxis, :]))
 
-            if _need_cut:
-                cube = cube[:self._scan_length, :, :]
-
-            if _select_frames:
-                cube = cube[frame_ids, :, :]
-
-            return np.array(cube, dtype=np.float32)
+            return cube
         else:
-            raise RuntimeError('No lmbd file found')
+            raise RuntimeError('No p1m file found')
 
     # ----------------------------------------------------------------------
     def _get_data_shape(self):
@@ -168,15 +121,16 @@ class P23ScanDataSet(Base2DDetectorDataSet):
         :return: tuple with data shape
         """
 
-        file_lists = [f for f in os.listdir(self._detector_folder) if f.endswith('.nxs')]
+        file_lists = self._get_file_list()
+        frame = self._reload_data([0])
+        return len(file_lists), frame[0], frame[1]
+
+    # ----------------------------------------------------------------------
+    def _get_file_list(self):
+        file_lists = [f for f in os.listdir(self.my_folder) if f.endswith(EXTENSION) and self.base_name in f]
         file_lists.sort()
 
-        if len(file_lists) > 1:
-            frame = self._reload_data([0])
-            return len(file_lists), frame[0], frame[1]
-        else:
-            source_file = h5py.File(os.path.join(self._detector_folder, file_lists[0]), 'r')
-            return source_file['entry']['instrument']['detector']['data'].shape
+        return file_lists
 
     # ----------------------------------------------------------------------
     def _calculate_correction(self, data_shape, frame_ids):
@@ -208,7 +162,7 @@ class P23ScanDataSet(Base2DDetectorDataSet):
 
     # ----------------------------------------------------------------------
     def _corrections_required(self):
-        if super(P23ScanDataSet, self)._corrections_required():
+        if super(P1MScanDataSet, self)._corrections_required():
             return True
 
         if SETTINGS['atten_correction']:

@@ -10,8 +10,9 @@ from PyQt5 import QtWidgets, QtCore
 from distutils.util import strtobool
 from petra_viewer.utils.utils import refresh_combo_box, check_settings
 
-from petra_viewer.data_sources.p23scan.p23scan_data_set_setup import P23ScanScanSetup
-from petra_viewer.data_sources.p11scan.p11scan_data_set_setup import P11ScanScanSetup
+from petra_viewer.data_sources.p23scan.p23scan_data_set_setup import P23ScanSetup
+from petra_viewer.data_sources.p1mscan.p1mscan_data_set_setup import P1MScanSetup
+from petra_viewer.data_sources.p11scan.p11scan_data_set_setup import P11ScanSetup
 if 'asapo_consumer' in sys.modules:
     from petra_viewer.data_sources.asapo.asapo_data_set_setup import ASAPOScanSetup
 
@@ -62,7 +63,7 @@ class ProgramSetup(QtWidgets.QDialog):
             except Exception as err:
                 logger.error(f'Cannot display {widget} state: {repr(err)}')
 
-        for ftype in ['asapo', 'p23scan', 'p11scan', 'beamline', 'tests']:
+        for ftype in ['asapo', 'p23scan', 'p11scan', "p1mscan", 'beamline', 'tests']:
             try:
                 getattr(self._ui, f'chk_{ftype}').setChecked(ftype in self.settings['WIDGETS']['file_types'])
             except Exception as err:
@@ -136,15 +137,23 @@ class ProgramSetup(QtWidgets.QDialog):
 
         try:
             if self._main_window.configuration['p23scan'] or self._main_window.configuration['tests']:
-                widget = P23ScanScanSetup(self._main_window)
+                widget = P23ScanSetup(self._main_window)
                 self._data_sources.append(widget)
                 self._ui.tb_sources.addTab(widget, 'P23Scan')
         except Exception as err:
             logger.error(f'Cannot display P23Scan settings: {repr(err)}')
 
         try:
+            if self._main_window.configuration['p1mscan'] or self._main_window.configuration['tests']:
+                widget = P1MScanSetup(self._main_window)
+                self._data_sources.append(widget)
+                self._ui.tb_sources.addTab(widget, 'P1MScan')
+        except Exception as err:
+            logger.error(f'Cannot display P1MScan settings: {repr(err)}')
+
+        try:
             if self._main_window.configuration['p11scan']:
-                widget = P11ScanScanSetup(self._main_window)
+                widget = P11ScanSetup(self._main_window)
                 self._data_sources.append(widget)
                 self._ui.tb_sources.addTab(widget, 'P11Scan')
         except Exception as err:
@@ -171,7 +180,7 @@ class ProgramSetup(QtWidgets.QDialog):
         settings['WIDGETS']['visualization'] = ';'.join(cmd)
 
         cmd = []
-        for widget in ['asapo', 'p23scan', 'p11scan', 'beamline', 'tests']:
+        for widget in ['asapo', 'p23scan', "p1mscan", 'p11scan', 'beamline', 'tests']:
             if getattr(self._ui, f'chk_{widget}').isChecked():
                 cmd.append(widget)
 

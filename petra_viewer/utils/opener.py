@@ -14,6 +14,7 @@ if 'asapo_consumer' in sys.modules:
 from petra_viewer.data_sources.beamview.beamview_data_set import BeamLineView
 from petra_viewer.data_sources.reciprocal.reciprocal_data_set import ReciprocalScan
 from petra_viewer.data_sources.p23scan.p23scan_data_set import P23ScanDataSet
+from petra_viewer.data_sources.p1mscan.p1mscan_data_set import P1MScanDataSet
 from petra_viewer.data_sources.p11scan.p11scan_data_set import P11ScanDataSet
 from petra_viewer.data_sources.test_datasets.test_datasets import Peak1, Peak2, HeavyPeak, \
     ASAPO2DPeak, ASAPO3DPeak, ASAPO4DPeak, BeamView
@@ -58,22 +59,12 @@ class Opener(QtCore.QThread):
                             finished = True
 
             elif self.mode == 'p11scan':
-                finished = False
-                while not finished:
-                    try:
-                        new_file = P11ScanDataSet(self.data_pool, self.params['file_name'])
-                        self.data_pool.add_new_entry(self.params['entry_name'], new_file)
-                        finished = True
+                new_file = P11ScanDataSet(self.data_pool, self.params['file_name'])
+                self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
-                    except OSError as err:
-                        if 'Resource temporarily unavailable' in str(err.args):
-                            time.sleep(0.5)
-                            print('Waiting for file {}'.format(self.params['file_name']))
-                        else:
-                            self.exception.emit('Cannot open file',
-                                                'Cannot open {}'.format(self.params['file_name']),
-                                                self._make_err_msg(err))
-                            finished = True
+            elif self.mode == 'p1mscan':
+                new_file = P1MScanDataSet(self.data_pool, self.params['file_name'])
+                self.data_pool.add_new_entry(self.params['entry_name'], new_file)
 
             elif self.mode == 'stream':
                 new_file = ASAPODataSet(self.params['detector_name'], self.params['stream_name'], self.data_pool)

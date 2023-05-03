@@ -21,6 +21,7 @@ except:
     has_asapo = False
 
 from petra_viewer.data_sources.p23scan.p23scan_data_set import apply_settings_p23scan
+from petra_viewer.data_sources.p1mscan.p1mscan_data_set import apply_settings_p1mscan
 from petra_viewer.data_sources.p11scan.p11scan_data_set import apply_settings_p11scan
 
 try:
@@ -130,15 +131,17 @@ class PETRAViewer(QtWidgets.QMainWindow):
                                                                  QtCore.Qt.BottomDockWidgetArea,
                                                                  self, self.data_pool)
 
+        self.file_browsers = {}
+        self.file_browser_docks = {}
         try:
             self.configuration['p23scan'] = 'p23scan' in self.settings['WIDGETS']['file_types']
         except:
             self.configuration['p23scan'] = True
 
         if self.configuration['p23scan']:
-            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "P23 scan browser",
-                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'p23scan')
-            self.file_browser.file_selected.connect(self.data_pool.open_file)
+            self.file_browsers['p23scan'], self.file_browser_docks["p23scan"]\
+                = self._add_dock(FileBrowser, "P23 scan browser", QtCore.Qt.LeftDockWidgetArea, self, 'p23scan')
+            self.file_browsers['p23scan'].file_selected.connect(self.data_pool.open_file)
 
         try:
             self.configuration['p11scan'] = 'p11scan' in self.settings['WIDGETS']['file_types']
@@ -146,9 +149,19 @@ class PETRAViewer(QtWidgets.QMainWindow):
             self.configuration['p11scan'] = True
 
         if self.configuration['p11scan']:
-            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "P11 scan browser",
-                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'p11scan')
-            self.file_browser.file_selected.connect(self.data_pool.open_file)
+            self.file_browsers['p11scan'], self.file_browser_docks['p11scan']\
+                = self._add_dock(FileBrowser, "P11 scan browser", QtCore.Qt.LeftDockWidgetArea, self, 'p11scan')
+            self.file_browsers['p11scan'].file_selected.connect(self.data_pool.open_file)
+
+        try:
+            self.configuration['p1mscan'] = 'p1mscan' in self.settings['WIDGETS']['file_types']
+        except:
+            self.configuration['p1mscan'] = True
+
+        if self.configuration['p1mscan']:
+            self.file_browsers['p1mscan'], self.file_browser_docks['p1mscan'] = \
+                self._add_dock(FileBrowser, "P1M scan browser", QtCore.Qt.LeftDockWidgetArea, self, 'p1mscan')
+            self.file_browsers['p1mscan'].file_selected.connect(self.data_pool.open_file)
 
         try:
             self.configuration['asapo'] = 'asapo' in self.settings['WIDGETS']['file_types']
@@ -170,9 +183,9 @@ class PETRAViewer(QtWidgets.QMainWindow):
             self.configuration['beamline'] = True
 
         if self.configuration['beamline']:
-            self.file_browser, self.file_browser_dock = self._add_dock(FileBrowser, "Beamline Browser",
-                                                                       QtCore.Qt.LeftDockWidgetArea, self, 'beamline')
-            self.file_browser.file_selected.connect(self.data_pool.open_file)
+            self.file_browsers["beamline"], self.file_browser_docks["beamline"] \
+                = self._add_dock(FileBrowser, "Beamline Browser", QtCore.Qt.LeftDockWidgetArea, self, 'beamline')
+            self.file_browsers["beamline"].file_selected.connect(self.data_pool.open_file)
 
         try:
             self.configuration['tests'] = 'tests' in self.settings['WIDGETS']['file_types']
@@ -310,11 +323,15 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
         if 'P23SCAN' in self.settings and self.configuration['p23scan']:
             apply_settings_p23scan(self.settings['P23SCAN'])
-            self.file_browser.apply_settings()
+            self.file_browsers["p23scan"].apply_settings()
+
+        if 'P1MSCAN' in self.settings and self.configuration['p1mscan']:
+            apply_settings_p1mscan(self.settings['P1MSCAN'])
+            self.file_browsers["p1mscan"].apply_settings()
 
         if 'P11SCAN' in self.settings and self.configuration['p11scan']:
             apply_settings_p11scan(self.settings['P11SCAN'])
-            self.file_browser.apply_settings()
+            self.file_browsers["p11scan"].apply_settings()
 
         if 'ASAPO' in self.settings and self.configuration['asapo']:
             apply_settings_asapo(self.settings['ASAPO'])
@@ -330,8 +347,14 @@ class PETRAViewer(QtWidgets.QMainWindow):
 
     # ----------------------------------------------------------------------
     def get_current_folder(self):
-        if self.configuration['p23scan'] or self.configuration['beamline']:
-            return self.file_browser.current_folder()
+        if self.configuration['p23scan']:
+            return self.file_browsers["p23scan"].current_folder()
+        if self.configuration['beamline']:
+            return self.file_browsers["beamline"].current_folder()
+        if self.configuration["p1mscan"]:
+            return self.file_browsers["p1mscan"].current_folder()
+        if self.configuration["p11can"]:
+            return self.file_browsers["p11can"].current_folder()
         else:
             return os.getcwd()
 
@@ -434,8 +457,10 @@ class PETRAViewer(QtWidgets.QMainWindow):
     # ----------------------------------------------------------------------
     def _close_me(self):
         logger.info("Closing the app...")
-        if self.configuration['p23scan']:
-            self.file_browser.safe_close()
+
+        for file_browser in self.file_browsers.values():
+            file_browser.safe_close()
+
         self.save_settings(os.path.join(os.path.join(str(Path.home()), '.petra_viewer'), 'default.ini'))
         self._save_ui_settings()
 
@@ -457,8 +482,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
         """
         settings = QtCore.QSettings(APP_NAME)
 
-        if self.configuration['p23scan']:
-            self.file_browser.save_ui_settings(settings)
+        for file_browser in self.file_browsers.values():
+            file_browser.save_ui_settings(settings)
 
         if self.configuration['asapo']:
             self.asapo_browser.save_ui_settings(settings)
@@ -499,8 +524,8 @@ class PETRAViewer(QtWidgets.QMainWindow):
         except:
             pass
 
-        if self.configuration['p23scan']:
-            self.file_browser.load_ui_settings(settings)
+        for file_browser in self.file_browsers.values():
+            file_browser.load_ui_settings(settings)
 
         if self.configuration['asapo']:
             self.asapo_browser.load_ui_settings(settings)
